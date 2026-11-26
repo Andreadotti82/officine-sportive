@@ -2,6 +2,7 @@
   "version": 2,
   "routes": [
     { "src": "/lista", "dest": "/public/lista.html" },
+    { "src": "/gradimento", "dest": "/public/gradimento.html" },
     { "src": "/", "dest": "/public/index.html" }
   ]
 }

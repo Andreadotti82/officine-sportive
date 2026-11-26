@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gradimento · Officine Sportive</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --teal: #0A9BA5; --vasca: #07808A; --vasca-scura: #05626A;
+  --acqua: #72C5B5; --piastrella: #F4F9F9; --testo: #14323F;
+  --grigio: #5A707A; --bianco: #FFFFFF; --verde: #10B981; --errore: #D9433F;
+  --oro: #F59E0B;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Figtree', Arial, sans-serif; background: var(--piastrella); color: var(--testo); -webkit-text-size-adjust: 100%; }
+
+.container { max-width: 540px; margin: 0 auto; padding: 0 16px 40px; }
+
+.header { text-align: center; padding: 24px 0 8px; }
+.header img { width: 160px; max-width: 50%; }
+.header h1 {
+  font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 22px;
+  color: var(--vasca-scura); margin-top: 12px; line-height: 1.3;
+}
+.header p { font-size: 15px; color: var(--grigio); margin-top: 6px; line-height: 1.5; }
+
+.card {
+  background: var(--bianco); border-radius: 16px; padding: 20px 20px;
+  margin-top: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.card-title {
+  font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 16px;
+  color: var(--vasca-scura); margin-bottom: 14px;
+}
+.card-subtitle { font-size: 14px; color: var(--grigio); margin-bottom: 16px; line-height: 1.5; }
+
+/* Selezione aree */
+.aree-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.area-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; background: var(--piastrella); border: 2px solid transparent;
+  border-radius: 12px; cursor: pointer; transition: all 0.2s;
+  font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 500; color: var(--testo);
+}
+.area-btn:hover { border-color: var(--acqua); }
+.area-btn.selected { border-color: var(--vasca); background: #E8F7F8; }
+.area-btn .emoji { font-size: 22px; }
+.area-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* NPS */
+.nps-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 10px 0; }
+.nps-btn {
+  width: 40px; height: 40px; border-radius: 10px; border: 2px solid #D4E0E3;
+  background: var(--bianco); font-size: 16px; font-weight: 600; color: var(--testo);
+  cursor: pointer; transition: all 0.2s; font-family: 'Figtree', sans-serif;
+}
+.nps-btn:hover { border-color: var(--acqua); }
+.nps-btn.selected { color: var(--bianco); border-color: transparent; }
+.nps-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--grigio); margin-top: 4px; }
+
+/* Voti stelline */
+.voto-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid #EEF2F3;
+}
+.voto-row:last-child { border-bottom: none; }
+.voto-label { font-size: 15px; color: var(--testo); flex: 1; min-width: 0; padding-right: 10px; }
+.stelle { display: flex; gap: 4px; flex-shrink: 0; }
+.stella {
+  width: 32px; height: 32px; border: none; background: none; cursor: pointer;
+  font-size: 22px; opacity: 0.3; transition: opacity 0.15s;
+  padding: 0; line-height: 1;
+}
+.stella.active { opacity: 1; }
+.stella:hover { opacity: 0.7; }
+
+/* Non frequento */
+.non-frequento {
+  display: flex; align-items: center; gap: 8px; margin-top: 8px;
+  font-size: 14px; color: var(--grigio); cursor: pointer;
+}
+.non-frequento input { width: 18px; height: 18px; accent-color: var(--vasca); }
+
+/* Textarea */
+textarea {
+  width: 100%; border: 2px solid #D4E0E3; border-radius: 12px;
+  padding: 14px; font-family: 'Figtree', sans-serif; font-size: 15px;
+  color: var(--testo); resize: vertical; min-height: 80px;
+  transition: border-color 0.2s;
+}
+textarea:focus { outline: none; border-color: var(--vasca); }
+textarea::placeholder { color: #A0B0B8; }
+
+/* Toggle anonimo */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0;
+}
+.toggle-row .label { font-size: 15px; color: var(--testo); }
+.toggle-row .sublabel { font-size: 13px; color: var(--grigio); margin-top: 2px; }
+.toggle {
+  width: 48px; height: 28px; border-radius: 14px; border: none;
+  background: #D4E0E3; cursor: pointer; position: relative; transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--vasca); }
+.toggle::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 22px; height: 22px; border-radius: 50%; background: var(--bianco);
+  transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.toggle.on::after { transform: translateX(20px); }
+
+/* Bottone invio */
+.btn-invia {
+  display: block; width: 100%; padding: 16px; margin-top: 24px;
+  background: var(--vasca); color: var(--bianco); border: none; border-radius: 14px;
+  font-family: 'Montserrat', sans-serif; font-size: 17px; font-weight: 700;
+  cursor: pointer; transition: background 0.2s; letter-spacing: 0.3px;
+}
+.btn-invia:hover { background: var(--vasca-scura); }
+.btn-invia:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Errore */
+.errore-msg {
+  background: #FEF2F2; border: 1.5px solid var(--errore); border-radius: 12px;
+  padding: 12px; text-align: center; color: var(--errore); font-size: 14px;
+  margin-top: 16px; display: none;
+}
+
+/* Grazie */
+.grazie {
+  text-align: center; padding: 40px 20px;
+}
+.grazie .icon { font-size: 56px; margin-bottom: 16px; }
+.grazie h2 {
+  font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 24px;
+  color: var(--vasca-scura); margin-bottom: 10px;
+}
+.grazie p { font-size: 16px; color: var(--grigio); line-height: 1.6; }
+.btn-google {
+  display: inline-block; margin-top: 20px; padding: 14px 28px;
+  background: var(--oro); color: var(--bianco); border: none; border-radius: 12px;
+  font-family: 'Montserrat', sans-serif; font-size: 15px; font-weight: 700;
+  text-decoration: none; cursor: pointer; transition: background 0.2s;
+}
+.btn-google:hover { background: #D97706; }
+
+.footer { text-align: center; padding: 24px 0; font-size: 11px; color: var(--grigio); letter-spacing: 0.4px; }
+
+/* Sezioni area condizionali */
+.area-section { display: none; }
+.area-section.visible { display: block; }
+
+@media (max-width: 400px) {
+  .aree-grid { grid-template-columns: 1fr; }
+  .nps-btn { width: 36px; height: 36px; font-size: 14px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <img src="https://www.officinesportive.it/wp-content/uploads/2025/11/logo-officine-sportive-top.png" alt="Officine Sportive">
+    <h1>Come ti trovi al circolo?</h1>
+    <p>Aiutaci a migliorare: bastano 2 minuti.<br>Le tue risposte contano davvero.</p>
+  </div>
+
+  <!-- FORM -->
+  <form id="formGradimento" style="display:block">
+
+    <!-- 1. Aree frequentate -->
+    <div class="card">
+      <div class="card-title">Cosa frequenti di più?</div>
+      <div class="card-subtitle">Scegli fino a 2 aree</div>
+      <div class="aree-grid" id="areeGrid">
+        <button type="button" class="area-btn" data-area="sala_attrezzi"><span class="emoji">🏋️</span> Sala attrezzi</button>
+        <button type="button" class="area-btn" data-area="corsi"><span class="emoji">🤸</span> Corsi</button>
+        <button type="button" class="area-btn" data-area="piscina"><span class="emoji">🏊</span> Piscina</button>
+        <button type="button" class="area-btn" data-area="padel"><span class="emoji">🎾</span> Padel</button>
+      </div>
+    </div>
+
+    <!-- 2. NPS -->
+    <div class="card">
+      <div class="card-title">Quanto consiglieresti il circolo a un amico?</div>
+      <div class="nps-row" id="npsRow"></div>
+      <div class="nps-labels"><span>Per niente</span><span>Assolutamente sì</span></div>
+    </div>
+
+    <!-- 3. Servizio ultimo ingresso -->
+    <div class="card">
+      <div class="card-title">Come valuti il servizio ricevuto all'ultimo ingresso?</div>
+      <div class="nps-row" id="servizioRow"></div>
+      <div class="nps-labels"><span>Pessimo</span><span>Eccellente</span></div>
+    </div>
+
+    <!-- 4. Domande per SALA ATTREZZI -->
+    <div class="card area-section" data-for="sala_attrezzi">
+      <div class="card-title">🏋️ Sala attrezzi</div>
+      <div class="voto-row"><span class="voto-label">Macchinari e attrezzature</span><div class="stelle" data-key="sala_macchinari"></div></div>
+      <div class="voto-row"><span class="voto-label">Spazi e disposizione</span><div class="stelle" data-key="sala_spazi"></div></div>
+      <div class="voto-row"><span class="voto-label">Pulizia</span><div class="stelle" data-key="sala_pulizia"></div></div>
+    </div>
+
+    <!-- 5. Domande per CORSI -->
+    <div class="card area-section" data-for="corsi">
+      <div class="card-title">🤸 Corsi</div>
+      <div class="voto-row"><span class="voto-label">Qualità delle lezioni</span><div class="stelle" data-key="corsi_qualita"></div></div>
+      <div class="voto-row"><span class="voto-label">Istruttori</span><div class="stelle" data-key="corsi_istruttori"></div></div>
+      <div class="voto-row"><span class="voto-label">Orari e disponibilità</span><div class="stelle" data-key="corsi_orari"></div></div>
+      <div class="voto-row"><span class="voto-label">Pulizia</span><div class="stelle" data-key="corsi_pulizia"></div></div>
+    </div>
+
+    <!-- 6. Domande per PISCINA -->
+    <div class="card area-section" data-for="piscina">
+      <div class="card-title">🏊 Piscina</div>
+      <div class="voto-row"><span class="voto-label">Qualità dell'acqua</span><div class="stelle" data-key="piscina_acqua"></div></div>
+      <div class="voto-row"><span class="voto-label">Spazi</span><div class="stelle" data-key="piscina_spazi"></div></div>
+      <div class="voto-row"><span class="voto-label">Pulizia</span><div class="stelle" data-key="piscina_pulizia"></div></div>
+    </div>
+
+    <!-- 7. Domande per PADEL -->
+    <div class="card area-section" data-for="padel">
+      <div class="card-title">🎾 Padel</div>
+      <div class="voto-row"><span class="voto-label">Qualità dei campi</span><div class="stelle" data-key="padel_campi"></div></div>
+      <div class="voto-row"><span class="voto-label">Disponibilità orari</span><div class="stelle" data-key="padel_disponibilita"></div></div>
+      <div class="voto-row"><span class="voto-label">Pulizia</span><div class="stelle" data-key="padel_pulizia"></div></div>
+    </div>
+
+    <!-- 8. Spogliatoi e Spa (tutti) -->
+    <div class="card">
+      <div class="card-title">Spogliatoi e Spa</div>
+      <div class="voto-row"><span class="voto-label">Spogliatoi</span><div class="stelle" data-key="spogliatoi"></div></div>
+      <div class="voto-row">
+        <span class="voto-label">Spa <span style="font-size:13px;color:var(--grigio)">(sauna, bagno turco, idromassaggio)</span></span>
+        <div class="stelle" data-key="spa"></div>
+      </div>
+      <label class="non-frequento">
+        <input type="checkbox" id="noSpa"> Non frequento la spa
+      </label>
+    </div>
+
+    <!-- 9. Commenti -->
+    <div class="card">
+      <div class="card-title">Vuoi dirci qualcosa?</div>
+      <div class="card-subtitle">Raccontaci cosa funziona bene e cosa possiamo migliorare.</div>
+      <textarea id="commenti" placeholder="Scrivi qui i tuoi commenti..." maxlength="2000"></textarea>
+    </div>
+
+    <!-- 10. Anonimato -->
+    <div class="card">
+      <div class="toggle-row">
+        <div>
+          <div class="label">Rispondi in forma anonima</div>
+          <div class="sublabel">Togli la spunta per rimanere anonimo</div>
+        </div>
+        <button type="button" class="toggle on" id="toggleAnonimo"></button>
+      </div>
+    </div>
+
+    <div id="erroreMsg" class="errore-msg"></div>
+
+    <button type="submit" class="btn-invia" id="btnInvia">Invia le tue risposte</button>
+  </form>
+
+  <!-- GRAZIE -->
+  <div id="grazie" class="grazie" style="display:none">
+    <div class="icon">💚</div>
+    <h2>Grazie!</h2>
+    <p>Le tue risposte ci aiuteranno a migliorare il circolo per tutti.</p>
+    <div id="googleReview" style="display:none">
+      <p style="margin-top:20px;font-size:15px;color:var(--testo)">Ti trovi bene da noi? Fallo sapere anche agli altri!</p>
+      <a class="btn-google" href="https://search.google.com/local/writereview?placeid=ChIJq6qqqlFgLxMRY8KOqUn-GAo" target="_blank" rel="noopener">⭐ Lascia una recensione su Google</a>
+    </div>
+  </div>
+
+  <div class="footer">Palestra · Piscina · Spa · Padel · Centri estivi</div>
+</div>
+
+<script>
+(function() {
+  // === Parametri URL ===
+  var params = new URLSearchParams(window.location.search);
+  var tipo = params.get('tipo') || 'annuale';
+  var nome = params.get('nome') || '';
+  var cognome = params.get('cognome') || '';
+  var email = params.get('email') || '';
+  var attivita = params.get('attivita') || '';
+
+  // === Stato ===
+  var areeSelezionate = [];
+  var npsValue = null;
+  var servizioValue = null;
+  var voti = {};
+  var anonimo = false; // toggle ON = non anonimo (default)
+
+  // === Se è test 7 giorni, mostra versione semplificata ===
+  if (tipo === '7giorni') {
+    document.querySelector('.header h1').textContent = 'Come ti stai trovando?';
+    document.querySelector('.header p').innerHTML = 'Sei con noi da pochi giorni: dicci come sta andando!';
+    // Nascondi aree, servizio e sezioni area
+    document.querySelectorAll('.card')[0].style.display = 'none'; // aree
+    document.querySelectorAll('.card')[2].style.display = 'none'; // servizio
+    // Cambia titolo NPS
+    document.querySelectorAll('.card-title')[1].textContent = 'Quanto consiglieresti il circolo a un amico?';
+  }
+
+  // === Genera NPS buttons (0-10) ===
+  function creaBottoniNps(container, onChange) {
+    for (var i = 0; i <= 10; i++) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'nps-btn';
+      btn.textContent = i;
+      btn.dataset.val = i;
+      btn.addEventListener('click', function() {
+        var val = parseInt(this.dataset.val);
+        onChange(val);
+        this.parentNode.querySelectorAll('.nps-btn').forEach(function(b) {
+          b.classList.remove('selected');
+          b.style.background = '';
+          b.style.borderColor = '';
+        });
+        this.classList.add('selected');
+        // Colore: rosso(0-6) → giallo(7-8) → verde(9-10)
+        var col = val <= 6 ? var_errore : val <= 8 ? var_oro : var_verde;
+        this.style.background = col;
+        this.style.borderColor = col;
+      });
+      container.appendChild(btn);
+    }
+  }
+  var var_errore = '#D9433F', var_oro = '#F59E0B', var_verde = '#10B981';
+  creaBottoniNps(document.getElementById('npsRow'), function(v) { npsValue = v; });
+  creaBottoniNps(document.getElementById('servizioRow'), function(v) { servizioValue = v; });
+
+  // === Stelle (1-5) ===
+  document.querySelectorAll('.stelle').forEach(function(container) {
+    var key = container.dataset.key;
+    for (var i = 1; i <= 5; i++) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'stella';
+      btn.textContent = '★';
+      btn.dataset.val = i;
+      btn.addEventListener('click', function() {
+        var val = parseInt(this.dataset.val);
+        var k = this.parentNode.dataset.key;
+        voti[k] = val;
+        this.parentNode.querySelectorAll('.stella').forEach(function(s) {
+          s.classList.toggle('active', parseInt(s.dataset.val) <= val);
+        });
+      });
+      container.appendChild(btn);
+    }
+  });
+
+  // === Selezione aree (max 2) ===
+  document.querySelectorAll('.area-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var area = this.dataset.area;
+      var idx = areeSelezionate.indexOf(area);
+      if (idx >= 0) {
+        areeSelezionate.splice(idx, 1);
+        this.classList.remove('selected');
+      } else if (areeSelezionate.length < 2) {
+        areeSelezionate.push(area);
+        this.classList.add('selected');
+      }
+      // Disabilita le non selezionate se già 2
+      document.querySelectorAll('.area-btn').forEach(function(b) {
+        if (areeSelezionate.length >= 2 && !b.classList.contains('selected')) {
+          b.classList.add('disabled');
+        } else {
+          b.classList.remove('disabled');
+        }
+      });
+      // Mostra/nascondi sezioni
+      document.querySelectorAll('.area-section').forEach(function(sec) {
+        sec.classList.toggle('visible', areeSelezionate.indexOf(sec.dataset.for) >= 0);
+      });
+    });
+  });
+
+  // === Spa: "non frequento" ===
+  document.getElementById('noSpa').addEventListener('change', function() {
+    var stelleSpa = document.querySelector('.stelle[data-key="spa"]');
+    if (this.checked) {
+      stelleSpa.style.opacity = '0.3';
+      stelleSpa.style.pointerEvents = 'none';
+      delete voti.spa;
+    } else {
+      stelleSpa.style.opacity = '1';
+      stelleSpa.style.pointerEvents = 'auto';
+    }
+  });
+
+  // === Toggle anonimo ===
+  var toggleBtn = document.getElementById('toggleAnonimo');
+  toggleBtn.addEventListener('click', function() {
+    anonimo = !anonimo;
+    this.classList.toggle('on', !anonimo);
+  });
+
+  // === Invio ===
+  document.getElementById('formGradimento').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var erroreEl = document.getElementById('erroreMsg');
+    erroreEl.style.display = 'none';
+
+    // Validazione
+    if (tipo === 'annuale' && areeSelezionate.length === 0) {
+      return mostraErr('Seleziona almeno un\'area che frequenti.');
+    }
+    if (npsValue === null) {
+      return mostraErr('Indica quanto consiglieresti il circolo (0-10).');
+    }
+
+    // Prepara dati
+    var dati = {
+      tipo: tipo,
+      nome: anonimo ? null : (nome || null),
+      cognome: anonimo ? null : (cognome || null),
+      email: anonimo ? null : (email || null),
+      anonimo: anonimo,
+      aree: tipo === 'annuale' ? areeSelezionate : [attivita || 'fitness'],
+      nps: npsValue,
+      servizio: tipo === 'annuale' ? servizioValue : null,
+      voti: voti,
+      spogliatoi: voti.spogliatoi || null,
+      spa: document.getElementById('noSpa').checked ? null : (voti.spa || null),
+      commenti: document.getElementById('commenti').value.trim() || null,
+      attivita: tipo === '7giorni' ? (attivita || 'fitness') : null
+    };
+
+    // Pulisci voti generali dal jsonb
+    var votiClean = Object.assign({}, voti);
+    delete votiClean.spogliatoi;
+    delete votiClean.spa;
+    dati.voti = votiClean;
+    dati.spogliatoi = voti.spogliatoi ? voti.spogliatoi * 2 : null; // stelle→scala 10
+    dati.spa = (!document.getElementById('noSpa').checked && voti.spa) ? voti.spa * 2 : null;
+
+    var btn = document.getElementById('btnInvia');
+    btn.disabled = true;
+    btn.textContent = 'Invio in corso...';
+
+    fetch('/api/gradimento', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dati)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.ok) {
+        document.getElementById('formGradimento').style.display = 'none';
+        document.getElementById('grazie').style.display = 'block';
+        // Se NPS >= 9, mostra richiesta recensione Google
+        if (npsValue >= 9) {
+          document.getElementById('googleReview').style.display = 'block';
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        mostraErr(res.errore || 'Errore nel salvataggio.');
+        btn.disabled = false;
+        btn.textContent = 'Invia le tue risposte';
+      }
+    })
+    .catch(function() {
+      mostraErr('Errore di connessione. Riprova.');
+      btn.disabled = false;
+      btn.textContent = 'Invia le tue risposte';
+    });
+  });
+
+  function mostraErr(msg) {
+    var el = document.getElementById('erroreMsg');
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+})();
+</script>
+
+</body>
+</html>

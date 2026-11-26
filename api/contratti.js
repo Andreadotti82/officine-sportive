@@ -51,6 +51,11 @@ function fmtData(d) { return String(d.getDate()).padStart(2,'0')+'/'+String(d.ge
 function fmtDataLunga(d) { return d.getDate()+' '+MESI_IT[d.getMonth()]+' '+d.getFullYear(); }
 function euro(n) { return Number(n).toLocaleString('it-IT',{style:'currency',currency:'EUR'}); }
 function arrotonda(n) { return Math.round(Number(n) * 100) / 100; }
+function ultimoGiorno(y, m) { return dt(y, m, giorniNelMese(y, m)); }
+function aggiungiMesi(d, n) { return dt(d.getFullYear(), d.getMonth() + n, 1); }
+function aggiungiGiorni(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+function mesiTra(inizio, scadenza) { return (scadenza.getFullYear() - inizio.getFullYear()) * 12 + (scadenza.getMonth() - inizio.getMonth()) + 1; }
+function euroInteri(n) { return arrotonda(n); }
 
 // === CATALOGO ===
 async function catalogo() {
@@ -144,29 +149,117 @@ async function verificaPromo(codice, abbId) {
 
 // === PREVENTIVO ===
 async function preventivo(abbId, codicePromo, primoGiorno, upg) {
-  // Leggi abbonamento dal listino
   const r = await supaFetch(`/rest/v1/listino?id=eq.${encodeURIComponent(abbId)}`);
   const rows = await r.json();
   if (!rows.length) return { errore: 'Abbonamento non trovato.' };
   const abb = rows[0];
-
-  // Leggi promo se c'è
   let promo = null;
-  if (codicePromo) {
-    const rp = await verificaPromo(codicePromo, abbId);
-    if (rp.valido) promo = rp.promo;
-  }
-
-  // Calcola piano (semplificato per ora, da completare con la logica piena)
+  if (codicePromo) { const rp = await verificaPromo(codicePromo, abbId); if (rp.valido) promo = rp.promo; }
+  const r3 = await supaFetch('/rest/v1/turni_docs?path=eq.contratti/config&select=data');
+  const cfgRows = await r3.json();
+  const imp = cfgRows.length ? cfgRows[0].data : {};
   const firma = primoGiorno ? new Date(primoGiorno.split('/').reverse().join('-')) : new Date();
+  const piano = calcolaPiano(abb, promo, firma, { primaRataAllaFirma: imp.primaRataAllaFirma !== false, includiGiornoIscrizione: imp.giornoIscrizioneNelProRata !== false, penale: imp.penale || 6, upgrade: upg || null });
+  return { abbonamento: abb, promo, piano };
+}
 
-  return {
-    abbonamento: abb,
-    promo: promo,
-    primoGiorno: fmtData(firma),
-    // TODO: calcolo completo del piano (prorata, rate, scadenza, disdetta)
-    piano: { calcolato: false, nota: 'Piano in fase di migrazione' }
-  };
+function calcolaPiano(abb, promo, firma, opz) {
+  opz = opz || {};
+  const includi = opz.includiGiornoIscrizione !== false;
+  const omaggio = !!(promo && promo.omaggio);
+  let prezzo = omaggio ? 0 : Number(abb.prezzo) || 0;
+  if (!omaggio && promo && promo.prezzo_rata != null && promo.prezzo_rata !== '' && !isNaN(Number(promo.prezzo_rata))) prezzo = Number(promo.prezzo_rata);
+  else if (!omaggio && promo && Number(promo.sconto_percento) > 0) prezzo = arrotonda(prezzo * (1 - Number(promo.sconto_percento) / 100));
+  const iscrizione = omaggio ? 0 : Number(abb.iscrizione) || 0;
+  const p = { abbonamento: abb.nome, area: abb.area, tipo: abb.tipo, firma: fmtData(firma), primoGiorno: fmtData(firma),
+    garanziaFino: abb.tipo === 'lungo' ? fmtData(aggiungiGiorni(firma, 14)) : null,
+    iscrizione: arrotonda(iscrizione), prezzo: arrotonda(prezzo), pagamento: abb.pagamento,
+    rinnovo: !!abb.rinnovo, fasciaOraria: abb.fascia_oraria || '',
+    prorata: [], prorataTotale: 0, primaRataAllaFirma: false, totaleFirma: 0, righeFirma: [],
+    promo: promo ? promo.descrizione || promo.codice : '', penale: opz.penale };
+  if (abb.tipo === 'giornaliero') {
+    p.inizio = fmtData(firma); p.scadenza = fmtData(firma); p.rinnovo = false; p.disdettaEntro = null;
+    p.totaleFirma = arrotonda(prezzo + iscrizione);
+    if (iscrizione) p.righeFirma.push({ voce: 'Iscrizione', importo: iscrizione });
+    p.righeFirma.push({ voce: 'Abbonamento giornaliero del ' + fmtData(firma), importo: prezzo });
+    p.pianoRate = 'Pagamento unico alla firma'; return p;
+  }
+  const rataMese = abb.pagamento === 'annuale' ? prezzo / 12 : prezzo;
+  const y = firma.getFullYear(), m = firma.getMonth(), d = firma.getDate();
+  const extra = promo && promo.mesi_prorata_extra ? Number(promo.mesi_prorata_extra) : 0;
+  let importi = null;
+  if (omaggio) importi = [0];
+  else if (promo && promo.importo_prorata_mese != null && promo.importo_prorata_mese !== '') {
+    importi = String(promo.importo_prorata_mese).split(/[;\/]/).map(x => Number(String(x).replace(',','.').trim())).filter(x => !isNaN(x));
+    if (!importi.length) importi = null;
+  }
+  const importoFisso = importi ? importi[0] : null;
+  const importoMese = (i) => importi ? importi[Math.min(i, importi.length - 1)] : null;
+  let fisso = promo && promo.inizio_abbonamento ? promo.inizio_abbonamento : null;
+  if (fisso && typeof fisso === 'string') { const pts = fisso.split('/'); if (pts.length === 3) fisso = dt(Number(pts[2]), Number(pts[1]) - 1, 1); else fisso = null; }
+  let inizio;
+  if (fisso) {
+    const nMesi = (fisso.getFullYear() * 12 + fisso.getMonth()) - (y * 12 + m);
+    for (let q = 0; q < nMesi; q++) {
+      const mq = aggiungiMesi(dt(y, m, 1), q), gq = giorniNelMese(mq.getFullYear(), mq.getMonth());
+      const daq = q === 0 ? firma : mq, giorniQ = q === 0 ? gq - d + (includi ? 1 : 0) : gq;
+      const impQ = importi ? importoMese(q) : (q === 0 ? rataMese / gq * giorniQ : rataMese);
+      p.prorata.push({ periodo: fmtData(daq) + ' – ' + fmtData(ultimoGiorno(mq.getFullYear(), mq.getMonth())), mese: MESI_IT[mq.getMonth()] + ' ' + mq.getFullYear(), giorni: giorniQ, importo: euroInteri(impQ) });
+    }
+    inizio = dt(fisso.getFullYear(), fisso.getMonth(), 1);
+  } else if (d === 1 && !extra) {
+    inizio = dt(y, m, 1);
+  } else {
+    if (d !== 1) {
+      const gm = giorniNelMese(y, m), giorni = gm - d + (includi ? 1 : 0);
+      const imp = importi ? importoMese(0) : rataMese / gm * giorni;
+      p.prorata.push({ periodo: fmtData(firma) + ' – ' + fmtData(ultimoGiorno(y, m)), mese: MESI_IT[m] + ' ' + y, giorni, importo: euroInteri(imp) });
+    }
+    const pe = d === 1 ? 0 : 1;
+    for (let k = 0; k < extra; k++) {
+      const mm = aggiungiMesi(dt(y, m, 1), pe + k);
+      p.prorata.push({ periodo: fmtData(mm) + ' – ' + fmtData(ultimoGiorno(mm.getFullYear(), mm.getMonth())), mese: MESI_IT[mm.getMonth()] + ' ' + mm.getFullYear(), giorni: giorniNelMese(mm.getFullYear(), mm.getMonth()), importo: euroInteri(importi ? importoMese(pe + k) : rataMese) });
+    }
+    inizio = aggiungiMesi(dt(y, m, 1), pe + extra);
+  }
+  p.inizio = fmtData(inizio);
+  p.prorataTotale = arrotonda(p.prorata.reduce((s, r) => s + r.importo, 0));
+  if (abb.fine_stagione) {
+    const fs = String(abb.fine_stagione).split('-'), fm = Number(fs[0]) - 1, fg = Number(fs[1]);
+    p.scadenza = fmtData(dt(inizio.getMonth() > fm ? inizio.getFullYear() + 1 : inizio.getFullYear(), fm, fg));
+  } else {
+    const um = aggiungiMesi(inizio, (Number(abb.durata_mesi) || 1) - 1);
+    p.scadenza = fmtData(ultimoGiorno(um.getFullYear(), um.getMonth()));
+  }
+  const scadD = new Date(p.scadenza.split('/').reverse().join('-'));
+  if (p.rinnovo && abb.tipo !== 'breve') {
+    const mp = aggiungiMesi(dt(scadD.getFullYear(), scadD.getMonth(), 1), -1);
+    p.disdettaEntro = fmtData(dt(mp.getFullYear(), mp.getMonth(), 5));
+  } else { p.disdettaEntro = null; }
+  if (iscrizione) p.righeFirma.push({ voce: 'Quota di iscrizione', importo: iscrizione });
+  p.prorata.forEach(r => { p.righeFirma.push({ voce: 'Pro rata ' + r.mese + (importoFisso !== null ? ' (promozione)' : ' (' + r.giorni + ' giorni)'), importo: r.importo }); });
+  const primaRata = promo && promo.prima_rata_alla_firma != null ? !!promo.prima_rata_alla_firma : (opz.primaRataAllaFirma !== false);
+  const meseInizio = MESI_IT[inizio.getMonth()] + ' ' + inizio.getFullYear();
+  if (abb.pagamento === 'annuale') {
+    p.primaRataAllaFirma = true;
+    p.righeFirma.push({ voce: 'Abbonamento annuale (' + meseInizio + ' – ' + MESI_IT[scadD.getMonth()] + ' ' + scadD.getFullYear() + ')', importo: prezzo });
+    p.pianoRate = 'Pagamento annuale anticipato di ' + euro(prezzo) + (p.rinnovo ? ', a ogni rinnovo' : '');
+  } else if (abb.pagamento === 'unico') {
+    p.primaRataAllaFirma = true; p.righeFirma.push({ voce: 'Abbonamento', importo: prezzo }); p.pianoRate = 'Pagamento unico';
+  } else {
+    p.primaRataAllaFirma = primaRata;
+    if (primaRata) {
+      p.righeFirma.push({ voce: 'Prima rata (' + meseInizio + ')', importo: prezzo });
+      p.pianoRate = 'Rata mensile di ' + euro(prezzo) + ' dal ' + fmtData(aggiungiMesi(inizio, 1)) + (p.rinnovo ? ', fino alla scadenza e a ogni rinnovo' : ', fino alla scadenza');
+    } else {
+      p.pianoRate = 'Rata mensile di ' + euro(prezzo) + ' dal ' + fmtData(inizio) + (p.rinnovo ? ', fino alla scadenza e a ogni rinnovo' : ', fino alla scadenza');
+    }
+    p.mesiDurata = mesiTra(inizio, scadD);
+  }
+  if (omaggio) { p.righeFirma = [{ voce: 'Abbonamento omaggio', importo: 0 }]; p.pianoRate = 'Abbonamento omaggio: nessun pagamento'; p.primaRataAllaFirma = false; }
+  p.omaggio = omaggio;
+  p.totaleFirma = arrotonda(p.righeFirma.reduce((s, r) => s + Number(r.importo), 0));
+  return p;
 }
 
 // === TESTI SPUNTE ===
@@ -276,7 +369,7 @@ async function boRegistra(nome, pin, pin2, dispositivo) {
   if (pin.length < 4) return { ok: false, errore: 'Il PIN deve avere almeno 4 cifre.' };
 
   // Per ora la registrazione crea un nuovo PIN
-  const crypto = await import('crypto');
+
   const salt = crypto.randomBytes(12).toString('hex');
   const hash = crypto.pbkdf2Sync(pin, salt, 150000, 32, 'sha256').toString('hex');
   const id = nome.toLowerCase().replace(/\s+/g, '').slice(0, 20);
@@ -293,7 +386,7 @@ async function boRegistra(nome, pin, pin2, dispositivo) {
 // === FIRMA OTP ===
 async function avviaFirma(dati) {
   // Salva il contratto in bozza
-  const crypto = await import('crypto');
+
   const otp = String(Math.floor(100000 + Math.random() * 900000)); // 6 cifre
   const otpSalt = crypto.randomBytes(12).toString('hex');
   const otpHash = crypto.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
@@ -364,7 +457,7 @@ async function confermaFirma(id, codice) {
   if (c.otp_tentativi >= 5) return { ok: false, errore: 'Troppi tentativi. Richiedi un nuovo codice.' };
 
   // Verifica OTP
-  const crypto = await import('crypto');
+
   const hash = crypto.pbkdf2Sync(codice, c.otp_salt, 150000, 32, 'sha256').toString('hex');
 
   if (hash !== c.otp_hash) {
@@ -385,7 +478,7 @@ async function confermaFirma(id, codice) {
 
 async function reinviaOtp(id) {
   // Genera nuovo OTP e invia
-  const crypto = await import('crypto');
+
   const otp = String(Math.floor(100000 + Math.random() * 900000));
   const otpSalt = crypto.randomBytes(12).toString('hex');
   const otpHash = crypto.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
@@ -409,7 +502,7 @@ async function reinviaOtp(id) {
 }
 
 async function otpViaEmail(id) {
-  const crypto = await import('crypto');
+
   const otp = String(Math.floor(100000 + Math.random() * 900000));
   const otpSalt = crypto.randomBytes(12).toString('hex');
   const otpHash = crypto.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');

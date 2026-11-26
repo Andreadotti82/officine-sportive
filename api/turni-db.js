@@ -27,10 +27,15 @@ export default async function handler(req, res) {
         return res.json({ exists: true, data: rows[0].data, path: rows[0].path });
       }
 
-      if (collection) {
-        // List documents in a collection (prefix match)
-        const prefix = collection.endsWith('/') ? collection : collection + '/';
-        const r = await supaFetch(`/rest/v1/turni_docs?path=like.${encodeURIComponent(prefix + '%')}&select=*&order=path`);
+      if (collection !== undefined) {
+        // List documents: empty collection = ALL, otherwise prefix match
+        let r;
+        if (collection === '' || collection === null) {
+          r = await supaFetch(`/rest/v1/turni_docs?select=*&order=path`);
+        } else {
+          const prefix = collection.endsWith('/') ? collection : collection + '/';
+          r = await supaFetch(`/rest/v1/turni_docs?path=like.${encodeURIComponent(prefix + '%')}&select=*&order=path`);
+        }
         const rows = await r.json();
         return res.json({
           docs: rows.map(row => ({

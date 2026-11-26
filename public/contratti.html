@@ -555,7 +555,8 @@ $('vai2').addEventListener('click', function () {
 function isoDa(itStr) { var p = itStr.split('/'); return p[2] + '-' + p[1] + '-' + p[0]; }
 function itDa(iso) { var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
 function preparaData() {
-  var oggi = isoDa(CAT.oggi), p = oggi.split('-');
+  var now = new Date(), oggiLocal = now.getFullYear() + '-' + ('0' + (now.getMonth()+1)).slice(-2) + '-' + ('0' + now.getDate()).slice(-2);
+  var oggi = CAT.oggi ? isoDa(CAT.oggi) : oggiLocal, p = oggi.split('-');
   var ultimo = new Date(Number(p[0]), Number(p[1]), 0).getDate();   // ultimo giorno del mese corrente
   var max = p[0] + '-' + p[1] + '-' + ('0' + ultimo).slice(-2);
   $('primo').min = oggi; $('primo').max = max;

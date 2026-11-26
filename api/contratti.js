@@ -50,7 +50,7 @@ function dt(y, m, d) { return new Date(y, m, d, 12, 0, 0); }
 function giorniNelMese(y, m) { return new Date(y, m + 1, 0).getDate(); }
 function fmtData(d) { return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }
 function fmtDataLunga(d) { return d.getDate()+' '+MESI_IT[d.getMonth()]+' '+d.getFullYear(); }
-function euro(n) { return Number(n).toLocaleString('it-IT',{style:'currency',currency:'EUR'}); }
+function euro(n) { return '€ ' + Number(n).toFixed(2).replace('.', ','); }
 function arrotonda(n) { return Math.round(Number(n) * 100) / 100; }
 function ultimoGiorno(y, m) { return dt(y, m, giorniNelMese(y, m)); }
 function aggiungiMesi(d, n) { return dt(d.getFullYear(), d.getMonth() + n, 1); }
@@ -192,9 +192,9 @@ function calcolaPiano(abb, promo, firma, opz) {
     promo: promo ? promo.descrizione || promo.codice : '', penale: opz.penale };
   if (abb.tipo === 'giornaliero') {
     p.inizio = fmtData(firma); p.scadenza = fmtData(firma); p.rinnovo = false; p.disdettaEntro = null;
-    p.totaleFirma = arrotonda(prezzo + iscrizione);
-    if (iscrizione) p.righeFirma.push({ voce: 'Iscrizione', importo: iscrizione });
-    p.righeFirma.push({ voce: 'Abbonamento giornaliero del ' + fmtData(firma), importo: prezzo });
+    p.totaleFirma = euro(arrotonda(prezzo + iscrizione));
+    if (iscrizione) p.righeFirma.push({ voce: 'Iscrizione', importo: euro(iscrizione) });
+    p.righeFirma.push({ voce: 'Abbonamento giornaliero del ' + fmtData(firma), importo: euro(prezzo) });
     p.pianoRate = 'Pagamento unico alla firma'; return p;
   }
   const rataMese = abb.pagamento === 'annuale' ? prezzo / 12 : prezzo;
@@ -272,6 +272,12 @@ function calcolaPiano(abb, promo, firma, opz) {
   if (omaggio) { p.righeFirma = [{ voce: 'Abbonamento omaggio', importo: 0 }]; p.pianoRate = 'Abbonamento omaggio: nessun pagamento'; p.primaRataAllaFirma = false; }
   p.omaggio = omaggio;
   p.totaleFirma = arrotonda(p.righeFirma.reduce((s, r) => s + Number(r.importo), 0));
+  // Formatta con € per il frontend
+  p.totaleFirma = euro(p.totaleFirma);
+  p.righeFirma.forEach(r => { r.importo = euro(r.importo); });
+  p.prorata.forEach(r => { r.importo = euro(r.importo); });
+  p.prorataTotale = euro(p.prorataTotale);
+  if (p.penale) p.penale = euro(p.penale);
   return p;
 }
 
@@ -415,37 +421,40 @@ async function avviaFirma(dati) {
   const otpSalt = c.randomBytes(12).toString('hex');
   const otpHash = c.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
 
+  // Il frontend manda: { titolare: {cf,nome,cognome,via,civico,cap,comune,provincia,cellulare,email}, minore: {cf,nome,cognome}|null, abbId, promo, primoGiorno, metodo, ... }
+  const t = dati.titolare || {};
+  const m = dati.minore || null;
+  const junior = !!dati.perMinore || !!(m && m.nome);
+  const primoGiorno = dati.primoGiorno ? dati.primoGiorno.split('/').reverse().join('-') : null;
+
   const record = {
     numero,
     tipo: dati.tipo || 'nuovo',
-    nome: dati.nome, cognome: dati.cognome,
-    codice_fiscale: dati.cf, cellulare: dati.cellulare, email: dati.email,
-    data_nascita: dati.dataNascita || null, luogo_nascita: dati.luogoNascita || null,
-    sesso: dati.sesso || null, indirizzo: dati.indirizzo || null,
-    comune: dati.comune || null, cap: dati.cap || null, provincia: dati.provincia || null,
-    junior: !!dati.junior,
-    genitore_nome: dati.genitoreNome || null, genitore_cognome: dati.genitoreCognome || null,
-    genitore_cf: dati.genitoreCf || null, genitore_cellulare: dati.genitoreCellulare || null,
-    categoria: dati.categoria, abbonamento_id: dati.abbId, abbonamento_nome: dati.abbNome,
-    durata_mesi: dati.durataMesi, codice_promo: dati.codicePromo || null, promo_nome: dati.promoNome || null,
-    primo_giorno: dati.primoGiorno || null, importo_rata: dati.rata || null,
-    importo_prorata: dati.prorata || null, totale_firma: dati.totaleFirma || null,
-    piano: dati.piano || null,
+    nome: t.nome || '', cognome: t.cognome || '',
+    codice_fiscale: t.cf || null, cellulare: t.cellulare || '', email: t.email || null,
+    indirizzo: (t.via || '') + (t.civico ? ' ' + t.civico : '') || null,
+    comune: t.comune || null, cap: t.cap || null, provincia: t.provincia || null,
+    junior,
+    genitore_nome: junior ? t.nome : null, genitore_cognome: junior ? t.cognome : null,
+    genitore_cf: junior ? t.cf : null, genitore_cellulare: junior ? t.cellulare : null,
+    abbonamento_id: dati.abbId || null, codice_promo: dati.promo || null,
+    primo_giorno: primoGiorno,
     otp_hash: otpHash, otp_salt: otpSalt,
     otp_scadenza: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minuti
-    creato_da: dati.creatoDa || 'online',
-    prova: dati.cognome === 'Prova'
+    creato_da: 'online',
+    prova: (t.cognome || '').toLowerCase() === 'prova'
   };
 
   const r = await supaFetch('/rest/v1/contratti', 'POST', record, { 'Prefer': 'return=representation' });
   if (!r.ok) {
     const err = await r.text();
-    console.error('Errore salvataggio contratto:', err);
-    return { ok: false, errori: ['Errore nel salvataggio. Riprova.'] };
+    console.error('Errore salvataggio contratto:', r.status, err);
+    console.error('Record inviato:', JSON.stringify(record).slice(0, 500));
+    return { ok: false, errori: ['Errore nel salvataggio (' + r.status + '). Riprova.'] };
   }
   const [saved] = await r.json();
 
-  const dest = dati.junior ? (dati.genitoreCellulare || dati.cellulare) : dati.cellulare;
+  const dest = t.cellulare || '';
 
   // Invia OTP via SMS (Skebby)
   let smsOk = false;

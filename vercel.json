@@ -1,6 +1,7 @@
 {
   "version": 2,
   "routes": [
+    { "src": "/staff", "status": 308, "headers": { "Location": "/contratti?staff" } },
     { "src": "/lista", "dest": "/public/lista.html" },
     { "src": "/gradimento", "dest": "/public/gradimento.html" },
     { "src": "/disiscrizione", "dest": "/public/disiscrizione.html" },
@@ -8,8 +9,5 @@
     { "src": "/contratti", "dest": "/public/contratti.html" },
     { "src": "/contratti/", "dest": "/public/contratti.html" },
     { "src": "/", "dest": "/public/index.html" }
-  ],
-  "redirects": [
-    { "source": "/staff", "destination": "/contratti?staff", "permanent": false }
   ]
 }

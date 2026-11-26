@@ -433,7 +433,7 @@ async function avviaFirma(dati) {
     genitore_nome: junior ? t.nome : null, genitore_cognome: junior ? t.cognome : null,
     genitore_cf: junior ? t.cf : null, genitore_cellulare: junior ? t.cellulare : null,
     abbonamento_id: dati.abbId || null, codice_promo: dati.promo || null,
-    primo_giorno: primoGiorno,
+    primo_giorno: primoGiorno, pagamento_metodo: dati.metodo || 'Contanti',
     otp_hash: otpHash, otp_salt: otpSalt,
     otp_scadenza: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minuti
     creato_da: 'online',
@@ -502,12 +502,21 @@ async function confermaFirma(id, codice) {
   }
 
   // Firma confermata!
-  await supaFetch(`/rest/v1/contratti?id=eq.${id}`, 'PATCH', {
-    firmato: true, firmato_il: new Date().toISOString()
-  }, { 'Prefer': 'return=minimal' });
+  const patch = { firmato: true, firmato_il: new Date().toISOString(), pagamento_metodo: c.pagamento_metodo || 'Contanti' };
+  await supaFetch(`/rest/v1/contratti?id=eq.${id}`, 'PATCH', patch, { 'Prefer': 'return=minimal' });
 
-  // TODO: generare PDF e salvarlo in Supabase Storage
-  // TODO: inviare email al socio dopo 30 minuti
+  // Se pagamento online → crea checkout SumUp
+  if (c.pagamento_metodo === 'Carte online' && SUMUP_KEY && SUMUP_MERCHANT) {
+    try {
+      const checkout = await creaSumUpCheckout(c);
+      if (checkout && checkout.url) {
+        await supaFetch(`/rest/v1/contratti?id=eq.${id}`, 'PATCH', {
+          sumup_checkout_id: checkout.id, pagamento_stato: 'in_attesa'
+        }, { 'Prefer': 'return=minimal' });
+        return { ok: true, numero: c.numero, firmato: true, pagamento: { url: checkout.url, importo: checkout.importo } };
+      }
+    } catch (e) { console.error('[SUMUP] Errore creazione checkout:', e); }
+  }
 
   return { ok: true, numero: c.numero, firmato: true };
 }
@@ -559,13 +568,63 @@ async function otpViaEmail(id) {
   return { ok: false, errore: 'Email non disponibile.' };
 }
 
-async function statoPagamento(token) {
-  // TODO: check SumUp payment status
-  return { stato: 'in_attesa' };
+async function creaSumUpCheckout(contratto) {
+  const importo = contratto.totale_firma ? Number(contratto.totale_firma) : 0;
+  if (!importo || importo <= 0) return null;
+  const ref = 'OS-' + contratto.id.slice(0, 8);
+  const r = await fetch('https://api.sumup.com/v0.1/checkouts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUMUP_KEY },
+    body: JSON.stringify({
+      merchant_code: SUMUP_MERCHANT,
+      amount: importo,
+      currency: 'EUR',
+      checkout_reference: ref,
+      description: 'Contratto ' + (contratto.numero || '') + ' - ' + (contratto.nome || '') + ' ' + (contratto.cognome || ''),
+      redirect_url: 'https://officine-sportive.vercel.app/contratti?pagato=' + contratto.id,
+      hosted_checkout: { enabled: true }
+    })
+  });
+  if (!r.ok) {
+    const err = await r.text();
+    console.error('[SUMUP] Checkout fallito:', r.status, err);
+    return null;
+  }
+  const data = await r.json();
+  console.log('[SUMUP] Checkout creato:', data.id, 'URL:', data.hosted_checkout_url);
+  return { id: data.id, url: data.hosted_checkout_url, importo: euro(importo) };
 }
 
-async function riprovaPagamento(token) {
-  return { ok: false, errore: 'Pagamenti SumUp in fase di migrazione.' };
+async function statoPagamento(checkoutId) {
+  if (!checkoutId || !SUMUP_KEY) return { ok: false, errore: 'Configurazione pagamento mancante.' };
+  try {
+    const r = await fetch('https://api.sumup.com/v0.1/checkouts/' + encodeURIComponent(checkoutId), {
+      headers: { 'Authorization': 'Bearer ' + SUMUP_KEY }
+    });
+    if (!r.ok) return { ok: false, errore: 'Errore verifica pagamento.' };
+    const data = await r.json();
+    if (data.status === 'PAID') {
+      // Aggiorna il contratto
+      await supaFetch(`/rest/v1/contratti?sumup_checkout_id=eq.${encodeURIComponent(checkoutId)}`, 'PATCH', {
+        pagamento_stato: 'pagato', pagato_il: new Date().toISOString()
+      }, { 'Prefer': 'return=minimal' });
+      return { ok: true, stato: 'pagato' };
+    }
+    return { ok: true, stato: data.status === 'PENDING' ? 'in_attesa' : data.status.toLowerCase() };
+  } catch (e) { console.error('[SUMUP] Errore stato:', e); return { ok: false, errore: 'Errore verifica.' }; }
+}
+
+async function riprovaPagamento(id) {
+  // Cerca il contratto e ricrea il checkout se serve
+  const r = await supaFetch(`/rest/v1/contratti?id=eq.${id}&select=*`);
+  const rows = await r.json();
+  if (!rows.length) return { ok: false, errore: 'Contratto non trovato.' };
+  const c = rows[0];
+  if (c.pagamento_stato === 'pagato') return { ok: true, stato: 'pagato' };
+  const checkout = await creaSumUpCheckout(c);
+  if (!checkout) return { ok: false, errore: 'Errore creazione pagamento.' };
+  await supaFetch(`/rest/v1/contratti?id=eq.${id}`, 'PATCH', { sumup_checkout_id: checkout.id }, { 'Prefer': 'return=minimal' });
+  return { ok: true, url: checkout.url, importo: checkout.importo };
 }
 
 // Revoca disdetta

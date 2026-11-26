@@ -375,7 +375,7 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:10px}
 <div class="attesa" id="attesa"><div class="rotella"></div><div id="attesaT">Un attimo…</div></div>
 
 <script>
-var APRI_STAFF = false;
+var APRI_STAFF = new URLSearchParams(location.search).has('staff');
 var PAGATO = '';
 var CAT = null;
 var ST = { area: '', abb: null, offerte: [], promo: '', letto: false, sessione: '', client: {} };

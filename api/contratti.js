@@ -2,6 +2,8 @@
 // Riceve POST { fn, args } e smista alla funzione giusta
 // Replica le funzioni di google.script.run del vecchio GAS
 
+import crypto from 'crypto';
+
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://kyricrhlqlassvhxqjgf.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5cmljcmhscWxhc3N2aHhxamdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU2OTU4MjEsImV4cCI6MjExMTI3MTgyMX0.PgX0_48IE63SB7MFEWaRSpMsA7uPqAh2GLQ-X2uNuyU';
 const SKEBBY_USER = process.env.SKEBBY_USER || '';
@@ -21,9 +23,9 @@ export default async function handler(req, res) {
   if (!fn) return res.status(400).json({ ok: false, errore: 'Funzione mancante' });
 
   try {
-    const handler = FUNZIONI[fn];
-    if (!handler) return res.status(400).json({ ok: false, errore: 'Funzione non trovata: ' + fn });
-    const data = await handler(...(args || []));
+    const comando = FUNZIONI[fn];
+    if (!comando) return res.status(400).json({ ok: false, errore: 'Funzione non trovata: ' + fn });
+    const data = await comando(...(args || []));
     return res.json({ ok: true, data });
   } catch (err) {
     console.error(`Errore contratti/${fn}:`, err);
@@ -180,7 +182,6 @@ async function boLogin(pin, dispositivo) {
     if (!p || !p.hash || !p.salt) continue;
 
     // Verifica PIN con PBKDF2
-    const crypto = await import('crypto');
     const hash = crypto.pbkdf2Sync(pin, p.salt, 150000, 32, 'sha256').toString('hex');
 
     if (hash === p.hash) {

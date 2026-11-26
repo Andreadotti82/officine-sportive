@@ -3,461 +3,369 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prova gratuita 2 giorni · Officine Sportive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --teal: #0A9BA5;
-  --vasca: #07808A;
-  --vasca-scura: #05626A;
-  --acqua: #72C5B5;
-  --piastrella: #F4F9F9;
-  --testo: #14323F;
-  --grigio: #5A707A;
-  --bianco: #FFFFFF;
-  --errore: #D9433F;
-  --raggio: 16px;
+:root{
+  /* colori Officine Sportive */
+  --teal:#0A9BA5;
+  --vasca:#07808A;
+  --vasca-scura:#05626A;
+  --acqua:#72C5B5;
+  --acqua-chiara:#E6F5F3;
+  --braccioli:#72C5B5;
+  --corsia:#0A9BA5;
+  --inchiostro:#3A3A3A;
+  --grigio:#6B7477;
+  --argento:#A0A0A0;
+  --piastrella:#F4F9F9;
+  --bianco:#FFFFFF;
+  --display:"Montserrat","Trebuchet MS",system-ui,sans-serif;
+  --testo:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
 }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  font-family: 'Figtree', Arial, sans-serif;
-  background: var(--piastrella);
-  color: var(--testo);
-  -webkit-font-smoothing: antialiased;
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--piastrella);color:var(--inchiostro);font:400 17px/1.55 var(--testo);-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+a{color:var(--vasca)}
+:focus-visible{outline:3px solid var(--braccioli);outline-offset:3px}
+
+/* ---------- Testata bianca con il logo ---------- */
+.testata{background:var(--bianco);border-bottom:4px solid var(--teal)}
+.testata-in{max-width:1040px;margin:0 auto;padding:10px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.testata img{height:64px;width:auto}
+.testata span{font:700 15px/1.2 var(--display);color:var(--teal)}
+
+/* ---------- Copertina: il fondo della piscina ---------- */
+.hero{
+  position:relative;color:var(--bianco);overflow:hidden;
+  background-color:var(--vasca);
+  background-image:
+    linear-gradient(rgba(255,255,255,.07) 1.5px,transparent 1.5px),
+    linear-gradient(90deg,rgba(255,255,255,.07) 1.5px,transparent 1.5px);
+  background-size:30px 30px;
+  padding:28px 22px 120px;
+}
+/* la riga di corsia sul fondo, con la T finale */
+.hero::before{
+  content:"";position:absolute;top:0;bottom:70px;right:12%;width:22px;
+  background:var(--vasca-scura);border-radius:0 0 4px 4px;
+}
+.hero::after{
+  content:"";position:absolute;bottom:70px;right:calc(12% - 34px);width:90px;height:22px;
+  background:var(--vasca-scura);border-radius:4px;
+}
+.hero-in{position:relative;z-index:1;max-width:1040px;margin:0 auto}
+.hero-grid{display:grid;gap:36px;margin-top:22px;align-items:center}
+h1{
+  font:800 clamp(40px,8.5vw,72px)/1.02 var(--display);
+  margin:0;letter-spacing:-.01em;max-width:14ch;text-wrap:balance;
+}
+.lead{font-size:19px;max-width:34ch;margin:22px 0 30px;opacity:.92}
+.vai{
+  display:inline-flex;align-items:center;gap:10px;
+  background:var(--bianco);color:var(--vasca);text-decoration:none;
+  font:700 18px/1 var(--display);padding:17px 26px;border-radius:999px;
+  box-shadow:0 5px 0 var(--vasca-scura);
+}
+.vai:active{transform:translateY(3px);box-shadow:0 2px 0 var(--vasca-scura)}
+.foto-copertina{
+  margin:0;border-radius:28px;overflow:hidden;aspect-ratio:4/3;
+  border:6px solid var(--bianco);transform:rotate(2deg);
+  box-shadow:0 18px 40px rgba(4,30,42,.35);
+}
+.foto-copertina img{width:100%;height:100%;object-fit:cover}
+.illustrazione{margin:0;border-radius:34px;border:6px solid var(--bianco);transform:rotate(-2deg);
+  box-shadow:0 18px 40px rgba(4,30,42,.35);overflow:hidden;line-height:0;background:var(--bianco);max-width:560px}
+.illustrazione svg{display:block;width:100%;height:auto}
+/* il pelo dell'acqua */
+.onda{position:absolute;left:0;right:0;bottom:-1px;height:80px;overflow:hidden;z-index:2}
+.onda svg{position:absolute;bottom:0;width:200%;height:80px;animation:onda 14s linear infinite}
+@keyframes onda{to{transform:translateX(-50%)}}
+
+/* ---------- Modulo ---------- */
+main{max-width:720px;margin:0 auto;padding:8px 18px 40px}
+.pannello{background:var(--bianco);border-radius:28px;padding:34px 24px 30px;margin-top:-34px;position:relative;z-index:3;box-shadow:0 1px 0 rgba(11,79,108,.08),0 14px 30px rgba(11,79,108,.08)}
+.passo h2{display:flex;align-items:center;gap:14px;font:700 24px/1.15 var(--display);margin:0 0 22px;color:var(--vasca)}
+.boa{
+  flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
+  font:700 18px/1 var(--display);color:var(--bianco);
+  background:var(--corsia);box-shadow:inset 0 0 0 5px var(--corsia),inset 0 0 0 8px var(--bianco);
+}
+/* la corda della corsia tra un passo e l'altro */
+.corda{
+  height:12px;margin:34px -24px;
+  background:
+    radial-gradient(circle at 6px 6px,var(--corsia) 5px,transparent 5.5px) 0 0/28px 12px repeat-x,
+    radial-gradient(circle at 6px 6px,var(--argento) 5px,transparent 5.5px) 14px 0/28px 12px repeat-x;
+}
+.campo{margin-bottom:20px}
+.campo:last-child{margin-bottom:0}
+label.etichetta,.etichetta{display:block;font-weight:600;font-size:16px;margin-bottom:8px}
+.nota{font-weight:400;color:var(--grigio)}
+input[type=text],input[type=email],input[type=tel]{
+  width:100%;font:500 17px/1.3 var(--testo);color:var(--inchiostro);
+  padding:15px 16px;border:2px solid #CFE3E8;border-radius:14px;background:var(--piastrella);
+}
+input:focus{outline:none;border-color:var(--acqua);background:var(--bianco)}
+input[aria-invalid=true]{border-color:var(--corsia)}
+.riga2{display:grid;grid-template-columns:1fr;gap:20px}
+
+/* livello di confidenza: il bicchiere che si riempie */
+.livelli{display:grid;gap:10px}
+.livello{position:relative}
+.livello input{position:absolute;opacity:0;pointer-events:none}
+.livello label{
+  display:flex;align-items:center;gap:16px;cursor:pointer;
+  padding:14px 16px;border:2px solid #CFE3E8;border-radius:16px;font-weight:500;
+}
+.livello input:checked + label{border-color:var(--vasca);background:var(--acqua-chiara)}
+.livello input:focus-visible + label{outline:3px solid var(--braccioli);outline-offset:2px}
+.bicchiere{flex:none;width:26px;height:32px;border:2.5px solid var(--vasca);border-top-width:0;border-radius:0 0 8px 8px;position:relative;overflow:hidden}
+.bicchiere i{position:absolute;left:0;right:0;bottom:0;background:var(--acqua);height:var(--l)}
+.altro-testo{margin-top:10px}
+
+/* giorni e orari */
+.giorni{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+.orari{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+.scelta input{position:absolute;opacity:0;pointer-events:none}
+.scelta{position:relative}
+.scelta label{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;
+  border:2px solid #CFE3E8;border-radius:16px;padding:12px 6px;text-align:center;background:var(--bianco);
+}
+.scelta .gs{font-size:14px;color:var(--grigio);font-weight:600}
+.scelta .num{font:700 28px/1.1 var(--display);color:var(--vasca)}
+.scelta .mese{font-size:14px;color:var(--grigio)}
+.orari .scelta label{padding:12px 18px;font:700 17px/1 var(--display);color:var(--vasca)}
+.scelta input:checked + label{background:var(--vasca);border-color:var(--vasca)}
+.scelta input:checked + label *, .orari .scelta input:checked + label{color:var(--bianco)}
+.scelta .posti{font:600 12px/1.2 var(--testo);color:var(--grigio);margin-top:5px}
+.orari .scelta label{flex-direction:column}
+.scelta .posti.ultimo{color:#B45309}
+.scelta.pieno label{cursor:not-allowed;background:var(--piastrella);border-style:dashed}
+.scelta.pieno .num,.scelta.pieno .ora{color:var(--argento);text-decoration:line-through}
+.scelta.pieno .posti{color:#B4232A}
+.durata{margin:12px 0 0;font-weight:600;color:var(--vasca)}
+.attesa{color:var(--grigio);font-size:15px;margin:0}
+.scelta input:focus-visible + label{outline:3px solid var(--braccioli);outline-offset:2px}
+
+.avviso{display:flex;gap:14px;align-items:flex-start;background:var(--acqua-chiara);border-left:5px solid var(--teal);
+  border-radius:14px;padding:16px 18px;margin:0 0 28px;font-weight:500}
+.avviso b{display:block;font:700 18px/1.25 var(--display);color:var(--vasca);margin-bottom:4px}
+.avviso .ico{font-size:28px;line-height:1}
+.consenso{display:flex;gap:12px;align-items:flex-start;font-size:15px;color:var(--grigio);margin-top:24px}
+.consenso input{width:22px;height:22px;margin:1px 0 0;accent-color:var(--vasca);flex:none}
+
+.invia{
+  width:100%;margin-top:28px;border:0;cursor:pointer;
+  background:var(--vasca);color:var(--bianco);
+  font:700 20px/1 var(--display);padding:20px;border-radius:18px;box-shadow:0 5px 0 var(--vasca-scura);
+}
+.invia:active{transform:translateY(3px);box-shadow:0 2px 0 var(--vasca-scura)}
+.invia[disabled]{opacity:.6;cursor:wait}
+.errore{color:#B4232A;font-weight:600;margin:16px 0 0;min-height:1em}
+
+/* conferma e chiuso */
+.esito{text-align:center;padding:10px 0}
+.esito h2{font:800 30px/1.15 var(--display);color:var(--vasca);margin:14px 0 10px}
+.esito .quando{font:700 21px/1.35 var(--display);margin:18px 0}
+.esito p{max-width:40ch;margin-left:auto;margin-right:auto}
+.salvagente{width:84px;height:84px;margin:0 auto;border-radius:50%;
+  background:conic-gradient(var(--corsia) 0 25%,var(--bianco) 0 50%,var(--corsia) 0 75%,var(--bianco) 0);
+  -webkit-mask:radial-gradient(circle,transparent 21px,#000 22px);mask:radial-gradient(circle,transparent 21px,#000 22px);
+  box-shadow:inset 0 0 0 2px var(--corsia)}
+.esito.mostra .salvagente{animation:galleggia 2.4s ease-in-out infinite}
+@keyframes galleggia{50%{transform:translateY(-6px) rotate(8deg)}}
+
+.galleria{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:28px}
+.galleria img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:20px}
+
+footer{max-width:720px;margin:0 auto;padding:10px 22px 48px;color:var(--grigio);font-size:15px}
+footer b{color:var(--inchiostro)}
+footer a{font-weight:600}
+
+[hidden]{display:none!important}
+
+@media (min-width:760px){
+  .testata img{height:76px}
+  .testata-in{padding:12px 40px}
+  .hero{padding:36px 40px 150px}
+  .hero-grid.con-foto{grid-template-columns:1.1fr .9fr}
+  .pannello{padding:44px 44px 38px}
+  .corda{margin:38px -44px}
+  .riga2{grid-template-columns:1.4fr .6fr}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .onda svg,.esito.mostra .salvagente{animation:none}
 }
 
-/* Container */
-.container {
-  max-width: 520px;
-  margin: 0 auto;
-  padding: 0 16px 40px;
-}
+.fasce{display:grid;gap:10px}
+.fascia{position:relative}
+.fascia input{position:absolute;opacity:0;pointer-events:none}
+.fascia label{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;
+  padding:16px 18px;border:2px solid #CFE3E8;border-radius:16px;background:var(--bianco)}
+.fascia .ore{font:700 20px/1.1 var(--display);color:var(--vasca)}
+.fascia .pt{font-weight:600;color:var(--grigio);font-size:15px;text-align:right}
+.fascia .pt b{display:block;color:var(--inchiostro);font-size:16px}
+.fascia input:checked + label{background:var(--vasca);border-color:var(--vasca)}
+.fascia input:checked + label .ore,.fascia input:checked + label .pt,.fascia input:checked + label .pt b{color:var(--bianco)}
+.fascia input:focus-visible + label{outline:3px solid var(--braccioli);outline-offset:2px}
+.nota-fascia{margin:12px 0 0;font-weight:600;color:var(--vasca)}
 
-/* Header */
-.header {
-  text-align: center;
-  padding: 28px 0 20px;
-}
-.header img {
-  width: 180px;
-  max-width: 60%;
-  height: auto;
-}
-
-/* Hero */
-.hero {
-  background: linear-gradient(135deg, var(--vasca) 0%, var(--vasca-scura) 100%);
-  border-radius: var(--raggio);
-  padding: 32px 24px;
-  text-align: center;
-  color: var(--bianco);
-  margin-bottom: 24px;
-}
-.hero h1 {
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 800;
-  font-size: 26px;
-  line-height: 1.2;
-  margin-bottom: 10px;
-}
-.hero p {
-  font-size: 15px;
-  line-height: 1.5;
-  opacity: 0.92;
-}
-.hero .badge-premium {
-  display: inline-block;
-  background: rgba(255,255,255,0.18);
-  border-radius: 20px;
-  padding: 6px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  margin-top: 14px;
-  letter-spacing: 0.3px;
-}
-
-/* Guest Pass card */
-.guestpass-card {
-  background: var(--bianco);
-  border-radius: var(--raggio);
-  padding: 20px;
-  margin-bottom: 20px;
-  border: 2px solid var(--acqua);
-  text-align: center;
-}
-.guestpass-card .emoji { font-size: 36px; margin-bottom: 8px; }
-.guestpass-card h3 {
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 700;
-  font-size: 17px;
-  color: var(--vasca-scura);
-  margin-bottom: 6px;
-}
-.guestpass-card p { font-size: 14px; color: var(--grigio); line-height: 1.5; }
-
-/* Attività badges */
-.attivita {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  margin-bottom: 24px;
-}
-.attivita span {
-  background: var(--bianco);
-  border: 1.5px solid var(--acqua);
-  border-radius: 20px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--vasca-scura);
-  white-space: nowrap;
-}
-
-/* Requisiti */
-.requisiti {
-  background: var(--bianco);
-  border-radius: var(--raggio);
-  padding: 18px 20px;
-  margin-bottom: 24px;
-  font-size: 13.5px;
-  color: var(--grigio);
-  line-height: 1.6;
-}
-.requisiti strong { color: var(--testo); }
-
-/* Form */
-.form-card {
-  background: var(--bianco);
-  border-radius: var(--raggio);
-  padding: 24px 20px;
-  margin-bottom: 20px;
-}
-.form-card h2 {
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 700;
-  font-size: 18px;
-  color: var(--vasca-scura);
-  margin-bottom: 4px;
-}
-.form-card .step-label {
-  font-size: 13px;
-  color: var(--acqua);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 16px;
-}
-
-.field { margin-bottom: 16px; }
-.field label {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--testo);
-  margin-bottom: 6px;
-}
-.field input[type="text"],
-.field input[type="email"],
-.field input[type="tel"] {
-  width: 100%;
-  padding: 14px 16px;
-  border: 2px solid #D4E0E3;
-  border-radius: 12px;
-  font-family: 'Figtree', Arial, sans-serif;
-  font-size: 16px;
-  color: var(--testo);
-  background: var(--piastrella);
-  transition: border-color 0.2s;
-  -webkit-appearance: none;
-}
-.field input:focus {
-  outline: none;
-  border-color: var(--teal);
-  background: var(--bianco);
-}
-.field input.errore { border-color: var(--errore); }
-.field .msg-errore {
-  color: var(--errore);
-  font-size: 12.5px;
-  margin-top: 4px;
-  display: none;
-}
-
-/* Checkbox privacy */
-.privacy {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin: 20px 0 24px;
-  font-size: 13px;
-  color: var(--grigio);
-  line-height: 1.5;
-}
-.privacy input[type="checkbox"] {
-  margin-top: 3px;
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  accent-color: var(--teal);
-}
-.privacy a { color: var(--vasca); }
-
-/* Submit button */
-.btn-submit {
-  display: block;
-  width: 100%;
-  padding: 16px;
-  background: linear-gradient(135deg, var(--teal) 0%, var(--vasca) 100%);
-  color: var(--bianco);
-  border: none;
-  border-radius: 14px;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 17px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-  box-shadow: 0 4px 16px rgba(10,155,165,0.3);
-}
-.btn-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(10,155,165,0.4); }
-.btn-submit:active { transform: translateY(0); }
-.btn-submit:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Conferma */
-.conferma {
-  display: none;
-  text-align: center;
-  padding: 40px 20px;
-}
-.conferma .emoji-grande { font-size: 60px; margin-bottom: 16px; }
-.conferma h2 {
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 800;
-  font-size: 22px;
-  color: var(--vasca-scura);
-  margin-bottom: 10px;
-}
-.conferma p { font-size: 15px; color: var(--grigio); line-height: 1.6; }
-
-/* Spinner */
-.spinner {
-  display: none;
-  width: 24px; height: 24px;
-  border: 3px solid rgba(255,255,255,0.3);
-  border-top-color: var(--bianco);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  margin: 0 auto;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Footer */
-.footer {
-  text-align: center;
-  padding: 20px 0 10px;
-  font-size: 12px;
-  color: var(--grigio);
-  letter-spacing: 0.4px;
-}
-
-/* Errore globale */
-.errore-globale {
-  display: none;
-  background: #FEF2F2;
-  border: 1.5px solid var(--errore);
-  border-radius: 12px;
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  font-size: 14px;
-  color: var(--errore);
-  text-align: center;
-}
+.requisiti{background:var(--acqua-chiara);border-left:5px solid var(--teal);border-radius:14px;padding:16px 18px;margin:0 0 26px}
+.requisiti b{display:block;font:700 17px/1.25 var(--display);color:var(--vasca);margin-bottom:6px}
+.requisiti ul{margin:0;padding-left:20px}.requisiti li{margin:3px 0}
+.incluso{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 26px}
+.incluso span{background:var(--bianco);border:2px solid #CFE3E8;border-radius:999px;padding:6px 12px;font-weight:600;font-size:14px;color:var(--vasca)}
+.riga2n{display:grid;grid-template-columns:1fr;gap:20px}
+@media (min-width:760px){.riga2n{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
 
-<div class="container">
+<div class="testata"><div class="testata-in">
+  <img id="logo" alt="Circolo Officine Sportive">
+  <span>Prova gratuita</span>
+</div></div>
 
-  <!-- Header con logo -->
-  <div class="header">
-    <img src="https://www.officinesportive.it/wp-content/uploads/2025/11/logo-officine-sportive-top.png" alt="Officine Sportive">
+<header class="hero">
+  <div class="hero-in">
+    <div class="hero-grid con-foto">
+      <div>
+        <h1>2 giorni gratis. Zero impegno.</h1>
+        <p class="lead">Sala attrezzi, piscina, corsi fitness, sauna e idromassaggio: vivi il circolo con l’Abbonamento Premium per 2 giorni, dal lunedì al giovedì. Compila, ricevi il Guest Pass e vieni ad allenarti.</p>
+        <a class="vai" href="#prenota">Attiva la prova gratuita</a>
+      </div>
+      <figure class="illustrazione"><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 480 400" role="img" aria-label="Il tuo Guest Pass di 2 giorni">
+<defs><clipPath id="gcl"><rect width="480" height="400" rx="28"/></clipPath>
+<pattern id="gpav" width="40" height="40" patternUnits="userSpaceOnUse"><rect width="40" height="40" fill="#E9F7F6"/><path d="M40 0V40H0" fill="none" stroke="#D3EEEA" stroke-width="2"/></pattern></defs>
+<g clip-path="url(#gcl)">
+<rect width="480" height="400" fill="url(#gpav)"/>
+<g transform="rotate(-6 240 200)">
+<rect x="70" y="95" width="340" height="200" rx="22" fill="#07808A"/>
+<rect x="70" y="95" width="340" height="56" rx="22" fill="#05626A"/><rect x="70" y="128" width="340" height="23" fill="#05626A"/>
+<text x="96" y="132" font-family="Arial,sans-serif" font-weight="bold" font-size="22" fill="#fff" letter-spacing="2">GUEST PASS</text>
+<circle cx="372" cy="123" r="16" fill="#72C5B5"/><text x="372" y="130" text-anchor="middle" font-family="Arial,sans-serif" font-weight="bold" font-size="19" fill="#05626A">2</text>
+<text x="96" y="196" font-family="Arial,sans-serif" font-weight="bold" font-size="38" fill="#fff">2 giorni</text>
+<text x="96" y="226" font-family="Arial,sans-serif" font-size="18" fill="#CFF2EE">Abbonamento Premium</text>
+<rect x="96" y="248" width="150" height="10" rx="5" fill="#72C5B5"/><rect x="96" y="266" width="100" height="10" rx="5" fill="#0A9BA5"/>
+<circle cx="70" cy="200" r="16" fill="#E9F7F6"/><circle cx="410" cy="200" r="16" fill="#E9F7F6"/>
+<g transform="translate(300 222)" fill="#fff"><rect width="70" height="56" rx="8" fill="#ffffff" opacity=".15"/>
+<rect x="10" y="10" width="12" height="12"/><rect x="28" y="10" width="6" height="6"/><rect x="40" y="10" width="20" height="12"/><rect x="10" y="30" width="20" height="6"/><rect x="36" y="28" width="8" height="16"/><rect x="50" y="34" width="10" height="10"/><rect x="10" y="40" width="10" height="8"/></g>
+</g>
+<g fill="#FFC531"><path d="M60 60 l5 11 l11 5 l-11 5 l-5 11 l-5 -11 l-11 -5 l11 -5z"/><path d="M420 330 l4 9 l9 4 l-9 4 l-4 9 l-4 -9 l-9 -4 l9 -4z"/><path d="M430 70 l3 7 l7 3 l-7 3 l-3 7 l-3 -7 l-7 -3 l7 -3z"/></g>
+<g fill="#FF6F61"><circle cx="90" cy="340" r="9"/><circle cx="380" cy="50" r="6"/></g>
+</g></svg></figure>
+    </div>
   </div>
-
-  <!-- Hero -->
-  <div class="hero">
-    <h1>2 giorni gratis.<br>Zero impegno.</h1>
-    <p>Prova tutto il circolo: sala attrezzi, piscina, fitness, sauna, bagno turco, idromassaggio e tanto altro.</p>
-    <div class="badge-premium">🎟️ Abbonamento Premium · prova gratuita</div>
+  <div class="onda" aria-hidden="true">
+    <svg viewBox="0 0 2400 80" preserveAspectRatio="none">
+      <path fill="#F4F9F9" d="M0 40 C150 10 300 10 450 40 S750 70 900 40 S1050 10 1200 40 S1500 70 1650 40 S1950 10 2100 40 S2300 60 2400 40 V80 H0Z"/>
+    </svg>
   </div>
+</header>
 
-  <!-- Cosa ti aspetta -->
-  <div class="attivita">
-    <span>🏋️ Sala attrezzi</span>
-    <span>🏊 Piscina</span>
-    <span>💪 Fitness</span>
-    <span>🧖 Sauna</span>
-    <span>♨️ Bagno turco</span>
-    <span>🌊 Idromassaggio</span>
-    <span>🧘 Posturale</span>
-    <span>🏊‍♀️ Aqua circuit</span>
-    <span>👤 Tutor personale</span>
-  </div>
-
-  <!-- Guest Pass card -->
-  <div class="guestpass-card">
-    <div class="emoji">🎟️</div>
-    <h3>Il tuo Guest Pass</h3>
-    <p>2 giorni a scelta, dal lunedì al giovedì.<br>Scegli tu quando venire, senza prenotare.</p>
-  </div>
-
-  <!-- Requisiti -->
-  <div class="requisiti">
-    <strong>Chi può provare:</strong> chi abita a Fiumicino o lavora in aeroporto e non è entrato al circolo negli ultimi 12 mesi.
-  </div>
-
-  <!-- Form -->
-  <div id="formArea">
-    <form id="guestForm" autocomplete="on" novalidate>
-
-      <!-- Passo 1 -->
-      <div class="form-card">
-        <div class="step-label">Passo 1 di 2</div>
-        <h2>Chi sei?</h2>
-        <div class="field">
-          <label for="nome">Nome</label>
-          <input type="text" id="nome" name="nome" autocomplete="given-name" required>
-          <div class="msg-errore" id="errNome">Inserisci il tuo nome</div>
-        </div>
-        <div class="field">
-          <label for="cognome">Cognome</label>
-          <input type="text" id="cognome" name="cognome" autocomplete="family-name" required>
-          <div class="msg-errore" id="errCognome">Inserisci il tuo cognome</div>
-        </div>
+<main id="prenota">
+  <div class="pannello">
+    <form id="modulo" novalidate>
+      <div class="requisiti">
+        <b>Chi può attivarla</b>
+        <ul>
+          <li>chi abita a Fiumicino</li>
+          <li>chi lavora in aeroporto</li>
+          <li>chi non è entrato al circolo negli ultimi 12 mesi</li>
+        </ul>
+      </div>
+      <div class="incluso" aria-label="Cosa è incluso">
+        <span>🏋️ Sala attrezzi</span><span>🏊 Piscina e nuoto libero</span><span>🤸 Fitness</span><span>🧑‍🏫 Tutor personale</span><span>🧘 Posturale</span><span>💧 Aqua circuit</span><span>🧖 Sauna e bagno turco</span><span>🫧 Idromassaggio</span>
       </div>
 
-      <!-- Passo 2 -->
-      <div class="form-card">
-        <div class="step-label">Passo 2 di 2</div>
-        <h2>Dove ti mandiamo il Guest Pass?</h2>
-        <div class="field">
-          <label for="email">Email</label>
-          <input type="email" id="email" name="email" autocomplete="email" required>
-          <div class="msg-errore" id="errEmail">Inserisci un indirizzo email valido</div>
+      <section class="passo" aria-labelledby="t1">
+        <h2 id="t1"><span class="boa">1</span>Chi sei?</h2>
+        <div class="riga2n campo">
+          <div><label class="etichetta" for="nome">Nome</label><input type="text" id="nome" autocomplete="given-name" required></div>
+          <div><label class="etichetta" for="cognome">Cognome</label><input type="text" id="cognome" autocomplete="family-name" required></div>
         </div>
-        <div class="field">
-          <label for="cellulare">Cellulare</label>
-          <input type="tel" id="cellulare" name="cellulare" autocomplete="tel" required>
-          <div class="msg-errore" id="errTel">Inserisci un numero di cellulare valido</div>
+      </section>
+
+      <div class="corda" aria-hidden="true"></div>
+
+      <section class="passo" aria-labelledby="t2">
+        <h2 id="t2"><span class="boa">2</span>Dove ti mandiamo il Guest Pass?</h2>
+        <div class="campo">
+          <label class="etichetta" for="email">Email <span class="nota">(qui arriva il Guest Pass)</span></label>
+          <input type="email" id="email" autocomplete="email" required>
         </div>
-
-        <div class="privacy">
-          <input type="checkbox" id="consenso" required>
-          <label for="consenso">Acconsento al trattamento dei miei dati personali per ricevere il Guest Pass e le comunicazioni del circolo.</label>
+        <div class="campo">
+          <label class="etichetta" for="telefono">Cellulare</label>
+          <input type="tel" id="telefono" autocomplete="tel" required>
         </div>
-      </div>
+        <label class="consenso">
+          <input type="checkbox" id="privacy" required>
+          <span>Acconsento al trattamento dei dati personali e a ricevere comunicazioni commerciali su prodotti e servizi di Gate Fitness SSD srl.</span>
+        </label>
+      </section>
 
-      <div class="errore-globale" id="errGlobale"></div>
-
-      <button type="submit" class="btn-submit" id="btnInvia">
-        <span id="btnTesto">Attiva la prova gratuita 🎟️</span>
-        <div class="spinner" id="btnSpinner"></div>
-      </button>
-
+      <button type="submit" class="invia" id="invia">Attiva la prova gratuita</button>
+      <p class="errore" id="errore" role="alert"></p>
     </form>
-  </div>
 
-  <!-- Conferma -->
-  <div class="conferma" id="conferma">
-    <div class="emoji-grande">🎉</div>
-    <h2>Ci siamo!<br>Il Guest Pass è in viaggio</h2>
-    <p>Controlla la tua casella email: troverai il Guest Pass con tutte le indicazioni per la tua prova gratuita.</p>
-    <p style="margin-top: 16px; font-size: 14px; color: var(--acqua); font-weight: 600;">Ti aspettiamo al circolo! 💪</p>
+    <section class="esito" id="fatto" hidden tabindex="-1">
+      <div class="salvagente" aria-hidden="true"></div>
+      <h2>Ci siamo! Il Guest Pass è in viaggio 🎉</h2>
+      <p class="quando" id="quando"></p>
+      <p>Controlla la tua email (anche nella cartella spam): dentro trovi il Guest Pass e tutto quello che serve. Ti aspettiamo dal lunedì al giovedì!</p>
+    </section>
   </div>
+</main>
 
-  <!-- Footer -->
-  <div class="footer">
-    Palestra · Piscina · Spa · Padel · Centri estivi
-  </div>
-
-</div>
+<footer>
+  <p><b id="nomeFooter"></b><br>
+  <span id="indirizzo"></span><br>
+  <a id="mappa" target="_blank" rel="noopener">Apri in Maps</a> · Telefono <a class="tel"></a></p>
+</footer>
 
 <script>
-(function() {
-  var form = document.getElementById('guestForm');
-  var btnInvia = document.getElementById('btnInvia');
-  var btnTesto = document.getElementById('btnTesto');
-  var btnSpinner = document.getElementById('btnSpinner');
-  var errGlobale = document.getElementById('errGlobale');
+const D = {circolo:"Circolo Officine Sportive SSD",indirizzo:"Viale di Porto 13, Fiumicino (RM)",telefono:"06 65047505"};
+document.querySelectorAll('a[href="#prenota"]').forEach(a => a.addEventListener('click', ev => {
+  ev.preventDefault(); document.getElementById('prenota').scrollIntoView({behavior:'smooth', block:'start'});
+}));
+const $ = id => document.getElementById(id);
+// Logo dal sito
+const LOGO_INTERNO = 'https://www.officinesportive.it/wp-content/uploads/2025/11/logo-officine-sportive-top.png'; 
+$('logo').src = LOGO_INTERNO;
+document.querySelectorAll('.tel').forEach(a => { a.textContent = D.telefono; a.href = 'tel:+39' + D.telefono.replace(/\D/g,''); });
+$('nomeFooter').textContent = D.circolo;
+$('indirizzo').textContent = D.indirizzo;
+$('mappa').href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(D.circolo + ' ' + D.indirizzo);
 
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-    // Reset errori
-    document.querySelectorAll('.msg-errore').forEach(function(el) { el.style.display = 'none'; });
-    document.querySelectorAll('input.errore').forEach(function(el) { el.classList.remove('errore'); });
-    errGlobale.style.display = 'none';
-
-    var nome = document.getElementById('nome').value.trim();
-    var cognome = document.getElementById('cognome').value.trim();
-    var email = document.getElementById('email').value.trim();
-    var tel = document.getElementById('cellulare').value.trim();
-    var consenso = document.getElementById('consenso').checked;
-    var ok = true;
-
-    if (!nome) { mostraErrore('nome', 'errNome'); ok = false; }
-    if (!cognome) { mostraErrore('cognome', 'errCognome'); ok = false; }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { mostraErrore('email', 'errEmail'); ok = false; }
-    if (!tel || tel.replace(/\D/g,'').length < 8) { mostraErrore('cellulare', 'errTel'); ok = false; }
-    if (!consenso) {
-      errGlobale.textContent = 'Devi acconsentire al trattamento dei dati per continuare.';
-      errGlobale.style.display = 'block';
-      ok = false;
-    }
-    if (!ok) return;
-
-    // Invio
-    btnInvia.disabled = true;
-    btnTesto.style.display = 'none';
-    btnSpinner.style.display = 'block';
-
-    fetch('/api/prenota', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome: nome, cognome: cognome, email: email, cellulare: tel })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.ok) {
-        document.getElementById('formArea').style.display = 'none';
-        document.getElementById('conferma').style.display = 'block';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        errGlobale.textContent = data.errore || 'Si è verificato un errore. Riprova tra qualche istante.';
-        errGlobale.style.display = 'block';
-        btnInvia.disabled = false;
-        btnTesto.style.display = 'inline';
-        btnSpinner.style.display = 'none';
-      }
-    })
-    .catch(function() {
-      errGlobale.textContent = 'Errore di connessione. Controlla la tua rete e riprova.';
-      errGlobale.style.display = 'block';
-      btnInvia.disabled = false;
-      btnTesto.style.display = 'inline';
-      btnSpinner.style.display = 'none';
-    });
-  });
-
-  function mostraErrore(inputId, errId) {
-    document.getElementById(inputId).classList.add('errore');
-    document.getElementById(errId).style.display = 'block';
-  }
-})();
+$('modulo').addEventListener('submit', ev => {
+  ev.preventDefault();
+  document.querySelectorAll('[aria-invalid]').forEach(x => x.removeAttribute('aria-invalid'));
+  const v = { nome: $('nome').value.trim(), cognome: $('cognome').value.trim(), email: $('email').value.trim(), telefono: $('telefono').value.trim() };
+  const errore = (msg, campo) => { $('errore').textContent = msg; if (campo){ campo.setAttribute('aria-invalid','true'); campo.focus(); } return false; };
+  if (!v.nome) return errore('Scrivi il tuo nome.', $('nome'));
+  if (!v.cognome) return errore('Scrivi il tuo cognome.', $('cognome'));
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) return errore('Controlla l’indirizzo email: è lì che arriva il Guest Pass.', $('email'));
+  if (v.telefono.replace(/\D/g,'').length < 8) return errore('Controlla il numero di cellulare.', $('telefono'));
+  if (!$('privacy').checked) return errore('Per attivare la prova serve il consenso.', $('privacy'));
+  $('errore').textContent = ''; $('invia').disabled = true; $('invia').textContent = 'Stampiamo il tuo Guest Pass…';
+  const fatto = () => {
+    $('quando').textContent = 'Benvenuto ' + v.nome + ': abbiamo mandato il Guest Pass a ' + v.email + '.';
+    $('modulo').hidden = true; $('fatto').hidden = false; $('fatto').classList.add('mostra');
+    $('fatto').scrollIntoView({block:'center'}); $('fatto').focus({preventScroll:true});
+  };
+  const fallito = err => { $('invia').disabled = false; $('invia').textContent = 'Attiva la prova gratuita';
+    errore((err && err.message) ? err.message.replace(/^(Error|Exception):\s*/,'') : 'Qualcosa è andato storto: riprova tra poco.'); };
+  fetch('/api/prenota', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({nome: v.nome, cognome: v.cognome, email: v.email, cellulare: v.telefono})
+  }).then(r => r.json()).then(data => { if (data.ok) fatto(); else fallito({message: data.errore}); }).catch(() => fallito(null));
+});
 </script>
-
 </body>
 </html>

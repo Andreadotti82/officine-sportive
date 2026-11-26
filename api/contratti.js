@@ -449,6 +449,12 @@ async function avviaFirma(dati) {
 
   const dest = t.cellulare || '';
 
+  // Contratti di prova (cognome "Prova") → mostra OTP a schermo
+  const isProva = (t.cognome || '').toLowerCase() === 'prova';
+  if (isProva) {
+    return { ok: true, id: saved.id, numero: saved.numero, canale: 'test', a: dest || t.email || '', otp_test: otp };
+  }
+
   // Invia OTP via SMS (Skebby)
   let smsOk = false;
   if (SKEBBY_USER && SKEBBY_PASS) {
@@ -458,20 +464,20 @@ async function avviaFirma(dati) {
     } catch (e) { console.error('Errore SMS:', e); }
   }
 
+  if (smsOk) {
+    return { ok: true, id: saved.id, numero: saved.numero, canale: 'SMS', a: dest };
+  }
+
   // Se SMS fallisce, prova via email
   const emailDest = t.email || '';
-  if (!smsOk && emailDest && RESEND_KEY) {
+  if (emailDest && RESEND_KEY) {
     try {
       await inviaOtpEmail(emailDest, t.nome, otp);
       return { ok: true, id: saved.id, numero: saved.numero, canale: 'email', a: emailDest };
     } catch (e) { console.error('Errore email OTP:', e); }
   }
 
-  if (smsOk) {
-    return { ok: true, id: saved.id, numero: saved.numero, canale: 'SMS', a: dest };
-  }
-
-  // Nessun canale configurato — fase di test: il codice OTP viene mostrato a schermo
+  // Nessun canale funzionante — mostra OTP a schermo
   return { ok: true, id: saved.id, numero: saved.numero, canale: 'test', a: dest || emailDest, otp_test: otp };
 }
 

@@ -37,23 +37,14 @@ a{color:var(--vasca)}
 .testata img{height:64px;width:auto}
 .testata span{font:700 15px/1.2 var(--display);color:var(--teal)}
 
-/* ---------- Copertina: il fondo della piscina ---------- */
+/* ---------- Hero ---------- */
 .hero{
   position:relative;color:var(--bianco);overflow:hidden;
   background-color:var(--vasca);
   background-image:
     radial-gradient(circle at 20% 80%, rgba(255,255,255,.08) 0%, transparent 50%),
     radial-gradient(circle at 80% 20%, rgba(255,255,255,.06) 0%, transparent 50%);
-  padding:28px 22px 120px;
-}
-/* la riga di corsia sul fondo, con la T finale */
-.hero::before{
-  content:"";position:absolute;top:0;bottom:70px;right:12%;width:22px;
-  background:var(--vasca-scura);border-radius:0 0 4px 4px;
-}
-.hero::after{
-  content:"";position:absolute;bottom:70px;right:calc(12% - 34px);width:90px;height:22px;
-  background:var(--vasca-scura);border-radius:4px;
+  padding:28px 22px 36px;
 }
 .hero-in{position:relative;z-index:1;max-width:1040px;margin:0 auto}
 .hero-grid{display:grid;gap:36px;margin-top:22px;align-items:center}
@@ -78,10 +69,6 @@ h1{
 .illustrazione{margin:0;border-radius:34px;border:6px solid var(--bianco);transform:rotate(-2deg);
   box-shadow:0 18px 40px rgba(4,30,42,.35);overflow:hidden;line-height:0;background:var(--bianco);max-width:560px}
 .illustrazione svg{display:block;width:100%;height:auto}
-/* il pelo dell'acqua */
-.onda{position:absolute;left:0;right:0;bottom:-1px;height:80px;overflow:hidden;z-index:2}
-.onda svg{position:absolute;bottom:0;width:200%;height:80px;animation:onda 14s linear infinite}
-@keyframes onda{to{transform:translateX(-50%)}}
 
 /* ---------- Modulo ---------- */
 main{max-width:720px;margin:0 auto;padding:8px 18px 40px}
@@ -190,7 +177,7 @@ footer a{font-weight:600}
 @media (min-width:760px){
   .testata img{height:76px}
   .testata-in{padding:12px 40px}
-  .hero{padding:36px 40px 150px}
+  .hero{padding:36px 40px 44px}
   .hero-grid.con-foto{grid-template-columns:1.1fr .9fr}
   .pannello{padding:44px 44px 38px}
   .corda{margin:38px -44px}
@@ -198,7 +185,7 @@ footer a{font-weight:600}
 }
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .onda svg,.esito.mostra .salvagente{animation:none}
+  .esito.mostra .salvagente{animation:none}
 }
 
 .fasce{display:grid;gap:10px}
@@ -263,11 +250,6 @@ footer a{font-weight:600}
 <g fill="#FF6F61"><circle cx="85" cy="345" r="8"/><circle cx="395" cy="48" r="5"/></g>
 </g></svg></figure>
     </div>
-  </div>
-  <div class="onda" aria-hidden="true">
-    <svg viewBox="0 0 2400 80" preserveAspectRatio="none">
-      <path fill="#F4F9F9" d="M0 40 C150 10 300 10 450 40 S750 70 900 40 S1050 10 1200 40 S1500 70 1650 40 S1950 10 2100 40 S2300 60 2400 40 V80 H0Z"/>
-    </svg>
   </div>
 </header>
 

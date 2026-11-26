@@ -128,7 +128,10 @@ function verificaNomeCF(nome, cognome, cf) {
 
 function datiDaCF(cf, nome, cognome) {
   const a = analizzaCF(cf);
-  return { cf: a, nome: nome || '', cognome: cognome || '' };
+  if (!a.valido) return { ok: false, errore: a.errore };
+  const v = verificaNomeCF(nome, cognome, cf);
+  return { ok: true, sesso: a.sesso, nascita: a.nascita, eta: a.eta, minore: a.minore,
+    luogo: '', provincia: '', nomeOk: v.corrispondente };
 }
 
 // === VERIFICA PROMO ===
@@ -145,7 +148,7 @@ async function verificaPromo(codice, abbId) {
   if (promo.data_fine && new Date(promo.data_fine) < oggi) return { valido: false, errore: 'Questa promozione è scaduta.' };
   if (promo.data_inizio && new Date(promo.data_inizio) > oggi) return { valido: false, errore: 'Questa promozione non è ancora attiva.' };
 
-  return { valido: true, promo };
+  return { valido: true, ok: true, promo, descrizione: promo.descrizione || promo.codice };
 }
 
 // === PREVENTIVO ===
@@ -161,7 +164,7 @@ async function preventivo(abbId, codicePromo, primoGiorno, upg) {
   const imp = cfgRows.length ? cfgRows[0].data : {};
   const firma = primoGiorno ? new Date(primoGiorno.split('/').reverse().join('-')) : new Date();
   const piano = calcolaPiano(abb, promo, firma, { primaRataAllaFirma: imp.primaRataAllaFirma !== false, includiGiornoIscrizione: imp.giornoIscrizioneNelProRata !== false, penale: imp.penale || 6, upgrade: upg || null });
-  return { abbonamento: abb, promo, piano };
+  return { ok: true, abbonamento: abb, promo, piano };
 }
 
 function calcolaPiano(abb, promo, firma, opz) {
@@ -420,15 +423,17 @@ async function avviaFirma(dati) {
   if (!r.ok) {
     const err = await r.text();
     console.error('Errore salvataggio contratto:', err);
-    return { ok: false, errore: 'Errore nel salvataggio.' };
+    return { ok: false, errori: ['Errore nel salvataggio. Riprova.'] };
   }
   const [saved] = await r.json();
+
+  const dest = dati.junior ? (dati.genitoreCellulare || dati.cellulare) : dati.cellulare;
 
   // Invia OTP via SMS (Skebby)
   let smsOk = false;
   if (SKEBBY_USER && SKEBBY_PASS) {
     try {
-      smsOk = await inviaSms(dati.junior ? dati.genitoreCellulare : dati.cellulare,
+      smsOk = await inviaSms(dest,
         `Officine Sportive: il tuo codice per firmare il contratto è ${otp}. Valido 10 minuti.`);
     } catch (e) { console.error('Errore SMS:', e); }
   }
@@ -437,16 +442,20 @@ async function avviaFirma(dati) {
   if (!smsOk && dati.email && RESEND_KEY) {
     try {
       await inviaOtpEmail(dati.email, dati.nome, otp);
-      return { ok: true, id: saved.id, numero: saved.numero, metodo: 'email' };
+      return { ok: true, id: saved.id, numero: saved.numero, canale: 'email', a: dati.email };
     } catch (e) { console.error('Errore email OTP:', e); }
   }
 
-  if (!smsOk && !RESEND_KEY) {
-    // Nessun canale disponibile: OTP non inviato
-    return { ok: true, id: saved.id, numero: saved.numero, metodo: 'nessuno', otp_debug: otp };
+  if (smsOk) {
+    return { ok: true, id: saved.id, numero: saved.numero, canale: 'SMS', a: dest };
   }
 
-  return { ok: true, id: saved.id, numero: saved.numero, metodo: smsOk ? 'sms' : 'nessuno' };
+  // Nessun canale configurato — in fase di test, mostra OTP a schermo
+  if (!SKEBBY_USER && !RESEND_KEY) {
+    return { ok: true, id: saved.id, numero: saved.numero, canale: 'SMS', a: dest, otp_debug: otp };
+  }
+
+  return { ok: false, errori: ['Non è stato possibile inviare il codice. Riprova.'] };
 }
 
 async function confermaFirma(id, codice) {

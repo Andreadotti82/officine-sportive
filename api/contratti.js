@@ -2,7 +2,7 @@
 // Riceve POST { fn, args } e smista alla funzione giusta
 // Replica le funzioni di google.script.run del vecchio GAS
 
-import crypto from 'crypto';
+import { createHmac, pbkdf2Sync, randomBytes } from 'node:crypto';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://kyricrhlqlassvhxqjgf.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5cmljcmhscWxhc3N2aHhxamdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU2OTU4MjEsImV4cCI6MjExMTI3MTgyMX0.PgX0_48IE63SB7MFEWaRSpMsA7uPqAh2GLQ-X2uNuyU';
@@ -282,12 +282,12 @@ async function boLogin(pin, dispositivo) {
     if (!p || !p.hash || !p.salt) continue;
 
     // Verifica PIN con PBKDF2
-    const hash = crypto.pbkdf2Sync(pin, p.salt, 150000, 32, 'sha256').toString('hex');
+    const hash = pbkdf2Sync(pin, p.salt, 150000, 32, 'sha256').toString('hex');
 
     if (hash === p.hash) {
       const staffId = doc.path.replace('pins/', '');
       // Genera token sessione
-      const token = crypto.randomBytes(20).toString('hex');
+      const token = randomBytes(20).toString('hex');
       const scade = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
 
       await supaFetch('/rest/v1/bo_sessioni', 'POST', {
@@ -370,8 +370,8 @@ async function boRegistra(nome, pin, pin2, dispositivo) {
 
   // Per ora la registrazione crea un nuovo PIN
 
-  const salt = crypto.randomBytes(12).toString('hex');
-  const hash = crypto.pbkdf2Sync(pin, salt, 150000, 32, 'sha256').toString('hex');
+  const salt = randomBytes(12).toString('hex');
+  const hash = pbkdf2Sync(pin, salt, 150000, 32, 'sha256').toString('hex');
   const id = nome.toLowerCase().replace(/\s+/g, '').slice(0, 20);
 
   await supaFetch('/rest/v1/turni_docs', 'POST', {
@@ -388,8 +388,8 @@ async function avviaFirma(dati) {
   // Salva il contratto in bozza
 
   const otp = String(Math.floor(100000 + Math.random() * 900000)); // 6 cifre
-  const otpSalt = crypto.randomBytes(12).toString('hex');
-  const otpHash = crypto.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
+  const otpSalt = randomBytes(12).toString('hex');
+  const otpHash = pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
 
   const record = {
     tipo: dati.tipo || 'nuovo',
@@ -458,7 +458,7 @@ async function confermaFirma(id, codice) {
 
   // Verifica OTP
 
-  const hash = crypto.pbkdf2Sync(codice, c.otp_salt, 150000, 32, 'sha256').toString('hex');
+  const hash = pbkdf2Sync(codice, c.otp_salt, 150000, 32, 'sha256').toString('hex');
 
   if (hash !== c.otp_hash) {
     await supaFetch(`/rest/v1/contratti?id=eq.${id}`, 'PATCH', { otp_tentativi: c.otp_tentativi + 1 }, { 'Prefer': 'return=minimal' });
@@ -480,8 +480,8 @@ async function reinviaOtp(id) {
   // Genera nuovo OTP e invia
 
   const otp = String(Math.floor(100000 + Math.random() * 900000));
-  const otpSalt = crypto.randomBytes(12).toString('hex');
-  const otpHash = crypto.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
+  const otpSalt = randomBytes(12).toString('hex');
+  const otpHash = pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
 
   const r = await supaFetch(`/rest/v1/contratti?id=eq.${id}&select=cellulare,email,nome,junior,genitore_cellulare`);
   const rows = await r.json();
@@ -504,8 +504,8 @@ async function reinviaOtp(id) {
 async function otpViaEmail(id) {
 
   const otp = String(Math.floor(100000 + Math.random() * 900000));
-  const otpSalt = crypto.randomBytes(12).toString('hex');
-  const otpHash = crypto.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
+  const otpSalt = randomBytes(12).toString('hex');
+  const otpHash = pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
 
   const r = await supaFetch(`/rest/v1/contratti?id=eq.${id}&select=email,nome`);
   const rows = await r.json();

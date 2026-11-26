@@ -6,6 +6,7 @@
     { "src": "/disiscrizione", "dest": "/public/disiscrizione.html" },
     { "src": "/turni", "dest": "/public/turni.html" },
     { "src": "/contratti", "dest": "/public/contratti.html" },
+    { "src": "/contratti/", "dest": "/public/contratti.html" },
     { "src": "/", "dest": "/public/index.html" }
   ]
 }

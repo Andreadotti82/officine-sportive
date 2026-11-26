@@ -448,7 +448,9 @@ function caricaCatalogo() {
       ],
       areeNascoste: data.impostazioni && data.impostazioni.areeNascoste || [],
       pagamento: data.impostazioni && data.impostazioni.modalitaPagamento || ['Contanti', 'Bancomat'],
-      penale: data.impostazioni && data.impostazioni.penale || 6
+      metodi: data.impostazioni && data.impostazioni.modalitaPagamento || ['Contanti', 'Bancomat'],
+      penale: data.impostazioni && data.impostazioni.penale || 6,
+      oggi: new Date().toISOString().slice(0, 10)
     };
     // Nascondi centro estivo se fuori stagione
     var imp = data.impostazioni || {};

@@ -72,7 +72,7 @@ function buildGuestPassEmail(nome, cognome) {
       <div style="font-size:15px;margin-bottom:4px">${nome} ${cognome}</div>
       <div style="font-size:36px;font-weight:800;margin:8px 0">2 giorni</div>
       <div style="font-size:14px;opacity:0.85">Abbonamento Premium · prova gratuita</div>
-      <div style="margin-top:12px;font-size:13px;opacity:0.7">Attivabili e utilizzabili dal lunedì al giovedì</div>
+      <div style="margin-top:14px;font-size:13px;background:rgba(255,255,255,0.15);border-radius:8px;padding:8px 14px;line-height:1.4">Attivabile e utilizzabile<br><b>esclusivamente dal lunedì al giovedì</b></div>
     </div>
 
     <!-- 3 passi -->

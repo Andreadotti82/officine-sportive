@@ -42,9 +42,8 @@ a{color:var(--vasca)}
   position:relative;color:var(--bianco);overflow:hidden;
   background-color:var(--vasca);
   background-image:
-    linear-gradient(rgba(255,255,255,.07) 1.5px,transparent 1.5px),
-    linear-gradient(90deg,rgba(255,255,255,.07) 1.5px,transparent 1.5px);
-  background-size:30px 30px;
+    radial-gradient(circle at 20% 80%, rgba(255,255,255,.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255,255,255,.06) 0%, transparent 50%);
   padding:28px 22px 120px;
 }
 /* la riga di corsia sul fondo, con la T finale */
@@ -236,28 +235,32 @@ footer a{font-weight:600}
     <div class="hero-grid con-foto">
       <div>
         <h1>2 giorni gratis. Zero impegno.</h1>
-        <p class="lead">Sala attrezzi, piscina, corsi fitness, sauna e idromassaggio: vivi il circolo con l’Abbonamento Premium per 2 giorni, dal lunedì al giovedì. Compila, ricevi il Guest Pass e vieni ad allenarti.</p>
         <a class="vai" href="#prenota">Attiva la prova gratuita</a>
       </div>
-      <figure class="illustrazione"><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 480 400" role="img" aria-label="Il tuo Guest Pass di 2 giorni">
-<defs><clipPath id="gcl"><rect width="480" height="400" rx="28"/></clipPath>
-<pattern id="gpav" width="40" height="40" patternUnits="userSpaceOnUse"><rect width="40" height="40" fill="#E9F7F6"/><path d="M40 0V40H0" fill="none" stroke="#D3EEEA" stroke-width="2"/></pattern></defs>
+      <figure class="illustrazione"><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 480 400" role="img" aria-label="Guest Pass 2 giorni al circolo">
+<defs><clipPath id="gcl"><rect width="480" height="400" rx="28"/></clipPath></defs>
 <g clip-path="url(#gcl)">
-<rect width="480" height="400" fill="url(#gpav)"/>
-<g transform="rotate(-6 240 200)">
-<rect x="70" y="95" width="340" height="200" rx="22" fill="#07808A"/>
-<rect x="70" y="95" width="340" height="56" rx="22" fill="#05626A"/><rect x="70" y="128" width="340" height="23" fill="#05626A"/>
-<text x="96" y="132" font-family="Arial,sans-serif" font-weight="bold" font-size="22" fill="#fff" letter-spacing="2">GUEST PASS</text>
-<circle cx="372" cy="123" r="16" fill="#72C5B5"/><text x="372" y="130" text-anchor="middle" font-family="Arial,sans-serif" font-weight="bold" font-size="19" fill="#05626A">2</text>
-<text x="96" y="196" font-family="Arial,sans-serif" font-weight="bold" font-size="38" fill="#fff">2 giorni</text>
-<text x="96" y="226" font-family="Arial,sans-serif" font-size="18" fill="#CFF2EE">Abbonamento Premium</text>
-<rect x="96" y="248" width="150" height="10" rx="5" fill="#72C5B5"/><rect x="96" y="266" width="100" height="10" rx="5" fill="#0A9BA5"/>
-<circle cx="70" cy="200" r="16" fill="#E9F7F6"/><circle cx="410" cy="200" r="16" fill="#E9F7F6"/>
-<g transform="translate(300 222)" fill="#fff"><rect width="70" height="56" rx="8" fill="#ffffff" opacity=".15"/>
-<rect x="10" y="10" width="12" height="12"/><rect x="28" y="10" width="6" height="6"/><rect x="40" y="10" width="20" height="12"/><rect x="10" y="30" width="20" height="6"/><rect x="36" y="28" width="8" height="16"/><rect x="50" y="34" width="10" height="10"/><rect x="10" y="40" width="10" height="8"/></g>
+<rect width="480" height="400" rx="28" fill="#E9F7F6"/>
+<!-- Guest Pass card -->
+<g transform="rotate(-4 240 200)">
+<rect x="60" y="80" width="360" height="220" rx="22" fill="#07808A" />
+<rect x="60" y="80" width="360" height="60" rx="22" fill="#05626A"/><rect x="60" y="118" width="360" height="22" fill="#05626A"/>
+<text x="86" y="118" font-family="Arial,sans-serif" font-weight="bold" font-size="20" fill="#fff" letter-spacing="2">GUEST PASS</text>
+<circle cx="384" cy="108" r="16" fill="#72C5B5"/><text x="384" y="115" text-anchor="middle" font-family="Arial,sans-serif" font-weight="bold" font-size="18" fill="#05626A">2</text>
+<text x="86" y="186" font-family="Arial,sans-serif" font-weight="bold" font-size="36" fill="#fff">2 giorni</text>
+<text x="86" y="214" font-family="Arial,sans-serif" font-size="16" fill="#CFF2EE">Abbonamento Premium · prova gratuita</text>
+<rect x="86" y="240" width="140" height="8" rx="4" fill="#72C5B5"/><rect x="86" y="256" width="90" height="8" rx="4" fill="#0A9BA5"/>
+<circle cx="60" cy="192" r="14" fill="#E9F7F6"/><circle cx="420" cy="192" r="14" fill="#E9F7F6"/>
 </g>
-<g fill="#FFC531"><path d="M60 60 l5 11 l11 5 l-11 5 l-5 11 l-5 -11 l-11 -5 l11 -5z"/><path d="M420 330 l4 9 l9 4 l-9 4 l-4 9 l-4 -9 l-9 -4 l9 -4z"/><path d="M430 70 l3 7 l7 3 l-7 3 l-3 7 l-3 -7 l-7 -3 l7 -3z"/></g>
-<g fill="#FF6F61"><circle cx="90" cy="340" r="9"/><circle cx="380" cy="50" r="6"/></g>
+<!-- Manubrio stilizzato -->
+<g transform="translate(160 320)" fill="#0A9BA5" opacity="0.5">
+<rect x="0" y="8" width="160" height="8" rx="4"/>
+<rect x="-6" y="0" width="24" height="24" rx="6"/><rect x="142" y="0" width="24" height="24" rx="6"/>
+<rect x="-14" y="3" width="14" height="18" rx="4"/><rect x="160" y="3" width="14" height="18" rx="4"/>
+</g>
+<!-- Stelle decorative -->
+<g fill="#FFC531"><path d="M60 55 l5 11 l11 5 l-11 5 l-5 11 l-5-11 l-11-5 l11-5z"/><path d="M420 340 l4 9 l9 4 l-9 4 l-4 9 l-4-9 l-9-4 l9-4z"/><path d="M430 65 l3 7 l7 3 l-7 3 l-3 7 l-3-7 l-7-3 l7-3z"/></g>
+<g fill="#FF6F61"><circle cx="85" cy="345" r="8"/><circle cx="395" cy="48" r="5"/></g>
 </g></svg></figure>
     </div>
   </div>
@@ -274,13 +277,10 @@ footer a{font-weight:600}
       <div class="requisiti">
         <b>Chi può attivarla</b>
         <ul>
-          <li>chi abita a Fiumicino</li>
+          <li>chi abita e lavora a Fiumicino</li>
           <li>chi lavora in aeroporto</li>
           <li>chi non è entrato al circolo negli ultimi 12 mesi</li>
         </ul>
-      </div>
-      <div class="incluso" aria-label="Cosa è incluso">
-        <span>🏋️ Sala attrezzi</span><span>🏊 Piscina e nuoto libero</span><span>🤸 Fitness</span><span>🧑‍🏫 Tutor personale</span><span>🧘 Posturale</span><span>💧 Aqua circuit</span><span>🧖 Sauna e bagno turco</span><span>🫧 Idromassaggio</span>
       </div>
 
       <section class="passo" aria-labelledby="t1">

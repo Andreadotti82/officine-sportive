@@ -673,36 +673,47 @@ async function libConfermaSocio(id, codice) { return { ok: false, errore: 'In fa
 async function inviaSms(numero, testo) {
   if (!SKEBBY_USER || !SKEBBY_PASS) return false;
   try {
-    // Token Skebby (GET con Basic Auth — token non scade)
     const auth = Buffer.from(SKEBBY_USER + ':' + SKEBBY_PASS).toString('base64');
-    console.log('[SMS] Token Skebby, user:', SKEBBY_USER.slice(0, 5) + '...', 'auth len:', auth.length);
-    const loginR = await fetch('https://api.skebby.it/API/v1.0/REST/token', {
+    console.log('[SMS] Login Skebby, user:', SKEBBY_USER);
+
+    // Prima prova: controlla se c'è un redirect
+    const loginR = await fetch('https://api.skebby.it/API/v1.0/REST/login', {
       method: 'GET',
+      redirect: 'manual',
       headers: { 'Authorization': 'Basic ' + auth }
     });
-    const bodyText = await loginR.text();
-    console.log('[SMS] Skebby risposta:', loginR.status, bodyText.slice(0, 100));
-    if (!loginR.ok) {
-      console.error('Skebby token fallito:', loginR.status, bodyText);
-      return false;
-    }
-    const keys = bodyText.trim().split(';');
-    console.log('[SMS] Token OK, user_key:', keys[0] ? keys[0].slice(0, 8) + '...' : 'vuota');
+    console.log('[SMS] Skebby status:', loginR.status, 'location:', loginR.headers.get('location') || 'nessuno');
 
-    // Invio SMS
+    let finalR = loginR;
+    // Se redirect, segui manualmente con l'header Authorization
+    if (loginR.status >= 300 && loginR.status < 400) {
+      const loc = loginR.headers.get('location');
+      console.log('[SMS] Redirect a:', loc);
+      finalR = await fetch(loc, {
+        method: 'GET',
+        headers: { 'Authorization': 'Basic ' + auth }
+      });
+    }
+
+    const bodyText = await finalR.text();
+    console.log('[SMS] Skebby risposta finale:', finalR.status, bodyText.slice(0, 150));
+    if (!finalR.ok) return false;
+
+    const keys = bodyText.trim().split(';');
+
+    // Invio SMS con Access_token
     const smsR = await fetch('https://api.skebby.it/API/v1.0/REST/sms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'user_key': keys[0], 'Session_key': keys[1] },
       body: JSON.stringify({ message_type: 'GP', message: testo, recipient: [numero], returnCredits: true })
     });
     if (!smsR.ok) {
-      const errSms = await smsR.text();
-      console.error('Skebby invio fallito:', smsR.status, errSms);
+      console.error('[SMS] Invio fallito:', smsR.status, await smsR.text());
       return false;
     }
     console.log('[SMS] Inviato a', numero);
     return true;
-  } catch (e) { console.error('Errore Skebby:', e.message || e); return false; }
+  } catch (e) { console.error('[SMS] Errore:', e.message || e); return false; }
 }
 
 // === HELPER: OTP via Email ===

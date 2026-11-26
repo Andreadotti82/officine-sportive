@@ -451,11 +451,14 @@ async function avviaFirma(dati) {
 
   // Invia OTP via SMS (Skebby)
   let smsOk = false;
-  if (SKEBBY_USER && SKEBBY_PASS) {
+  const hasSms = !!(SKEBBY_USER && SKEBBY_PASS);
+  console.log('[OTP] Config SMS:', hasSms, 'dest:', dest, 'RESEND:', !!RESEND_KEY);
+  if (hasSms) {
     try {
       smsOk = await inviaSms(dest,
         `Officine Sportive: il tuo codice per firmare il contratto è ${otp}. Valido 10 minuti.`);
-    } catch (e) { console.error('Errore SMS:', e); }
+      console.log('[OTP] SMS risultato:', smsOk);
+    } catch (e) { console.error('[OTP] Errore SMS:', e); }
   }
 
   if (smsOk) {
@@ -468,7 +471,7 @@ async function avviaFirma(dati) {
     try {
       await inviaOtpEmail(emailDest, t.nome, otp);
       return { ok: true, id: saved.id, numero: saved.numero, canale: 'email', a: emailDest };
-    } catch (e) { console.error('Errore email OTP:', e); }
+    } catch (e) { console.error('[OTP] Errore email:', e); }
   }
 
   // Nessun canale funzionante — mostra OTP a schermo

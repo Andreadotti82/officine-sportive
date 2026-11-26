@@ -60,32 +60,24 @@ function euroInteri(n) { return arrotonda(n); }
 
 // === CATALOGO ===
 async function catalogo() {
-  const r = await supaFetch('/rest/v1/listino?attivo=eq.true&order=ordine');
-  const lista = await r.json();
-
-  const r2 = await supaFetch('/rest/v1/promo?attivo=eq.true');
-  const promoList = await r2.json();
-
-  // Leggi impostazioni dal turni_docs (configurazione contratti)
-  const r3 = await supaFetch('/rest/v1/turni_docs?path=eq.contratti/config&select=data');
-  const cfgRows = await r3.json();
-  const imp = cfgRows.length ? cfgRows[0].data : {};
-
-  // Leggi testi del contratto
-  const r4 = await supaFetch('/rest/v1/turni_docs?path=eq.contratti/condizioni&select=data');
-  const condRows = await r4.json();
-  const condizioni = condRows.length && condRows[0].data ? condRows[0].data.html || '' : '';
-
-  const r5 = await supaFetch('/rest/v1/turni_docs?path=eq.contratti/informativa&select=data');
-  const infoRows = await r5.json();
-  const informativa = infoRows.length && infoRows[0].data ? infoRows[0].data.html || '' : '';
+  // Tutte le query in parallelo per velocizzare il caricamento
+  const [r1, r2, r3, r4, r5] = await Promise.all([
+    supaFetch('/rest/v1/listino?attivo=eq.true&order=ordine'),
+    supaFetch('/rest/v1/promo?attivo=eq.true'),
+    supaFetch('/rest/v1/turni_docs?path=eq.contratti/config&select=data'),
+    supaFetch('/rest/v1/turni_docs?path=eq.contratti/condizioni&select=data'),
+    supaFetch('/rest/v1/turni_docs?path=eq.contratti/informativa&select=data')
+  ]);
+  const [lista, promoList, cfgRows, condRows, infoRows] = await Promise.all([
+    r1.json(), r2.json(), r3.json(), r4.json(), r5.json()
+  ]);
 
   return {
     listino: lista,
     promo: promoList,
-    impostazioni: imp,
-    condizioni,
-    informativa
+    impostazioni: cfgRows.length ? cfgRows[0].data : {},
+    condizioni: condRows.length && condRows[0].data ? condRows[0].data.html || '' : '',
+    informativa: infoRows.length && infoRows[0].data ? infoRows[0].data.html || '' : ''
   };
 }
 

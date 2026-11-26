@@ -598,20 +598,21 @@ async function libConfermaSocio(id, codice) { return { ok: false, errore: 'In fa
 async function inviaSms(numero, testo) {
   if (!SKEBBY_USER || !SKEBBY_PASS) return false;
   try {
-    // Login Skebby (GET con Basic Auth)
+    // Token Skebby (GET con Basic Auth — token non scade)
     const auth = Buffer.from(SKEBBY_USER + ':' + SKEBBY_PASS).toString('base64');
-    console.log('[SMS] Login Skebby con user:', SKEBBY_USER.slice(0, 5) + '...');
-    const loginR = await fetch('https://api.skebby.it/API/v1.0/REST/login', {
+    console.log('[SMS] Token Skebby, user:', SKEBBY_USER.slice(0, 5) + '...', 'auth len:', auth.length);
+    const loginR = await fetch('https://api.skebby.it/API/v1.0/REST/token', {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + auth }
+      headers: { 'Authorization': 'Basic ' + auth }
     });
+    const bodyText = await loginR.text();
+    console.log('[SMS] Skebby risposta:', loginR.status, bodyText.slice(0, 100));
     if (!loginR.ok) {
-      const errBody = await loginR.text();
-      console.error('Skebby login fallito:', loginR.status, errBody);
+      console.error('Skebby token fallito:', loginR.status, bodyText);
       return false;
     }
-    const keys = (await loginR.text()).trim().split(';');
-    console.log('[SMS] Login OK, user_key:', keys[0] ? keys[0].slice(0, 8) + '...' : 'vuota');
+    const keys = bodyText.trim().split(';');
+    console.log('[SMS] Token OK, user_key:', keys[0] ? keys[0].slice(0, 8) + '...' : 'vuota');
 
     // Invio SMS
     const smsR = await fetch('https://api.skebby.it/API/v1.0/REST/sms', {

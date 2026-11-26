@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "regions": ["cdg1"],
   "rewrites": [
     { "source": "/staff", "destination": "/contratti.html" },
     { "source": "/lista", "destination": "/lista.html" },

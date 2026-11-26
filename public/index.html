@@ -41,11 +41,18 @@ a{color:var(--vasca)}
 .hero{
   position:relative;color:var(--bianco);overflow:hidden;
   background-color:var(--vasca);
-  background-image:
-    radial-gradient(circle at 20% 80%, rgba(255,255,255,.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(255,255,255,.06) 0%, transparent 50%);
   padding:28px 22px 36px;
 }
+.hero-foto{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;
+  margin-top:24px;
+}
+.hero-foto img{
+  width:100%;height:160px;object-fit:cover;
+  border-radius:16px;border:3px solid rgba(255,255,255,.3);
+  box-shadow:0 8px 24px rgba(0,0,0,.2);
+}
+@media(min-width:760px){.hero-foto img{height:220px}}
 .hero-in{position:relative;z-index:1;max-width:1040px;margin:0 auto}
 .hero-grid{display:grid;gap:36px;margin-top:22px;align-items:center}
 h1{
@@ -219,36 +226,13 @@ footer a{font-weight:600}
 
 <header class="hero">
   <div class="hero-in">
-    <div class="hero-grid con-foto">
-      <div>
+    <div style="text-align:center">
         <h1>2 giorni gratis.</h1>
-        <a class="vai" href="#prenota">Attiva la prova gratuita</a>
-      </div>
-      <figure class="illustrazione"><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 480 400" role="img" aria-label="Guest Pass 2 giorni al circolo">
-<defs><clipPath id="gcl"><rect width="480" height="400" rx="28"/></clipPath></defs>
-<g clip-path="url(#gcl)">
-<rect width="480" height="400" rx="28" fill="#E9F7F6"/>
-<!-- Guest Pass card -->
-<g transform="rotate(-4 240 200)">
-<rect x="60" y="80" width="360" height="220" rx="22" fill="#07808A" />
-<rect x="60" y="80" width="360" height="60" rx="22" fill="#05626A"/><rect x="60" y="118" width="360" height="22" fill="#05626A"/>
-<text x="86" y="118" font-family="Arial,sans-serif" font-weight="bold" font-size="20" fill="#fff" letter-spacing="2">GUEST PASS</text>
-<circle cx="384" cy="108" r="16" fill="#72C5B5"/><text x="384" y="115" text-anchor="middle" font-family="Arial,sans-serif" font-weight="bold" font-size="18" fill="#05626A">2</text>
-<text x="86" y="186" font-family="Arial,sans-serif" font-weight="bold" font-size="36" fill="#fff">2 giorni</text>
-<text x="86" y="214" font-family="Arial,sans-serif" font-size="16" fill="#CFF2EE">Abbonamento Premium · prova gratuita</text>
-<rect x="86" y="240" width="140" height="8" rx="4" fill="#72C5B5"/><rect x="86" y="256" width="90" height="8" rx="4" fill="#0A9BA5"/>
-<circle cx="60" cy="192" r="14" fill="#E9F7F6"/><circle cx="420" cy="192" r="14" fill="#E9F7F6"/>
-</g>
-<!-- Manubrio stilizzato -->
-<g transform="translate(160 320)" fill="#0A9BA5" opacity="0.5">
-<rect x="0" y="8" width="160" height="8" rx="4"/>
-<rect x="-6" y="0" width="24" height="24" rx="6"/><rect x="142" y="0" width="24" height="24" rx="6"/>
-<rect x="-14" y="3" width="14" height="18" rx="4"/><rect x="160" y="3" width="14" height="18" rx="4"/>
-</g>
-<!-- Stelle decorative -->
-<g fill="#FFC531"><path d="M60 55 l5 11 l11 5 l-11 5 l-5 11 l-5-11 l-11-5 l11-5z"/><path d="M420 340 l4 9 l9 4 l-9 4 l-4 9 l-4-9 l-9-4 l9-4z"/><path d="M430 65 l3 7 l7 3 l-7 3 l-3 7 l-3-7 l-7-3 l7-3z"/></g>
-<g fill="#FF6F61"><circle cx="85" cy="345" r="8"/><circle cx="395" cy="48" r="5"/></g>
-</g></svg></figure>
+        <div class="hero-foto">
+          <img src="https://www.officinesportive.it/wp-content/uploads/2025/11/fotogallery-palestra-officine-sportive-12.jpg" alt="Sala attrezzi">
+          <img src="https://www.officinesportive.it/wp-content/uploads/2025/11/officine-sportive-piscina-0_0007_officine-sportive-foto-piscina-2025-02-1.jpg" alt="Piscina">
+        </div>
+        <a class="vai" href="#prenota" style="margin-top:24px">Attiva la prova gratuita</a>
     </div>
   </div>
 </header>

@@ -369,9 +369,9 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:10px}
 <div class="attesa" id="attesa"><div class="rotella"></div><div id="attesaT">Un attimo…</div></div>
 
 <script>
-var APRI_STAFF = <?!= staff ? 'true' : 'false' ?>;   // scritto così com'è: altrimenti Google lo trasforma nel testo "false", che vale come vero
-var PAGATO = '<?!= pagato ?>';   // ritorno da SumUp: solo lettere e numeri, ripulito dal server
-var CAT = <?!= catalogoJSON ?>;
+var APRI_STAFF = false;
+var PAGATO = '';
+var CAT = null;
 var ST = { area: '', abb: null, offerte: [], promo: '', letto: false, sessione: '', client: {} };
 var DOMINI = ['gmail.com','hotmail.com','hotmail.it','libero.it','yahoo.com','yahoo.it','icloud.com','outlook.com','outlook.it','live.com','live.it','alice.it','tiscali.it','virgilio.it','tim.it','me.com','fastwebnet.it','email.it','msn.com'];
 var $ = function (id) { return document.getElementById(id); };
@@ -420,8 +420,56 @@ document.addEventListener('click', function (e) {
 });
 
 /* ---------- Avvio ---------- */
-/* Il catalogo è già nella pagina (iniettato dal server in doGet): niente round-trip, niente attesa. */
-(function inizializza(c) {
+/* Carica il catalogo via API (era iniettato dal GAS in doGet) */
+function caricaCatalogo() {
+  srv('catalogo', [], function(data) {
+    // Trasforma il formato API nel formato che il frontend si aspetta
+    CAT = {
+      abbonamenti: (data.listino || []).map(function(a) {
+        return { id: a.id, area: a.area, nome: a.nome, tipo: a.tipo, durataMesi: a.durata_mesi,
+          prezzo: Number(a.prezzo), iscrizione: Number(a.iscrizione || 0), pagamento: a.pagamento,
+          rinnovo: a.rinnovo, fineStagione: a.fine_stagione || '', fasciaOraria: a.fascia_oraria || '',
+          junior: a.junior, descrizione: a.descrizione || '' };
+      }),
+      promo: (data.promo || []).map(function(p) {
+        return { codice: p.codice, descrizione: p.descrizione, abbonamenti: p.abbonamenti,
+          mesiProrataExtra: p.mesi_prorata_extra, importoProrataMese: p.importo_prorata_mese,
+          primaRataAllaFirma: p.prima_rata_alla_firma, omaggio: p.omaggio,
+          inizioFisso: p.inizio_abbonamento, prezzoRata: p.prezzo_rata,
+          scontoPercento: p.sconto_percento, durataMesi: p.durata_mesi,
+          nomeAbbonamento: p.nome_abbonamento };
+      }),
+      condizioni: data.condizioni || '',
+      informativa: data.informativa || '',
+      spunte: [
+        { titolo: 'Condizioni generali e privacy', testo: ' Dichiaro di aver preso visione delle condizioni generali di contratto e dell\'informativa privacy e di accettarle integralmente.' },
+        { titolo: 'Trattamento dati', testo: ' Acconsento al trattamento dei miei dati personali per le finalità indicate nell\'informativa privacy.' },
+        { titolo: 'Immagini e video', testo: ' Acconsento all\'utilizzo di immagini e video per la comunicazione del circolo, come indicato nelle condizioni generali.' }
+      ],
+      areeNascoste: data.impostazioni && data.impostazioni.areeNascoste || [],
+      pagamento: data.impostazioni && data.impostazioni.modalitaPagamento || ['Contanti', 'Bancomat'],
+      penale: data.impostazioni && data.impostazioni.penale || 6
+    };
+    // Nascondi centro estivo se fuori stagione
+    var imp = data.impostazioni || {};
+    if (imp.centroEstivoNascostoDal && imp.centroEstivoNascostoAl) {
+      var oggi = new Date(), meseOggi = oggi.getMonth();
+      var mesi = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+      var dal = mesi.indexOf(imp.centroEstivoNascostoDal.split(' ').pop().toLowerCase());
+      var al = mesi.indexOf(imp.centroEstivoNascostoAl.split(' ').pop().toLowerCase());
+      if (dal >= 0 && al >= 0) {
+        var nascosto = dal <= al ? (meseOggi >= dal && meseOggi <= al) : (meseOggi >= dal || meseOggi <= al);
+        if (nascosto && CAT.areeNascoste.indexOf('Centro estivo') < 0) CAT.areeNascoste.push('Centro estivo');
+      }
+    }
+    inizializza(CAT);
+  }, function(err) {
+    document.body.innerHTML = '<div style="text-align:center;padding:60px 20px;font-family:Montserrat,sans-serif"><h2 style="color:#C0392B">Errore nel caricamento</h2><p>' + (err || 'Riprova tra qualche istante.') + '</p><button onclick="location.reload()" style="margin-top:16px;padding:12px 28px;background:#13556F;color:#fff;border:none;border-radius:10px;font-size:15px;cursor:pointer">Riprova</button></div>';
+  });
+}
+caricaCatalogo();
+
+function inizializza(c) {
   oscuraAree();
   $('doc').innerHTML = c.condizioni + '<h3>Informativa privacy</h3>' + c.informativa + '<p style="text-align:center;color:#5A707A;margin:18px 0">— Fine del contratto —</p>';
   $('spunte').innerHTML = c.spunte.map(function (s, i) {
@@ -431,13 +479,14 @@ document.addEventListener('click', function (e) {
   vai(1);
   if (PAGATO) esitoPagamento();
   if (APRI_STAFF) { $('pin').value = ''; $('errPin').textContent = ''; mostraReg(false); $('vPin').classList.add('on'); setTimeout(function () { $('pin').focus(); }, 100); }
-})(CAT);
+}
 try { fetch('https://api.ipify.org?format=json').then(function (r) { return r.json(); }).then(function (j) { ST.client.ip = j.ip; }).catch(function () {}); } catch (e) {}
 ST.client.ua = navigator.userAgent; ST.client.schermo = screen.width + '×' + screen.height; ST.client.lingua = navigator.language;
 
 /* ---------- 1 · Attività ---------- */
 function isJunior() { return !!(ST.abb && (ST.abb.junior || ST.perMinore)); }
 function oscuraAree() {
+  if (!CAT) return;
   (CAT.areeNascoste || []).forEach(function (a) {
     var b = document.querySelector('[data-area="' + a + '"]'); if (b) b.style.display = 'none';
   });

@@ -632,8 +632,8 @@ async function inviaSms(numero, testo) {
 
 // === HELPER: OTP via Email ===
 async function inviaOtpEmail(email, nome, otp) {
-  if (!RESEND_KEY) return;
-  await fetch('https://api.resend.com/emails', {
+  if (!RESEND_KEY) throw new Error('RESEND_KEY non configurata');
+  const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -648,6 +648,12 @@ async function inviaOtpEmail(email, nome, otp) {
       </div>`
     })
   });
+  if (!r.ok) {
+    const errBody = await r.text();
+    console.error('[EMAIL] Resend errore:', r.status, errBody);
+    throw new Error('Email non inviata: ' + r.status);
+  }
+  console.log('[EMAIL] OTP inviato a', email);
 }
 
 // === HELPER: Verifica sessione back office ===

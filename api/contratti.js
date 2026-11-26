@@ -598,13 +598,20 @@ async function libConfermaSocio(id, codice) { return { ok: false, errore: 'In fa
 async function inviaSms(numero, testo) {
   if (!SKEBBY_USER || !SKEBBY_PASS) return false;
   try {
-    // Login Skebby
+    // Login Skebby (GET con Basic Auth)
     const auth = Buffer.from(SKEBBY_USER + ':' + SKEBBY_PASS).toString('base64');
+    console.log('[SMS] Login Skebby con user:', SKEBBY_USER.slice(0, 5) + '...');
     const loginR = await fetch('https://api.skebby.it/API/v1.0/REST/login', {
-      headers: { 'Authorization': 'Basic ' + auth }
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + auth }
     });
-    if (!loginR.ok) { console.error('Skebby login fallito:', loginR.status); return false; }
+    if (!loginR.ok) {
+      const errBody = await loginR.text();
+      console.error('Skebby login fallito:', loginR.status, errBody);
+      return false;
+    }
     const keys = (await loginR.text()).trim().split(';');
+    console.log('[SMS] Login OK, user_key:', keys[0] ? keys[0].slice(0, 8) + '...' : 'vuota');
 
     // Invio SMS
     const smsR = await fetch('https://api.skebby.it/API/v1.0/REST/sms', {
@@ -612,10 +619,14 @@ async function inviaSms(numero, testo) {
       headers: { 'Content-Type': 'application/json', 'user_key': keys[0], 'Session_key': keys[1] },
       body: JSON.stringify({ message_type: 'GP', message: testo, recipient: [numero], returnCredits: true })
     });
-    if (!smsR.ok) { console.error('Skebby invio fallito:', smsR.status, await smsR.text()); return false; }
+    if (!smsR.ok) {
+      const errSms = await smsR.text();
+      console.error('Skebby invio fallito:', smsR.status, errSms);
+      return false;
+    }
     console.log('[SMS] Inviato a', numero);
     return true;
-  } catch (e) { console.error('Errore Skebby:', e); return false; }
+  } catch (e) { console.error('Errore Skebby:', e.message || e); return false; }
 }
 
 // === HELPER: OTP via Email ===

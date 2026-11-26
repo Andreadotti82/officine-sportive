@@ -247,13 +247,15 @@ textarea::placeholder { color: #A0B0B8; }
     <div class="card">
       <div class="card-title">Spogliatoi e Spa</div>
       <div class="voto-row"><span class="voto-label">Spogliatoi</span><div class="stelle" data-key="spogliatoi"></div></div>
-      <div class="voto-row">
-        <span class="voto-label">Spa <span style="font-size:13px;color:var(--grigio)">(sauna, bagno turco, idromassaggio)</span></span>
-        <div class="stelle" data-key="spa"></div>
-      </div>
-      <label class="non-frequento">
-        <input type="checkbox" id="noSpa"> Non frequento la spa
+      <label class="non-frequento" style="margin-top:12px;margin-bottom:4px">
+        <input type="checkbox" id="siSpa"> Frequento la spa
       </label>
+      <div id="spaVoto" style="display:none">
+        <div class="voto-row">
+          <span class="voto-label">Spa <span style="font-size:13px;color:var(--grigio)">(sauna, bagno turco, idromassaggio)</span></span>
+          <div class="stelle" data-key="spa"></div>
+        </div>
+      </div>
     </div>
 
     <!-- 9. Commenti -->
@@ -404,17 +406,10 @@ textarea::placeholder { color: #A0B0B8; }
     });
   });
 
-  // === Spa: "non frequento" ===
-  document.getElementById('noSpa').addEventListener('change', function() {
-    var stelleSpa = document.querySelector('.stelle[data-key="spa"]');
-    if (this.checked) {
-      stelleSpa.style.opacity = '0.3';
-      stelleSpa.style.pointerEvents = 'none';
-      delete voti.spa;
-    } else {
-      stelleSpa.style.opacity = '1';
-      stelleSpa.style.pointerEvents = 'auto';
-    }
+  // === Spa: "frequento la spa" ===
+  document.getElementById('siSpa').addEventListener('change', function() {
+    document.getElementById('spaVoto').style.display = this.checked ? 'block' : 'none';
+    if (!this.checked) delete voti.spa;
   });
 
   // === Toggle anonimo ===
@@ -450,7 +445,7 @@ textarea::placeholder { color: #A0B0B8; }
       servizio: tipo === 'annuale' ? servizioValue : null,
       voti: voti,
       spogliatoi: voti.spogliatoi || null,
-      spa: document.getElementById('noSpa').checked ? null : (voti.spa || null),
+      spa: document.getElementById('siSpa').checked ? (voti.spa || null) : null,
       commenti: tipo === '7giorni'
         ? (document.getElementById('suggerimenti7g').value.trim() || null)
         : (document.getElementById('commenti').value.trim() || null),
@@ -463,7 +458,7 @@ textarea::placeholder { color: #A0B0B8; }
     delete votiClean.spa;
     dati.voti = votiClean;
     dati.spogliatoi = voti.spogliatoi ? voti.spogliatoi * 2 : null; // stelle→scala 10
-    dati.spa = (!document.getElementById('noSpa').checked && voti.spa) ? voti.spa * 2 : null;
+    dati.spa = (document.getElementById('siSpa').checked && voti.spa) ? voti.spa * 2 : null;
 
     var btn = document.getElementById('btnInvia');
     btn.disabled = true;

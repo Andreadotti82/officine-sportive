@@ -48,8 +48,17 @@ export default async function handler(req, res) {
 
     const [record] = await response.json();
 
-    // TODO: mandare la mail Guest Pass via SendGrid (fase 2)
-    // Per ora il trigger di Claude manda la mail leggendo i record senza mail_guest_pass_inviata
+    // Manda la mail col Guest Pass via SendGrid
+    try {
+      const baseUrl = `https://${req.headers.host}`;
+      await fetch(`${baseUrl}/api/mail-guestpass`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: nome.trim(), cognome: cognome.trim(), email: email.trim().toLowerCase() })
+      });
+    } catch (mailErr) {
+      console.error('Errore invio mail (non bloccante):', mailErr);
+    }
 
     return res.status(200).json({ ok: true, id: record.id });
 

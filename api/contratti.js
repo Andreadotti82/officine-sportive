@@ -77,7 +77,8 @@ async function catalogo() {
     promo: promoList,
     impostazioni: cfgRows.length ? cfgRows[0].data : {},
     condizioni: condRows.length && condRows[0].data ? condRows[0].data.html || '' : '',
-    informativa: infoRows.length && infoRows[0].data ? infoRows[0].data.html || '' : ''
+    informativa: infoRows.length && infoRows[0].data ? infoRows[0].data.html || '' : '',
+    oggi: fmtData(new Date())
   };
 }
 

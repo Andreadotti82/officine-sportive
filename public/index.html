@@ -49,13 +49,13 @@ a{color:var(--vasca)}
 }
 .hero-overlay{
   position:absolute;bottom:0;left:0;right:0;
-  background:linear-gradient(to top, rgba(5,98,106,.95) 0%, rgba(5,98,106,.6) 50%, transparent 100%);
-  padding:40px 22px 32px;text-align:center;
+  background:linear-gradient(to top, rgba(5,98,106,.92) 0%, rgba(5,98,106,.4) 60%, transparent 100%);
+  padding:30px 22px 28px;text-align:center;
 }
-h1{
-  font:800 clamp(32px,8vw,56px)/1.05 var(--display);
-  margin:0 0 20px;letter-spacing:-.02em;text-align:center;text-wrap:balance;
-  text-shadow:0 3px 20px rgba(0,0,0,.4);
+.hero-sotto{
+  font:700 18px/1 var(--display);
+  margin:14px 0 0;letter-spacing:.05em;text-transform:uppercase;
+  opacity:.9;
 }
 .hero-in{position:relative;z-index:1;max-width:1040px;margin:0 auto}
 .hero-grid{display:grid;gap:36px;margin-top:22px;align-items:center}
@@ -228,8 +228,8 @@ footer a{font-weight:600}
   <div class="hero-in">
     <img class="hero-banner" src="hero-banner.jpg" alt="Officine Sportive: sala attrezzi, piscina, padel">
     <div class="hero-overlay">
-        <h1>2 giorni gratis.</h1>
         <a class="vai" href="#prenota">Attiva la prova gratuita</a>
+        <p class="hero-sotto">2 giorni gratis</p>
     </div>
   </div>
 </header>

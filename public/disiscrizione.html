@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Disiscrizione · Officine Sportive</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --vasca: #07808A; --vasca-scura: #05626A;
+  --piastrella: #F4F9F9; --testo: #14323F;
+  --grigio: #5A707A; --bianco: #FFFFFF; --verde: #10B981;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Figtree', Arial, sans-serif; background: var(--piastrella); color: var(--testo); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+
+.container { max-width: 480px; margin: 0 auto; padding: 40px 20px; text-align: center; }
+
+.logo { width: 160px; max-width: 50%; margin-bottom: 24px; }
+
+.card {
+  background: var(--bianco); border-radius: 16px; padding: 32px 24px;
+  box-shadow: 0 2px 8px rgba(10,155,165,0.08);
+}
+
+h1 {
+  font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 22px;
+  color: var(--vasca-scura); margin-bottom: 12px;
+}
+p { font-size: 15px; color: var(--grigio); line-height: 1.6; margin-bottom: 20px; }
+
+.btn {
+  display: inline-block; padding: 14px 32px; border: none; border-radius: 12px;
+  font-family: 'Montserrat', sans-serif; font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; text-decoration: none;
+}
+.btn-conferma { background: var(--vasca); color: var(--bianco); }
+.btn-conferma:hover { background: var(--vasca-scura); }
+.btn-conferma:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-iscritto { background: var(--verde); color: var(--bianco); margin-left: 10px; }
+.btn-iscritto:hover { background: #0D9668; }
+
+.buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+.risultato { display: none; }
+.risultato .icon { font-size: 48px; margin-bottom: 12px; }
+
+.footer { margin-top: 24px; font-size: 11px; color: var(--grigio); letter-spacing: 0.4px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <img class="logo" src="https://www.officinesportive.it/wp-content/uploads/2025/11/logo-officine-sportive-top.png" alt="Officine Sportive">
+
+  <!-- Scelta -->
+  <div class="card" id="scelta">
+    <h1>Vuoi smettere di ricevere le nostre email?</h1>
+    <p>Ci dispiace vederti andare! Se confermi, non riceverai più comunicazioni commerciali da Officine Sportive.</p>
+    <div class="buttons">
+      <button class="btn btn-conferma" id="btnDisiscrivi" onclick="disiscrivi()">Non voglio più riceverle</button>
+      <button class="btn btn-iscritto" id="btnIscritto" onclick="giaIscritto()">Mi sono già iscritto!</button>
+    </div>
+  </div>
+
+  <!-- Conferma disiscrizione -->
+  <div class="card risultato" id="confermaDis">
+    <div class="icon">👋</div>
+    <h1>Fatto, non riceverai più nostre email</h1>
+    <p>Se cambi idea, sai dove trovarci!<br>
+    <strong>Officine Sportive</strong> · Via Fratelli Wright snc, Fiumicino</p>
+  </div>
+
+  <!-- Conferma già iscritto -->
+  <div class="card risultato" id="confermaIscritto">
+    <div class="icon">🎉</div>
+    <h1>Benvenuto nel circolo!</h1>
+    <p>Perfetto, abbiamo aggiornato il tuo profilo. Non riceverai più le mail della sequenza informativa.</p>
+  </div>
+
+  <!-- Errore -->
+  <div class="card risultato" id="errore">
+    <div class="icon">😕</div>
+    <h1>Qualcosa non ha funzionato</h1>
+    <p id="erroreMsg">Riprova tra qualche istante.</p>
+  </div>
+
+  <div class="footer">Palestra · Piscina · Spa · Padel · Centri estivi</div>
+</div>
+
+<script>
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var token = params.get('t');  // token = contatto_id
+  var azione = params.get('a'); // 'dis' o 'iscritto'
+
+  if (!token) {
+    document.getElementById('scelta').style.display = 'none';
+    document.getElementById('errore').style.display = 'block';
+    document.getElementById('erroreMsg').textContent = 'Link non valido.';
+    return;
+  }
+
+  // Se l'azione è già nel link, eseguila
+  if (azione === 'iscritto') giaIscritto();
+
+  window.disiscrivi = function() {
+    var btn = document.getElementById('btnDisiscrivi');
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    fetch('/api/disiscrizione', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contatto_id: token, azione: 'disiscrivi' })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.getElementById('scelta').style.display = 'none';
+      if (data.ok) {
+        document.getElementById('confermaDis').style.display = 'block';
+      } else {
+        document.getElementById('errore').style.display = 'block';
+      }
+    })
+    .catch(function() {
+      document.getElementById('scelta').style.display = 'none';
+      document.getElementById('errore').style.display = 'block';
+    });
+  };
+
+  window.giaIscritto = function() {
+    var btn = document.getElementById('btnIscritto');
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+    fetch('/api/disiscrizione', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contatto_id: token, azione: 'iscritto' })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.getElementById('scelta').style.display = 'none';
+      if (data.ok) {
+        document.getElementById('confermaIscritto').style.display = 'block';
+      } else {
+        document.getElementById('errore').style.display = 'block';
+      }
+    })
+    .catch(function() {
+      document.getElementById('scelta').style.display = 'none';
+      document.getElementById('errore').style.display = 'block';
+    });
+  };
+
+})();
+</script>
+
+</body>
+</html>

@@ -3,6 +3,7 @@
   "routes": [
     { "src": "/lista", "dest": "/public/lista.html" },
     { "src": "/gradimento", "dest": "/public/gradimento.html" },
+    { "src": "/disiscrizione", "dest": "/public/disiscrizione.html" },
     { "src": "/", "dest": "/public/index.html" }
   ]
 }

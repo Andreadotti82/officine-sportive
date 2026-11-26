@@ -49,11 +49,12 @@ body { font-family: 'Figtree', Arial, sans-serif; background: var(--piastrella);
 .area-btn.disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* NPS */
-.nps-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 10px 0; }
+.nps-row { display: flex; gap: 4px; justify-content: center; flex-wrap: nowrap; margin: 10px 0; }
 .nps-btn {
-  width: 40px; height: 40px; border-radius: 10px; border: 2px solid #D4E0E3;
-  background: var(--bianco); font-size: 16px; font-weight: 600; color: var(--testo);
+  width: 30px; height: 38px; border-radius: 8px; border: 2px solid #D4E0E3;
+  background: var(--bianco); font-size: 14px; font-weight: 600; color: var(--testo);
   cursor: pointer; transition: all 0.2s; font-family: 'Figtree', sans-serif;
+  padding: 0; flex-shrink: 0;
 }
 .nps-btn:hover { border-color: var(--acqua); }
 .nps-btn.selected { color: var(--bianco); border-color: transparent; }
@@ -154,7 +155,6 @@ textarea::placeholder { color: #A0B0B8; }
 
 @media (max-width: 400px) {
   .aree-grid { grid-template-columns: 1fr; }
-  .nps-btn { width: 36px; height: 36px; font-size: 14px; }
 }
 </style>
 </head>
@@ -227,6 +227,24 @@ textarea::placeholder { color: #A0B0B8; }
       <div class="voto-row"><span class="voto-label">Pulizia</span><div class="stelle" data-key="padel_pulizia"></div></div>
     </div>
 
+    <!-- 7b. Domande specifiche PRIMI 7 GIORNI -->
+    <div class="card" id="sezione7giorni" style="display:none">
+      <div class="card-title">La tua prima settimana</div>
+      <div class="voto-row"><span class="voto-label">Accoglienza in reception</span><div class="stelle" data-key="accoglienza"></div></div>
+      <div class="voto-row"><span class="voto-label">La persona che ti ha seguito</span><div class="stelle" data-key="persona_accoglienza"></div></div>
+      <div class="voto-row"><span class="voto-label">Chiarezza del contratto e delle condizioni</span><div class="stelle" data-key="chiarezza_contratto"></div></div>
+      <div class="voto-row"><span class="voto-label">Processo di iscrizione</span><div class="stelle" data-key="processo_iscrizione"></div></div>
+      <div class="voto-row"><span class="voto-label">Pulizia degli spazi</span><div class="stelle" data-key="pulizia_generale"></div></div>
+      <div class="voto-row"><span class="voto-label">Ti sei sentito a tuo agio</span><div class="stelle" data-key="agio"></div></div>
+    </div>
+
+    <!-- 7c. Cosa cambieresti (solo 7 giorni) -->
+    <div class="card" id="cosaCambieresti" style="display:none">
+      <div class="card-title">C'è qualcosa che cambieresti?</div>
+      <div class="card-subtitle">Dicci cosa avremmo potuto fare meglio nella tua prima settimana.</div>
+      <textarea id="suggerimenti7g" placeholder="Scrivi qui..." maxlength="2000"></textarea>
+    </div>
+
     <!-- 8. Spogliatoi e Spa (tutti) -->
     <div class="card">
       <div class="card-title">Spogliatoi e Spa</div>
@@ -294,15 +312,21 @@ textarea::placeholder { color: #A0B0B8; }
   var voti = {};
   var anonimo = false; // toggle ON = non anonimo (default)
 
-  // === Se è test 7 giorni, mostra versione semplificata ===
+  // === Se è test 7 giorni, mostra versione specifica ===
   if (tipo === '7giorni') {
     document.querySelector('.header h1').textContent = 'Come ti stai trovando?';
     document.querySelector('.header p').innerHTML = 'Sei con noi da pochi giorni: dicci come sta andando!';
-    // Nascondi aree, servizio e sezioni area
+    // Nascondi: aree, servizio, spogliatoi/spa, commenti generali
     document.querySelectorAll('.card')[0].style.display = 'none'; // aree
     document.querySelectorAll('.card')[2].style.display = 'none'; // servizio
-    // Cambia titolo NPS
-    document.querySelectorAll('.card-title')[1].textContent = 'Quanto consiglieresti il circolo a un amico?';
+    // Nascondi spogliatoi e spa
+    document.querySelectorAll('.card').forEach(function(c) {
+      if (c.querySelector('.card-title') && c.querySelector('.card-title').textContent === 'Spogliatoi e Spa') c.style.display = 'none';
+      if (c.querySelector('.card-title') && c.querySelector('.card-title').textContent === 'Vuoi dirci qualcosa?') c.style.display = 'none';
+    });
+    // Mostra sezioni 7 giorni
+    document.getElementById('sezione7giorni').style.display = 'block';
+    document.getElementById('cosaCambieresti').style.display = 'block';
   }
 
   // === Genera NPS buttons (0-10) ===
@@ -429,7 +453,9 @@ textarea::placeholder { color: #A0B0B8; }
       voti: voti,
       spogliatoi: voti.spogliatoi || null,
       spa: document.getElementById('noSpa').checked ? null : (voti.spa || null),
-      commenti: document.getElementById('commenti').value.trim() || null,
+      commenti: tipo === '7giorni'
+        ? (document.getElementById('suggerimenti7g').value.trim() || null)
+        : (document.getElementById('commenti').value.trim() || null),
       attivita: tipo === '7giorni' ? (attivita || 'fitness') : null
     };
 

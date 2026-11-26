@@ -29,11 +29,11 @@ export default async function handler(req, res) {
 
       if (collection !== undefined) {
         // List documents: empty collection = ALL, otherwise prefix match
-        let r;
+        let r, prefix = '';
         if (collection === '' || collection === null) {
           r = await supaFetch(`/rest/v1/turni_docs?select=*&order=path`);
         } else {
-          const prefix = collection.endsWith('/') ? collection : collection + '/';
+          prefix = collection.endsWith('/') ? collection : collection + '/';
           r = await supaFetch(`/rest/v1/turni_docs?path=like.${encodeURIComponent(prefix + '%')}&select=*&order=path`);
         }
         const rows = await r.json();

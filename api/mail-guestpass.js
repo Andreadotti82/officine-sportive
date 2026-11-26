@@ -100,11 +100,6 @@ function buildGuestPassEmail(nome, cognome) {
       </div>
     </div>
 
-    <!-- Consiglio borsa -->
-    <div style="background:#F4F9F9;border-left:4px solid #72C5B5;border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:14px;color:#6B7477">
-      <strong style="color:#05626A">🎒 Cosa portare:</strong> costume, cuffia, ciabatte, asciugamano e abbigliamento sportivo. Troverai armadietti e docce.
-    </div>
-
     <p style="font-size:15px;color:#3A3A3A;line-height:1.6;text-align:center;margin:0">
       Ti aspettiamo al circolo! 💪
     </p>

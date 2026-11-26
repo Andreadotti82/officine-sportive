@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lista Guest Pass · Officine Sportive</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --teal: #0A9BA5; --vasca: #07808A; --vasca-scura: #05626A;
+  --acqua: #72C5B5; --piastrella: #F4F9F9; --testo: #14323F;
+  --grigio: #5A707A; --bianco: #FFFFFF; --verde: #10B981; --errore: #D9433F;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Figtree', Arial, sans-serif; background: var(--piastrella); color: var(--testo); }
+
+.container { max-width: 560px; margin: 0 auto; padding: 0 16px 40px; }
+.header { text-align: center; padding: 24px 0 16px; }
+.header img { width: 160px; max-width: 50%; }
+.header h1 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700; font-size: 20px;
+  color: var(--vasca-scura); margin-top: 10px;
+}
+
+.toolbar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; gap: 10px;
+}
+.toolbar .conteggio { font-size: 14px; color: var(--grigio); }
+.btn-aggiorna {
+  padding: 8px 16px; background: var(--vasca); color: var(--bianco);
+  border: none; border-radius: 10px; font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: 'Figtree', sans-serif;
+}
+
+.sezione-titolo {
+  font-family: 'Montserrat', sans-serif; font-weight: 700;
+  font-size: 15px; color: var(--vasca-scura);
+  margin: 20px 0 10px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+.card {
+  background: var(--bianco); border-radius: 14px;
+  padding: 16px 18px; margin-bottom: 10px;
+  border-left: 4px solid var(--acqua);
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+}
+.card.arrivato { border-left-color: var(--verde); opacity: 0.75; }
+.card-info { flex: 1; min-width: 0; }
+.card-info .nome { font-weight: 600; font-size: 16px; color: var(--testo); }
+.card-info .dettagli { font-size: 13px; color: var(--grigio); margin-top: 4px; line-height: 1.5; }
+.card-info .dettagli a { color: var(--vasca); text-decoration: none; }
+.badge-arrivato {
+  background: var(--verde); color: var(--bianco);
+  font-size: 12px; font-weight: 600; padding: 4px 10px;
+  border-radius: 8px; white-space: nowrap;
+}
+
+.btn-arrivato {
+  padding: 10px 16px; background: var(--teal); color: var(--bianco);
+  border: none; border-radius: 10px; font-size: 14px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; font-family: 'Figtree', sans-serif;
+}
+.btn-arrivato:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.vuoto { text-align: center; padding: 30px; color: var(--grigio); font-size: 15px; }
+.errore-box { background: #FEF2F2; border: 1.5px solid var(--errore); border-radius: 12px; padding: 12px; text-align: center; color: var(--errore); font-size: 14px; margin-bottom: 16px; }
+.caricamento { text-align: center; padding: 40px; color: var(--grigio); }
+
+.footer { text-align: center; padding: 20px 0; font-size: 11px; color: var(--grigio); letter-spacing: 0.4px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <img src="https://www.officinesportive.it/wp-content/uploads/2025/11/logo-officine-sportive-top.png" alt="Officine Sportive">
+    <h1>🎟️ Lista Guest Pass</h1>
+  </div>
+
+  <div id="errore" class="errore-box" style="display:none"></div>
+
+  <div class="toolbar">
+    <span class="conteggio" id="conteggio"></span>
+    <button class="btn-aggiorna" onclick="carica()">🔄 Aggiorna</button>
+  </div>
+
+  <div id="contenuto"><div class="caricamento">Caricamento...</div></div>
+
+  <div class="footer">Palestra · Piscina · Spa · Padel · Centri estivi</div>
+</div>
+
+<script>
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var chiave = params.get('chiave') || params.get('lista');
+  if (!chiave) {
+    document.getElementById('contenuto').innerHTML = '<div class="errore-box">Chiave mancante. Usa il link completo.</div>';
+    return;
+  }
+
+  window.carica = function() {
+    document.getElementById('errore').style.display = 'none';
+    fetch('/api/lista?chiave=' + encodeURIComponent(chiave))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data.ok) { mostraErrore(data.errore); return; }
+        renderLista(data.righe);
+      })
+      .catch(function() { mostraErrore('Errore di connessione'); });
+  };
+
+  window.segnaArrivato = function(id, btn) {
+    btn.disabled = true;
+    btn.textContent = '...';
+    fetch('/api/arrivato', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chiave: chiave, id: id })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) carica();
+      else { mostraErrore(data.errore); btn.disabled = false; btn.textContent = '✅ Arrivato'; }
+    })
+    .catch(function() { mostraErrore('Errore di connessione'); btn.disabled = false; btn.textContent = '✅ Arrivato'; });
+  };
+
+  function renderLista(righe) {
+    var daArrivare = righe.filter(function(r) { return !r.arrivato; });
+    var arrivati = righe.filter(function(r) { return r.arrivato; });
+
+    document.getElementById('conteggio').textContent =
+      daArrivare.length + ' da arrivare · ' + arrivati.length + ' arrivati';
+
+    var html = '';
+
+    if (daArrivare.length > 0) {
+      html += '<div class="sezione-titolo">🟡 Da arrivare (' + daArrivare.length + ')</div>';
+      daArrivare.forEach(function(r) {
+        var data = new Date(r.richiesta_il).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        html += '<div class="card">' +
+          '<div class="card-info">' +
+            '<div class="nome">' + esc(r.nome) + ' ' + esc(r.cognome) + '</div>' +
+            '<div class="dettagli">' +
+              '<a href="tel:' + esc(r.cellulare) + '">' + esc(r.cellulare) + '</a> · ' + data +
+            '</div>' +
+          '</div>' +
+          '<button class="btn-arrivato" onclick="segnaArrivato(\'' + r.id + '\', this)">✅ Arrivato</button>' +
+        '</div>';
+      });
+    }
+
+    if (arrivati.length > 0) {
+      html += '<div class="sezione-titolo">✅ Arrivati (' + arrivati.length + ')</div>';
+      arrivati.forEach(function(r) {
+        var quando = r.arrivato_il ? new Date(r.arrivato_il).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+        html += '<div class="card arrivato">' +
+          '<div class="card-info">' +
+            '<div class="nome">' + esc(r.nome) + ' ' + esc(r.cognome) + '</div>' +
+            '<div class="dettagli">' + esc(r.cellulare) + '</div>' +
+          '</div>' +
+          '<span class="badge-arrivato">✅ ' + quando + '</span>' +
+        '</div>';
+      });
+    }
+
+    if (righe.length === 0) {
+      html = '<div class="vuoto">Nessun Guest Pass negli ultimi 60 giorni</div>';
+    }
+
+    document.getElementById('contenuto').innerHTML = html;
+  }
+
+  function mostraErrore(msg) {
+    var el = document.getElementById('errore');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s || '';
+    return d.innerHTML;
+  }
+
+  // Carica subito e auto-refresh ogni 60s
+  carica();
+  setInterval(carica, 60000);
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+{
+  "name": "officine-sportive",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App del circolo Officine Sportive - Guest Pass e servizi ai soci",
+  "type": "module"
+}

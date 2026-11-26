@@ -399,8 +399,16 @@ async function boRegistra(nome, pin, pin2, dispositivo) {
 }
 
 // === FIRMA OTP ===
+async function generaNumero() {
+  const anno = new Date().getFullYear();
+  const r = await supaFetch(`/rest/v1/contratti?numero=like.OS-${anno}-%25&select=numero&order=numero.desc&limit=1`);
+  const rows = await r.json();
+  const last = rows.length ? parseInt(rows[0].numero.split('-')[2]) : 0;
+  return `OS-${anno}-${String(last + 1).padStart(4, '0')}`;
+}
+
 async function avviaFirma(dati) {
-  // Salva il contratto in bozza
+  const numero = await generaNumero();
 
   const c = await getCrypto();
   const otp = String(Math.floor(100000 + Math.random() * 900000)); // 6 cifre
@@ -408,6 +416,7 @@ async function avviaFirma(dati) {
   const otpHash = c.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
 
   const record = {
+    numero,
     tipo: dati.tipo || 'nuovo',
     nome: dati.nome, cognome: dati.cognome,
     codice_fiscale: dati.cf, cellulare: dati.cellulare, email: dati.email,

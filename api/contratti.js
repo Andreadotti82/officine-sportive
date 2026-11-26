@@ -71,12 +71,21 @@ async function catalogo() {
   const cfgRows = await r3.json();
   const imp = cfgRows.length ? cfgRows[0].data : {};
 
+  // Leggi testi del contratto
+  const r4 = await supaFetch('/rest/v1/turni_docs?path=eq.contratti/condizioni&select=data');
+  const condRows = await r4.json();
+  const condizioni = condRows.length && condRows[0].data ? condRows[0].data.html || '' : '';
+
+  const r5 = await supaFetch('/rest/v1/turni_docs?path=eq.contratti/informativa&select=data');
+  const infoRows = await r5.json();
+  const informativa = infoRows.length && infoRows[0].data ? infoRows[0].data.html || '' : '';
+
   return {
     listino: lista,
     promo: promoList,
     impostazioni: imp,
-    condizioni: imp.condizioni || '',
-    informativa: imp.informativa || ''
+    condizioni,
+    informativa
   };
 }
 

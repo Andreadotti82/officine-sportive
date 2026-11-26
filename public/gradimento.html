@@ -17,17 +17,22 @@ body { font-family: 'Figtree', Arial, sans-serif; background: var(--piastrella);
 
 .container { max-width: 540px; margin: 0 auto; padding: 0 16px 40px; }
 
-.header { text-align: center; padding: 24px 0 8px; }
-.header img { width: 160px; max-width: 50%; }
-.header h1 {
-  font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 22px;
-  color: var(--vasca-scura); margin-top: 12px; line-height: 1.3;
+.header {
+  background: linear-gradient(135deg, var(--vasca), var(--vasca-scura));
+  border-radius: 0 0 24px 24px; text-align: center;
+  padding: 28px 20px 24px; margin: 0 -16px 8px;
 }
-.header p { font-size: 15px; color: var(--grigio); margin-top: 6px; line-height: 1.5; }
+.header img { width: 150px; max-width: 45%; filter: brightness(0) invert(1); }
+.header h1 {
+  font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 24px;
+  color: var(--bianco); margin-top: 14px; line-height: 1.3;
+}
+.header p { font-size: 15px; color: rgba(255,255,255,0.85); margin-top: 8px; line-height: 1.5; }
 
 .card {
   background: var(--bianco); border-radius: 16px; padding: 20px 20px;
-  margin-top: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  margin-top: 16px; box-shadow: 0 2px 8px rgba(10,155,165,0.08);
+  border: 1px solid rgba(10,155,165,0.06);
 }
 .card-title {
   font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 16px;

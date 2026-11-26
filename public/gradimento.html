@@ -270,9 +270,9 @@ textarea::placeholder { color: #A0B0B8; }
       <div class="toggle-row">
         <div>
           <div class="label">Rispondi in forma anonima</div>
-          <div class="sublabel">Togli la spunta per rimanere anonimo</div>
+          <div class="sublabel">Attiva per non mostrare il tuo nome</div>
         </div>
-        <button type="button" class="toggle on" id="toggleAnonimo"></button>
+        <button type="button" class="toggle" id="toggleAnonimo"></button>
       </div>
     </div>
 
@@ -423,7 +423,7 @@ textarea::placeholder { color: #A0B0B8; }
   var toggleBtn = document.getElementById('toggleAnonimo');
   toggleBtn.addEventListener('click', function() {
     anonimo = !anonimo;
-    this.classList.toggle('on', !anonimo);
+    this.classList.toggle('on', anonimo);
   });
 
   // === Invio ===

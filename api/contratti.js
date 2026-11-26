@@ -592,9 +592,25 @@ async function libConfermaSocio(id, codice) { return { ok: false, errore: 'In fa
 // === HELPER: SMS via Skebby ===
 async function inviaSms(numero, testo) {
   if (!SKEBBY_USER || !SKEBBY_PASS) return false;
-  // TODO: implementare chiamata API Skebby
-  console.log(`[SMS] A ${numero}: ${testo}`);
-  return false;
+  try {
+    // Login Skebby
+    const auth = Buffer.from(SKEBBY_USER + ':' + SKEBBY_PASS).toString('base64');
+    const loginR = await fetch('https://api.skebby.it/API/v1.0/REST/login', {
+      headers: { 'Authorization': 'Basic ' + auth }
+    });
+    if (!loginR.ok) { console.error('Skebby login fallito:', loginR.status); return false; }
+    const keys = (await loginR.text()).trim().split(';');
+
+    // Invio SMS
+    const smsR = await fetch('https://api.skebby.it/API/v1.0/REST/sms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'user_key': keys[0], 'Session_key': keys[1] },
+      body: JSON.stringify({ message_type: 'GP', message: testo, recipient: [numero], returnCredits: true })
+    });
+    if (!smsR.ok) { console.error('Skebby invio fallito:', smsR.status, await smsR.text()); return false; }
+    console.log('[SMS] Inviato a', numero);
+    return true;
+  } catch (e) { console.error('Errore Skebby:', e); return false; }
 }
 
 // === HELPER: OTP via Email ===

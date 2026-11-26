@@ -449,12 +449,6 @@ async function avviaFirma(dati) {
 
   const dest = t.cellulare || '';
 
-  // Contratti di prova (cognome "Prova") → mostra OTP a schermo
-  const isProva = (t.cognome || '').toLowerCase() === 'prova';
-  if (isProva) {
-    return { ok: true, id: saved.id, numero: saved.numero, canale: 'test', a: dest || t.email || '', otp_test: otp };
-  }
-
   // Invia OTP via SMS (Skebby)
   let smsOk = false;
   if (SKEBBY_USER && SKEBBY_PASS) {

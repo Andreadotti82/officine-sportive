@@ -562,6 +562,8 @@ function preparaData() {
   $('primo').min = oggi; $('primo').max = max;
   if ($('primo').value > max) $('primo').value = max;
   if (!$('primo').value || $('primo').value < oggi) $('primo').value = oggi;
+  $('primo').setAttribute('value', $('primo').value);
+  $('primo').dispatchEvent(new Event('change'));
   anteprima();
 }
 $('primo').addEventListener('change', anteprima);

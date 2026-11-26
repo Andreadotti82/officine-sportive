@@ -13,7 +13,15 @@
   --oro: #F59E0B;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Figtree', Arial, sans-serif; background: var(--piastrella); color: var(--testo); -webkit-text-size-adjust: 100%; }
+body {
+  font-family: 'Figtree', Arial, sans-serif; background: var(--piastrella); color: var(--testo);
+  -webkit-text-size-adjust: 100%; position: relative;
+}
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1;
+  background: url('/hero-banner.jpg') center/cover no-repeat;
+  opacity: 0.08;
+}
 
 .container { max-width: 540px; margin: 0 auto; padding: 0 16px 40px; }
 

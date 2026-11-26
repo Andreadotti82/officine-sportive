@@ -1,13 +1,11 @@
 {
   "version": 2,
-  "routes": [
-    { "src": "/staff", "status": 308, "headers": { "Location": "/contratti?staff" } },
-    { "src": "/lista", "dest": "/public/lista.html" },
-    { "src": "/gradimento", "dest": "/public/gradimento.html" },
-    { "src": "/disiscrizione", "dest": "/public/disiscrizione.html" },
-    { "src": "/turni", "dest": "/public/turni.html" },
-    { "src": "/contratti", "dest": "/public/contratti.html" },
-    { "src": "/contratti/", "dest": "/public/contratti.html" },
-    { "src": "/", "dest": "/public/index.html" }
+  "rewrites": [
+    { "source": "/staff", "destination": "/contratti.html" },
+    { "source": "/lista", "destination": "/lista.html" },
+    { "source": "/gradimento", "destination": "/gradimento.html" },
+    { "source": "/disiscrizione", "destination": "/disiscrizione.html" },
+    { "source": "/turni", "destination": "/turni.html" },
+    { "source": "/contratti", "destination": "/contratti.html" }
   ]
 }

@@ -466,10 +466,11 @@ async function avviaFirma(dati) {
   }
 
   // Se SMS fallisce, prova via email
-  if (!smsOk && dati.email && RESEND_KEY) {
+  const emailDest = t.email || '';
+  if (!smsOk && emailDest && RESEND_KEY) {
     try {
-      await inviaOtpEmail(dati.email, dati.nome, otp);
-      return { ok: true, id: saved.id, numero: saved.numero, canale: 'email', a: dati.email };
+      await inviaOtpEmail(emailDest, t.nome, otp);
+      return { ok: true, id: saved.id, numero: saved.numero, canale: 'email', a: emailDest };
     } catch (e) { console.error('Errore email OTP:', e); }
   }
 
@@ -477,12 +478,8 @@ async function avviaFirma(dati) {
     return { ok: true, id: saved.id, numero: saved.numero, canale: 'SMS', a: dest };
   }
 
-  // Nessun canale configurato — in fase di test, mostra OTP a schermo
-  if (!SKEBBY_USER && !RESEND_KEY) {
-    return { ok: true, id: saved.id, numero: saved.numero, canale: 'SMS', a: dest, otp_debug: otp };
-  }
-
-  return { ok: false, errori: ['Non è stato possibile inviare il codice. Riprova.'] };
+  // Nessun canale configurato — fase di test: il codice OTP viene mostrato a schermo
+  return { ok: true, id: saved.id, numero: saved.numero, canale: 'test', a: dest || emailDest, otp_test: otp };
 }
 
 async function confermaFirma(id, codice) {

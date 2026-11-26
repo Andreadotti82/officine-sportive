@@ -795,8 +795,12 @@ $('firma').addEventListener('click', function () {
     attesa(false);
     if (!r.ok) { $('errFirma').innerHTML = r.errori.map(esc).join('<br>'); return; }
     ST.sessione = r.id;
-    $('otpA').innerHTML = 'Ti abbiamo inviato un codice di 6 cifre ' + (r.canale === 'SMS' ? 'via SMS al numero ' : 'via email a ') + '<b>' + esc(r.a) + '</b>.<br>Inserendolo firmi il contratto.';
-    disegnaOtp(); vai(6); attesaSms(r.canale);
+    if (r.canale === 'test' && r.otp_test) {
+      $('otpA').innerHTML = '<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px;margin-bottom:12px;text-align:center"><b>⚠️ MODALITÀ TEST</b><br>Il codice OTP è: <span style="font-size:1.5em;letter-spacing:4px;font-weight:bold;color:#d63384">' + esc(r.otp_test) + '</span></div>Inserisci il codice qui sotto per firmare il contratto.';
+    } else {
+      $('otpA').innerHTML = 'Ti abbiamo inviato un codice di 6 cifre ' + (r.canale === 'SMS' ? 'via SMS al numero ' : 'via email a ') + '<b>' + esc(r.a) + '</b>.<br>Inserendolo firmi il contratto.';
+    }
+    disegnaOtp(); vai(6); if (r.canale !== 'test') attesaSms(r.canale);
   });
 });
 
@@ -1071,7 +1075,11 @@ $('revInvia').addEventListener('click', function () {
     attesa(false);
     if (!r.ok) { $('errRev').innerHTML = r.errori.map(esc).join('<br>'); return; }
     REV = r.id;
-    $('revOtpA').innerHTML = 'Abbiamo inviato un codice di 6 cifre ' + (r.canale === 'SMS' ? 'via SMS al numero ' : 'via email a ') + '<b>' + esc(r.a) + '</b>. Fallo inserire al socio: equivale alla sua firma.';
+    if (r.canale === 'test' && r.otp_test) {
+      $('revOtpA').innerHTML = '<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px;margin-bottom:12px;text-align:center"><b>⚠️ MODALITÀ TEST</b><br>Il codice OTP è: <span style="font-size:1.5em;letter-spacing:4px;font-weight:bold;color:#d63384">' + esc(r.otp_test) + '</span></div>Inserisci il codice per confermare.';
+    } else {
+      $('revOtpA').innerHTML = 'Abbiamo inviato un codice di 6 cifre ' + (r.canale === 'SMS' ? 'via SMS al numero ' : 'via email a ') + '<b>' + esc(r.a) + '</b>. Fallo inserire al socio: equivale alla sua firma.';
+    }
     $('revDati').classList.add('nascosto'); $('revOtp').classList.remove('nascosto'); setTimeout(function () { $('revCodice').focus(); }, 100);
   }, function (e) { if (!scaduta(e)) { attesa(false); $('errRev').textContent = 'Si è verificato un problema. Riprova.'; } });
 });

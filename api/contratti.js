@@ -422,6 +422,20 @@ async function avviaFirma(dati) {
   const junior = !!dati.perMinore || !!(m && m.nome);
   const primoGiorno = dati.primoGiorno ? dati.primoGiorno.split('/').reverse().join('-') : null;
 
+  // Calcola piano per salvare importi nel contratto
+  let pianoData = null, totaleFirma = null, importoRata = null, importoProrata = null;
+  try {
+    const prev = await preventivo(dati.abbId, dati.promo, dati.primoGiorno);
+    if (prev.ok && prev.piano) {
+      pianoData = prev.piano;
+      // totaleFirma e importoRata sono stringhe euro "€ 39,00" — estrarre il numero
+      const parseEuro = s => s ? Number(String(s).replace('€', '').replace(/\s/g, '').replace(',', '.')) : null;
+      totaleFirma = parseEuro(prev.piano.totaleFirma);
+      importoRata = parseEuro(prev.piano.rataMensile || prev.piano.pianoRate);
+      importoProrata = parseEuro(prev.piano.prorataTotale);
+    }
+  } catch (e) { console.error('[FIRMA] Errore calcolo piano:', e); }
+
   const record = {
     numero,
     tipo: dati.tipo || 'nuovo',
@@ -434,6 +448,8 @@ async function avviaFirma(dati) {
     genitore_cf: junior ? t.cf : null, genitore_cellulare: junior ? t.cellulare : null,
     abbonamento_id: dati.abbId || null, codice_promo: dati.promo || null,
     primo_giorno: primoGiorno, pagamento_metodo: dati.metodo || 'Contanti',
+    totale_firma: totaleFirma, importo_rata: importoRata, importo_prorata: importoProrata,
+    piano: pianoData ? JSON.stringify(pianoData) : null,
     otp_hash: otpHash, otp_salt: otpSalt,
     otp_scadenza: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minuti
     creato_da: 'online',

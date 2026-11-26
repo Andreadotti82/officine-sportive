@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#13556F;--teal:#1A9DA7;--bg:#EEF4F5;--ink:#14323F;--muted:#5A707A;--line:#D4E0E3;--red:#C0392B;--ok:#1E8E5A}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);font-family:Montserrat,Arial,sans-serif;color:var(--ink);font-size:15px}
+header{background:#fff;border-bottom:4px solid var(--teal);padding:14px 18px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:5}
+header img{height:40px;user-select:none;-webkit-user-select:none}
+header .t{font-weight:700;color:var(--brand);font-size:14px;letter-spacing:.3px;margin-left:auto;text-align:right}
+header .t small{display:block;color:var(--muted);font-weight:500;font-size:11.5px}
+.wrap{max-width:720px;margin:0 auto;padding:18px 14px 90px}
+.steps{display:flex;gap:6px;margin:4px 0 18px}
+.steps i{flex:1;height:5px;border-radius:3px;background:var(--line)}
+.steps i.on{background:var(--teal)}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(19,85,111,.06)}
+h1{font-size:21px;margin:0 0 6px;color:var(--brand)}
+h2{font-size:15px;margin:0 0 12px;color:var(--brand);text-transform:uppercase;letter-spacing:.6px}
+p.sub{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5}
+.scelte{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.scelta{border:2px solid var(--line);border-radius:14px;padding:18px 14px;background:#fff;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:.15s}
+.scelta:hover{border-color:var(--teal)}
+.scelta.sel{border-color:var(--brand);background:#F4FAFB;box-shadow:0 0 0 3px rgba(26,157,167,.15)}
+.scelta b{display:block;font-size:16px;color:var(--brand);margin-bottom:4px}
+.scelta span{color:var(--muted);font-size:13px}
+.area{font-size:12px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.8px;margin:16px 0 8px}
+.abb{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin-bottom:8px}
+.abb .p{font-size:18px;font-weight:800;color:var(--brand);white-space:nowrap;text-align:right}
+.abb .p small{display:block;font-size:11px;font-weight:500;color:var(--muted)}
+label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:12px 0 5px}
+input[type=text],input[type=email],input[type=tel],input[type=date],input[type=password],select{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:11px;font:inherit;font-size:16px;color:var(--ink);background:#fff;outline:none}
+input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(26,157,167,.15)}
+input.err{border-color:var(--red)}input.ok{border-color:var(--ok)}
+select{appearance:none;-webkit-appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%2313556F' stroke-width='2' fill='none'/%3E%3C/svg%3E") no-repeat right 14px center;padding-right:40px;font-weight:600}
+.cf{text-transform:uppercase;letter-spacing:1.5px;font-weight:600}
+.riga{display:grid;grid-template-columns:1fr 1fr;gap:10px}.riga3{display:grid;grid-template-columns:2fr 1fr;gap:10px}.riga4{display:grid;grid-template-columns:1fr 2fr 70px;gap:10px}
+.info{background:var(--bg);border-radius:11px;padding:11px 13px;font-size:13.5px;margin-top:10px;line-height:1.5}
+.info.ok{background:#E9F6EF;color:#14532D}.info.err{background:#FDF2F0;color:var(--red)}
+.msg{color:var(--red);font-size:13px;margin-top:6px;min-height:0}
+.sugg{font-size:13px;margin-top:6px;color:var(--brand)}.sugg a{color:var(--teal);font-weight:700;cursor:pointer;text-decoration:underline}
+.btn{display:block;width:100%;padding:16px;border:0;border-radius:13px;background:var(--brand);color:#fff;font:inherit;font-weight:700;font-size:16px;cursor:pointer;margin-top:16px}
+.btn.sec{background:#fff;color:var(--brand);border:1.5px solid var(--brand)}
+.btn:disabled{background:#A9BCC3;cursor:not-allowed}
+.btn.firma{background:var(--teal)}
+.indietro{background:none;border:0;color:var(--muted);font:inherit;font-size:14px;cursor:pointer;padding:8px 0;margin-top:6px}
+table.r{width:100%;border-collapse:collapse;font-size:14px}
+table.r td{padding:8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+table.r td:first-child{color:var(--muted);width:44%}
+table.r td.v{text-align:right;font-weight:600}
+table.r tr.tot td{font-weight:800;color:var(--brand);border-bottom:0;border-top:2px solid var(--brand);font-size:16px}
+.carte{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}.carte>span{display:flex;align-items:center;justify-content:center;width:46px;height:30px;background:#fff;border:1px solid var(--line);border-radius:6px}.carte svg{display:block;max-width:38px;max-height:22px;width:100%;height:auto}
+.riga2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.boxData{border:2px solid var(--teal);background:#EAF7F8;border-radius:14px;padding:14px 15px 16px;margin:14px 0 6px}
+.boxData label{font-size:16px;font-weight:800;color:var(--brand);margin:0 0 4px}
+.boxData p{margin:0 0 10px;font-size:13.5px;color:var(--muted);line-height:1.45}
+.boxData input[type=date]{font-size:18px;font-weight:700;color:var(--brand);border:2px solid var(--teal);padding:14px}
+.dataGrande{margin-top:10px;text-align:center;font-size:19px;font-weight:800;color:var(--brand)}
+.dataGrande small{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:2px}
+.box{border:2px solid var(--red);background:#FDF2F0;border-radius:12px;padding:13px 15px;margin:14px 0;font-size:13.5px;line-height:1.5}
+.box b{color:var(--red);font-size:14.5px;display:block;margin-bottom:3px}
+.doc{border:1.5px solid var(--line);border-radius:12px;height:340px;overflow:auto;padding:4px 16px;font-size:13px;line-height:1.55;background:#FCFEFE}
+.doc h3{font-size:13.5px;color:var(--brand);margin:16px 0 6px}.doc p{margin:0 0 7px;text-align:left}
+.doc table{border-collapse:collapse;width:100%;font-size:12.5px}.doc td,.doc th{border:1px solid var(--line);padding:5px;text-align:left}
+.letto{font-size:12.5px;color:var(--muted);margin-top:7px}.letto.ok{color:var(--ok);font-weight:600}
+.sp{display:flex;gap:12px;border:1.5px solid var(--line);border-radius:12px;padding:13px;margin-top:10px;cursor:pointer;font-size:13px;line-height:1.5;background:#fff}
+.sp.on{border-color:var(--teal);background:#F4FAFB}
+.sp input{width:24px;height:24px;flex:none;accent-color:var(--teal);margin-top:2px}
+.sp b{color:var(--brand);display:block;font-size:14px;margin-bottom:2px}
+.otp{display:flex;gap:8px;justify-content:center;margin:18px 0 6px}
+.otp input{width:48px;height:58px;text-align:center;font-size:26px;font-weight:700;padding:0;border-radius:12px}
+.centro{text-align:center}
+.spunta{width:76px;height:76px;border-radius:50%;background:var(--ok);color:#fff;font-size:42px;line-height:76px;margin:6px auto 12px}
+.link{background:none;border:0;color:var(--teal);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline;padding:0}
+.velo{position:fixed;inset:0;background:rgba(20,50,63,.55);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+.velo.on{display:flex}
+.modale{background:#fff;border-radius:18px;padding:22px;width:100%;max-width:420px;max-height:92vh;overflow:auto}
+.modale.larga{max-width:760px}
+.attesa{position:fixed;inset:0;background:rgba(255,255,255,.75);display:none;align-items:center;justify-content:center;z-index:30;flex-direction:column;gap:12px;font-weight:600;color:var(--brand)}
+.attesa.on{display:flex}
+.rotella{width:42px;height:42px;border:4px solid var(--line);border-top-color:var(--teal);border-radius:50%;animation:g 0.8s linear infinite}
+@keyframes g{to{transform:rotate(360deg)}}
+.bo-riga{border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:8px;font-size:13.5px}
+.bo-riga b{color:var(--brand)}.bo-riga .az{display:flex;gap:8px;margin-top:9px}
+.bo-riga .az button{flex:1;padding:9px;border-radius:9px;border:1.5px solid var(--brand);background:#fff;color:var(--brand);font:inherit;font-weight:600;font-size:13px;cursor:pointer}
+.bo-riga .az button.p{background:var(--brand);color:#fff}
+.bo-riga{border-left:5px solid var(--line)}
+.bo-riga.rosso{border-left-color:var(--red);background:#FFF8F7}.bo-riga.verde{border-left-color:var(--ok)}
+.stato{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px}
+.stato.rosso{background:#FDE3DF;color:var(--red)}.stato.verde{background:#E1F3E9;color:var(--ok)}
+.schede{display:flex;gap:8px;margin:12px 0 4px}
+.schede button{flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font:inherit;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer}
+.schede button.on{border-color:var(--brand);color:#fff;background:var(--brand)}
+.schede button .n{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:var(--red);color:#fff;font-size:11.5px;margin-left:4px}
+.det{display:none;background:var(--bg);border-radius:10px;padding:8px 12px;margin-top:9px}
+.det.on{display:block}
+.det table{width:100%;border-collapse:collapse;font-size:13px}
+.det td{padding:5px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.det td:first-child{color:var(--muted);width:40%}.det td:last-child{font-weight:600;user-select:all;-webkit-user-select:all}
+.det h4{margin:10px 0 2px;font-size:12px;color:var(--teal);text-transform:uppercase;letter-spacing:.6px}
+.bo-riga .az button.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.bo-riga .az button.conferma{background:#F39C12;border-color:#F39C12;color:#fff}
+.tag{display:inline-block;background:var(--bg);color:var(--brand);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px}
+footer{text-align:center;color:var(--muted);font-size:11.5px;padding:10px}
+.nascosto{display:none!important}
+@media(max-width:520px){.scelte{grid-template-columns:1fr}.riga4{grid-template-columns:1fr 1fr}.riga4 .lungo{grid-column:1/3}}
+</style>
+</head>
+<body>
+<header>
+  <img id="logo" src="https://www.officinesportive.it/wp-content/uploads/2025/11/logo-officine-sportive-top.png" alt="Officine Sportive" draggable="false">
+  <div class="t">CONTRATTO DI ABBONAMENTO<small>Firma digitale con codice OTP</small></div>
+</header>
+
+<div class="wrap">
+  <div id="bannerUpg" class="nascosto" style="background:#FFF4D6;border:2px solid #E0A800;color:#5C4300;border-radius:14px;padding:12px 14px;margin:0 0 14px;font-size:14px;line-height:1.45"></div>
+  <div class="steps" id="steps"></div>
+
+  <!-- 1 · Attività -->
+  <section id="s1" class="card">
+    <h1>Benvenuto</h1>
+    <p class="sub">Compila il contratto in pochi minuti. Alla fine lo firmi con il codice che ricevi sul cellulare.</p>
+    <h2>Scegli l'attività</h2>
+    <div class="scelte">
+      <button class="scelta" data-area="Fitness"><b>Fitness</b><span>Sala pesi, corsi, piscina, spa</span></button>
+      <button class="scelta" data-area="Padel"><b>Padel</b><span>Abbonamenti padel</span></button>
+      <button class="scelta" data-area="Scuola nuoto"><b>Scuola nuoto</b><span>Junior · firma il genitore</span></button>
+      <button class="scelta" data-area="Centro estivo"><b>Centro estivo</b><span>Junior · firma il genitore</span></button>
+    </div>
+  </section>
+
+  <!-- 2 · Abbonamento -->
+  <section id="s2" class="card nascosto">
+    <h2 id="titArea">Abbonamento</h2>
+    <label for="selAbb">Scegli l'abbonamento</label>
+    <select id="selAbb"></select>
+    <div class="info nascosto" id="detAbb"></div>
+    <button class="btn" id="vai2" disabled>Continua</button>
+    <button class="indietro" data-vai="1">← Indietro</button>
+  </section>
+
+  <!-- 3 · Primo giorno -->
+  <section id="s3" class="card nascosto">
+    <h2>Primo giorno di accesso</h2>
+    <p class="sub" id="abbScelto"></p>
+    <div class="boxData nascosto" id="boxUpg"></div>
+    <div id="soloNormale">
+    <div class="boxData">
+      <label for="primo">📅 Quale sarà il tuo primo giorno al circolo? <span style="color:var(--red)">*</span></label>
+      <p>Risposta obbligatoria. Abbiamo impostato la data di oggi: se vuoi iniziare un altro giorno, cambiala: puoi scegliere un giorno di questo mese.</p>
+      <input type="date" id="primo">
+      <div class="dataGrande" id="primoTesto"></div>
+      <div class="msg" id="errPrimo"></div>
+    </div>
+    <label for="promo">Codice sconto <span style="font-weight:500">(se ce l'hai)</span></label>
+    <div class="riga3"><input type="text" id="promo" class="cf" placeholder="Codice" autocapitalize="characters">
+    <button class="btn sec" id="applica" style="margin-top:0">Applica</button></div>
+    <div class="info nascosto" id="esitoPromo"></div>
+    </div>
+    <div class="info" id="anteprima">…</div>
+    <button class="btn" id="vai3">Continua</button>
+    <button class="indietro" data-vai="2">← Indietro</button>
+  </section>
+
+  <!-- 4 · Dati -->
+  <section id="s4" class="card nascosto">
+    <label class="sp nascosto" id="boxMinore" style="margin:0 0 16px"><input type="checkbox" id="perMinore"><div><b>L'abbonamento è per un minorenne</b>Il contratto lo intesta e lo firma il genitore: compila prima i dati del genitore, poi quelli del ragazzo.</div></label>
+    <h2 id="titDati">I tuoi dati</h2>
+    <p class="sub" id="subDati">Inizia dal codice fiscale: data e luogo di nascita li ricaviamo noi.</p>
+    <div id="pTit"></div>
+    <label for="via">Via / Piazza</label><input type="text" id="via" autocomplete="address-line1">
+    <div class="riga4">
+      <div><label for="civico">Numero civico</label><input type="text" id="civico"></div>
+      <div class="lungo"><label for="comune">Comune di residenza</label><input type="text" id="comune" autocomplete="address-level2"></div>
+      <div><label for="prov">Prov.</label><input type="text" id="prov" maxlength="2" class="cf"></div>
+    </div>
+    <label for="cap">CAP</label><input type="tel" id="cap" maxlength="5" inputmode="numeric" autocomplete="postal-code">
+    <label for="cell">Cellulare <span style="font-weight:500">(riceverai qui il codice per firmare)</span></label>
+    <input type="tel" id="cell" inputmode="tel" autocomplete="tel" placeholder="3xx xxx xxxx">
+    <div id="bloccoTel2"><label for="tel2">Secondo recapito telefonico</label>
+    <input type="tel" id="tel2" inputmode="tel" placeholder="Un altro numero a cui trovarti"></div>
+    <label for="email">Email</label>
+    <input type="email" id="email" autocomplete="email" autocapitalize="off" spellcheck="false">
+    <div class="sugg" id="suggEmail"></div>
+    <label for="email2">Ripeti l'email</label>
+    <input type="email" id="email2" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div id="pJun" class="nascosto">
+      <h2 style="margin-top:26px">Dati dello Junior</h2>
+      <div id="pJunCampi"></div>
+    </div>
+    <div class="msg" id="errDati"></div>
+    <button class="btn" id="vai4">Continua</button>
+    <button class="indietro" data-vai="3">← Indietro</button>
+  </section>
+
+  <!-- 6 · Riepilogo, contratto, spunte -->
+  <section id="s5" class="nascosto">
+    <div class="card">
+      <h2>Riepilogo</h2>
+      <table class="r" id="riep"></table>
+      <div id="boxDisdetta"></div>
+      <table class="r" id="pag"></table>
+      <div id="boxMetodo" class="nascosto">
+        <h2 style="margin-top:20px">Modalità di pagamento alla firma</h2>
+        <p class="sub" style="margin-bottom:6px">Seleziona la modalità con cui verranno pagati il pro rata e la prima rata.</p>
+        <div id="metodi"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Contratto</h2>
+      <p class="sub">Leggi il contratto completo fino in fondo: è obbligatorio prima di firmare.</p>
+      <div class="doc" id="doc"></div>
+      <div class="letto" id="letto">Scorri il contratto fino alla fine.</div>
+      <h2 style="margin-top:22px">Approvazioni</h2>
+      <div id="spunte"></div>
+      <div class="msg" id="errFirma"></div>
+      <button class="btn firma" id="firma" disabled>Firma con codice OTP</button>
+      <button class="indietro" data-vai="4">← Indietro</button>
+    </div>
+  </section>
+
+  <!-- 7 · OTP -->
+  <section id="s6" class="card nascosto centro">
+    <h2>Inserisci il codice</h2>
+    <p class="sub" id="otpA"></p>
+    <div class="otp" id="otp"></div>
+    <div class="msg" id="errOtp"></div>
+    <p class="sub" style="margin-top:14px">Non è arrivato? <button class="link" id="reinvia">Invia di nuovo</button></p>
+  </section>
+
+  <!-- 8 · Fatto -->
+  <section id="s7" class="card nascosto centro">
+    <div class="spunta">✓</div>
+    <h1>Contratto firmato</h1>
+    <p class="sub" id="fatto"></p>
+    <div id="boxPaga"></div>
+    <button class="btn sec" id="nuovo">Nuovo contratto</button>
+  </section>
+</div>
+<footer>Gate Fitness S.S.D. a r.l. · Circolo Officine Sportive · Fiumicino (RM)</footer>
+
+<!-- Back office -->
+<div class="velo" id="vPin"><div class="modale">
+  <div id="boAccesso">
+    <h2>Area riservata</h2>
+    <input type="password" id="pin" inputmode="numeric" autocomplete="off" placeholder="PIN">
+    <div class="msg" id="errPin"></div>
+    <button class="btn" id="entra">Entra</button>
+    <p class="sub" style="text-align:center;margin:14px 0 0">Primo accesso? <button class="link" id="vaiReg">Registrati</button></p>
+  </div>
+  <div id="boReg" class="nascosto">
+    <h2>Primo accesso</h2>
+    <p class="sub">Scrivi il tuo nome e usa lo stesso PIN dell'app turni.</p>
+    <label for="regNome">Nome</label><input type="text" id="regNome" autocomplete="off">
+    <label for="regPin">PIN</label><input type="password" id="regPin" inputmode="numeric" autocomplete="off">
+    <label for="regPin2">Ripeti il PIN</label><input type="password" id="regPin2" inputmode="numeric" autocomplete="off">
+    <div class="msg" id="errReg"></div>
+    <button class="btn" id="registra">Registrati ed entra</button>
+    <p class="sub" style="text-align:center;margin:14px 0 0"><button class="link" id="vaiAcc">Ho già il PIN</button></p>
+  </div>
+  <button class="btn sec" data-chiudi="vPin">Annulla</button>
+</div></div>
+<div class="velo" id="vBo"><div class="modale larga">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><h2 style="margin:0">Contratti firmati</h2><span class="tag" id="boNome"></span>
+    <button class="link" style="margin-left:auto" id="esci">Esci</button></div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px"><button class="btn sec" style="margin:0;flex:1 1 30%" id="apriUpg">⬆️ Upgrade abbonamento</button><button class="btn sec" style="margin:0;flex:1 1 30%" id="apriRev">↩️ Revoca disdetta</button><button class="btn sec" style="margin:0;flex:1 1 30%" id="apriCes">🔁 Cessione abbonamento</button><button class="btn" style="margin:0;flex:1 1 100%;background:#0E9F86" id="apriLib">📋 Liberatoria certificato</button></div>
+  <input type="text" id="cerca" placeholder="Cerca per nome, codice fiscale, numero…">
+  <details id="boxPromo" style="margin:12px 0 0;border:1.5px solid var(--line);border-radius:12px;padding:10px 13px;background:#F4FAFB">
+    <summary style="cursor:pointer;font-weight:700;color:var(--brand)">🏷️ Codici sconto attivi</summary>
+    <div id="listaPromo" style="margin-top:8px;font-size:13.5px"></div>
+  </details>
+  <div class="schede" id="schede">
+    <button data-filtro="da" class="on">Da inserire <span class="n" id="nDa">0</span></button>
+    <button data-filtro="fatti">Inseriti</button>
+    <button data-filtro="">Tutti</button>
+  </div>
+  <div id="boLista" style="margin-top:12px"></div>
+</div></div>
+<div class="velo" id="vUpg"><div class="modale">
+  <h2>⬆️ Upgrade abbonamento</h2>
+  <p class="sub">Solo al circolo. Inserisci i dati dell'abbonamento attuale del socio (dal gestionale): il nuovo parte il 1° del mese prossimo, mantiene questa scadenza e alla firma non si paga nulla.</p>
+  <label for="upgVecchio">Abbonamento attuale</label><input type="text" id="upgVecchio" placeholder="Es. Open 12 Morning">
+  <label for="upgScad">Scadenza dell'abbonamento attuale</label><input type="date" id="upgScad">
+  <div class="msg" id="errUpg"></div>
+  <button class="btn" id="iniziaUpg">Continua: scegli il nuovo abbonamento</button>
+  <button class="btn sec" data-chiudi="vUpg">Annulla</button>
+</div></div>
+<div class="velo" id="vCes"><div class="modale">
+  <h2>🔁 Cessione abbonamento</h2>
+  <p class="sub">Solo al circolo. Scrivi chi cede: le condizioni del suo abbonamento le cerco io nei report di Wellness. Poi il nuovo socio compila i suoi dati e firma. Alla firma non si paga nulla: le rate proseguono quelle del vecchio socio.</p>
+  <div class="riga2"><div><label for="cesNome">Nome di chi cede</label><input type="text" id="cesNome"></div><div><label for="cesCognome">Cognome</label><input type="text" id="cesCognome"></div></div>
+  <label for="cesCell">Cellulare di chi cede</label><input type="tel" id="cesCell">
+  <button class="btn sec" id="cesCerca">🔎 Cerca le condizioni</button>
+  <div id="cesEsito" class="nascosto" style="border-radius:12px;padding:10px 12px;margin:6px 0 4px;font-size:13.5px;line-height:1.45"></div>
+  <div id="cesCampi" class="nascosto">
+    <label for="cesPac">Abbonamento ceduto</label><input type="text" id="cesPac" placeholder="Es. Open 12">
+    <div class="riga2"><div><label for="cesRata">Rata mensile (€)</label><input type="text" id="cesRata" inputmode="decimal" placeholder="Es. 59"></div><div><label for="cesScad">Scadenza</label><input type="date" id="cesScad"></div></div>
+    <label style="display:flex;align-items:center;gap:8px;font-weight:600;margin-top:10px"><input type="checkbox" id="cesTacito" style="width:auto;margin:0"> Rinnovo tacito alla scadenza</label>
+  </div>
+  <div class="msg" id="errCes"></div>
+  <button class="btn" id="iniziaCes">Continua: scegli il tipo di abbonamento</button>
+  <button class="btn sec" data-chiudi="vCes">Annulla</button>
+</div></div>
+<div class="velo" id="vRev"><div class="modale">
+  <div id="revDati">
+    <h2>↩️ Revoca della disdetta</h2>
+    <p class="sub">Solo al circolo. Inserisci i dati dal gestionale: il socio firma con il codice che riceve sul cellulare.</p>
+    <label for="revCf">Codice fiscale del socio</label><input type="text" id="revCf" class="cf" autocapitalize="characters">
+    <div class="riga2"><div><label for="revNome">Nome</label><input type="text" id="revNome"></div><div><label for="revCognome">Cognome</label><input type="text" id="revCognome"></div></div>
+    <label for="revCell">Cellulare</label><input type="tel" id="revCell">
+    <label for="revEmail">Email</label><input type="email" id="revEmail">
+    <label for="revAbb">Abbonamento</label><input type="text" id="revAbb" placeholder="Es. Open 12">
+    <label for="revDataD">Data in cui ha dato la disdetta</label><input type="date" id="revDataD">
+    <label for="revScad">Scadenza dell'abbonamento</label><input type="date" id="revScad">
+    <div class="msg" id="errRev"></div>
+    <button class="btn" id="revInvia">Invia il codice al socio</button>
+  </div>
+  <div id="revOtp" class="nascosto">
+    <h2>Codice del socio</h2>
+    <p class="sub" id="revOtpA"></p>
+    <input type="tel" id="revCodice" inputmode="numeric" maxlength="6" placeholder="Codice di 6 cifre" style="font-size:22px;letter-spacing:6px;text-align:center">
+    <div class="msg" id="errRevOtp"></div>
+    <button class="btn firma" id="revFirma">Firma la revoca</button>
+  </div>
+  <div id="revFatto" class="nascosto" style="text-align:center">
+    <div class="spunta">✓</div><h2>Revoca firmata</h2><p class="sub" id="revFattoT"></p>
+  </div>
+  <button class="btn sec" data-chiudi="vRev" id="revChiudi">Chiudi</button>
+</div></div>
+<div class="velo" id="vLib"><div class="modale">
+  <div id="libForm">
+    <h2>📋 Liberatoria certificato medico</h2>
+    <p class="sub">Il socio compila i suoi dati e firma con il codice OTP.</p>
+    <label for="libNome">Nome</label><input type="text" id="libNome" autocapitalize="words">
+    <label for="libCognome">Cognome</label><input type="text" id="libCognome" autocapitalize="words">
+    <label for="libCell">Cellulare (ricevera il codice OTP)</label><input type="tel" id="libCell">
+    <label for="libEmail">Email</label><input type="email" id="libEmail">
+    <div class="msg" id="errLib"></div>
+    <button class="btn" id="libInvia" style="background:#0E9F86">Invia il codice OTP</button>
+  </div>
+  <div id="libOtp" class="nascosto">
+    <h2>📋 Firma la liberatoria</h2>
+    <div style="font-size:13px;color:#5A707A;line-height:1.6;max-height:200px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px" id="libTesto"></div>
+    <p class="sub" id="libOtpA"></p>
+    <div id="libScrollMsg" style="text-align:center;color:#C0392B;font-size:13px;font-weight:600;margin-bottom:8px">&#9660; Scorri fino in fondo per leggere tutta la liberatoria</div>
+    <label class="sp" id="splCk1" style="opacity:0.4;pointer-events:none"><input type="checkbox" id="libCk1"><div><b>Ho letto e accetto</b> le condizioni della liberatoria</div></label>
+    <label class="sp" id="splCk2" style="opacity:0.4;pointer-events:none"><input type="checkbox" id="libCk2"><div><b>Dichiaro</b> di non essere a conoscenza di patologie o controindicazioni</div></label>
+    <label class="sp" id="splCk3" style="opacity:0.4;pointer-events:none"><input type="checkbox" id="libCk3"><div><b>Confermo il divieto assoluto</b> di piscina, sauna, bagno turco e idromassaggio e di svolgere solo attivita leggere</div></label>
+    <input type="tel" id="libCodice" inputmode="numeric" maxlength="6" placeholder="Codice di 6 cifre" style="font-size:22px;letter-spacing:6px;text-align:center">
+    <div class="msg" id="errLibOtp"></div>
+    <button class="btn firma" id="libFirma" style="background:#0E9F86" disabled>Firma e accedi al circolo</button>
+  </div>
+  <div id="libFatto" class="nascosto" style="text-align:center">
+    <div class="spunta">✓</div><h2>Liberatoria firmata</h2><p class="sub" id="libFattoT"></p>
+    <div style="background:#F0F7F8;border:1px solid #C8E0E3;border-radius:12px;padding:14px;margin:14px auto;max-width:340px;text-align:left">
+      <div style="font-size:12px;font-weight:600;color:#1A9DA7;text-transform:uppercase;margin-bottom:4px">Medico convenzionato del circolo</div>
+      <div style="font-size:15px;font-weight:700;color:#14323F">Dr. Domenico Bisogno</div>
+      <div style="font-size:13px;color:#5A707A">Medicina dello sport - Senza appuntamento<br>Viale Donato Bramante 47, Fiumicino<br>Lun e Mer 15-18 - Mar e Gio 11:30-15 - Ven 17-19</div>
+    </div>
+  </div>
+  <button class="btn sec" data-chiudi="vLib" id="libChiudi">Chiudi</button>
+</div></div>
+<div class="attesa" id="attesa"><div class="rotella"></div><div id="attesaT">Un attimo…</div></div>
+
+<script>
+var APRI_STAFF = <?!= staff ? 'true' : 'false' ?>;   // scritto così com'è: altrimenti Google lo trasforma nel testo "false", che vale come vero
+var PAGATO = '<?!= pagato ?>';   // ritorno da SumUp: solo lettere e numeri, ripulito dal server
+var CAT = <?!= catalogoJSON ?>;
+var ST = { area: '', abb: null, offerte: [], promo: '', letto: false, sessione: '', client: {} };
+var DOMINI = ['gmail.com','hotmail.com','hotmail.it','libero.it','yahoo.com','yahoo.it','icloud.com','outlook.com','outlook.it','live.com','live.it','alice.it','tiscali.it','virgilio.it','tim.it','me.com','fastwebnet.it','email.it','msn.com'];
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function euro(n) { return '€ ' + Number(n).toFixed(2).replace('.', ','); }
+function attesa(on, t) { $('attesa').classList.toggle('on', on); $('attesaT').textContent = t || 'Un attimo…'; }
+
+/* Chiamata al server (in anteprima, fuori da Google, usa dati di prova) */
+/* Le sole letture (niente SMS, firme o pagamenti) si riprovano da sole fino a 3 volte prima di dare l'avviso:
+   così un intoppo momentaneo di Google non arriva mai al socio. */
+var RIPROVA = ['catalogo', 'preventivo', 'verificaPromo', 'datiDaCF', 'statoPagamento', 'boElenco', 'boPromo', 'boCessioneCerca'];
+function srv(fn, args, ok, ko, giro) {
+  if (typeof google === 'undefined' || !google.script) { if (window.PROVA) return window.PROVA(fn, args, ok); return; }
+  giro = giro || 0;
+  var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) {
+    if (RIPROVA.indexOf(fn) >= 0 && giro < 3) { setTimeout(function () { srv(fn, args, ok, ko, giro + 1); }, 700 * (giro + 1)); return; }
+    attesa(false);
+    if (ko) ko(e); else alert('Si è verificato un problema. Riprova tra qualche istante.');
+  });
+  r[fn].apply(r, args || []);
+}
+
+/* ---------- Navigazione ---------- */
+var PASSO = 1;
+function vai(n) {
+  for (var i = 1; i <= 7; i++) $('s' + i).classList.toggle('nascosto', i !== n);
+  PASSO = n;
+  $('steps').innerHTML = [1, 2, 3, 4, 5, 6].map(function (i) { return '<i class="' + (i <= Math.min(n, 6) ? 'on' : '') + '"></i>'; }).join('');
+  window.scrollTo(0, 0);
+}
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-vai]'); if (b) vai(Number(b.dataset.vai));
+  var c = e.target.closest('[data-chiudi]'); if (c) $(c.dataset.chiudi).classList.remove('on');
+});
+
+/* ---------- Avvio ---------- */
+/* Il catalogo è già nella pagina (iniettato dal server in doGet): niente round-trip, niente attesa. */
+(function inizializza(c) {
+  oscuraAree();
+  $('doc').innerHTML = c.condizioni + '<h3>Informativa privacy</h3>' + c.informativa + '<p style="text-align:center;color:#5A707A;margin:18px 0">— Fine del contratto —</p>';
+  $('spunte').innerHTML = c.spunte.map(function (s, i) {
+    return '<label class="sp" id="spl' + i + '"><input type="checkbox" id="sp' + i + '"><div><b>' + (i + 1) + ' · ' + esc(s.titolo) + '</b>' + esc(s.testo) + '</div></label>';
+  }).join('');
+  c.spunte.forEach(function (s, i) { $('sp' + i).addEventListener('change', function () { $('spl' + i).classList.toggle('on', this.checked); abilitaFirma(); }); });
+  vai(1);
+  if (PAGATO) esitoPagamento();
+  if (APRI_STAFF) { $('pin').value = ''; $('errPin').textContent = ''; mostraReg(false); $('vPin').classList.add('on'); setTimeout(function () { $('pin').focus(); }, 100); }
+})(CAT);
+try { fetch('https://api.ipify.org?format=json').then(function (r) { return r.json(); }).then(function (j) { ST.client.ip = j.ip; }).catch(function () {}); } catch (e) {}
+ST.client.ua = navigator.userAgent; ST.client.schermo = screen.width + '×' + screen.height; ST.client.lingua = navigator.language;
+
+/* ---------- 1 · Attività ---------- */
+function isJunior() { return !!(ST.abb && (ST.abb.junior || ST.perMinore)); }
+function oscuraAree() {
+  (CAT.areeNascoste || []).forEach(function (a) {
+    var b = document.querySelector('[data-area="' + a + '"]'); if (b) b.style.display = 'none';
+  });
+}
+document.querySelectorAll('[data-area]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    ST.area = b.dataset.area;
+    document.querySelectorAll('[data-area]').forEach(function (x) { x.classList.toggle('sel', x === b); });
+    disegnaElenco(); vai(2);
+  });
+});
+
+/* ---------- 2 · Abbonamento ---------- */
+function prezzoBreve(a) {
+  if (a.tipo === 'giornaliero') return euro(a.prezzo);
+  if (a.pagamento === 'annuale') return euro(a.prezzo) + ' all\'anno';
+  return euro(a.prezzo) + ' al mese' + (a.iscrizione ? ' + ' + euro(a.iscrizione) + ' iscrizione' : '');
+}
+function disegnaElenco() {
+  var lista = CAT.abbonamenti.filter(function (a) { return a.area === ST.area && (!ST.upgrade || (ST.upgrade.cessione ? a.tipo !== 'giornaliero' : (a.pagamento === 'mensile' && a.tipo !== 'giornaliero'))); });
+  ST.abb = null; $('vai2').disabled = true; $('detAbb').classList.add('nascosto');
+  $('titArea').textContent = ST.area;
+  ST.offerte = lista.map(function (a) { return a.area + ' ' + a.nome + ' ' + prezzoBreve(a); });
+  if (!lista.length) {
+    $('selAbb').innerHTML = '<option>Disponibile a breve</option>'; $('selAbb').disabled = true; return;
+  }
+  $('selAbb').disabled = false;
+  $('selAbb').innerHTML = '<option value="">Tocca per scegliere…</option>' + lista.map(function (a) {
+    var corto = a.tipo === 'giornaliero' ? euro(a.prezzo) : euro(a.prezzo) + (a.pagamento === 'annuale' ? '/anno' : '/mese');
+    return '<option value="' + esc(a.id) + '">' + esc(a.nome) + ' · ' + esc(corto) + '</option>';
+  }).join('');
+}
+$('selAbb').addEventListener('change', function () {
+  var id = this.value;
+  ST.abb = CAT.abbonamenti.filter(function (a) { return a.id === id; })[0] || null;
+  $('vai2').disabled = !ST.abb;
+  if (!ST.abb) { $('detAbb').classList.add('nascosto'); return; }
+  var a = ST.abb;
+  $('detAbb').classList.remove('nascosto');
+  $('detAbb').innerHTML = '<b>' + esc(a.nome) + '</b> · ' + esc(prezzoBreve(a)) + '<br>' + esc(a.descrizione) +
+    (a.fasciaOraria ? '<br>Ingresso solo ' + esc(a.fasciaOraria) : '') +
+    (a.tipo === 'lungo' ? '<br>Lungo termine' + (a.rinnovo ? ', con rinnovo tacito' : ', senza rinnovo') : a.tipo === 'breve' ? '<br>Senza vincolo, a prezzo pieno' : '') +
+    (a.junior ? '<br>Il contratto è intestato al genitore e lo firma lui.' : '');
+});
+$('vai2').addEventListener('click', function () {
+  if (!ST.abb) return;
+  ST.promo = ''; $('promo').value = ''; $('esitoPromo').classList.add('nascosto'); ST.perMinore = false; $('perMinore').checked = false;
+  $('abbScelto').innerHTML = '<b>' + esc(ST.abb.area + ' · ' + ST.abb.nome) + '</b>';
+  $('soloNormale').classList.toggle('nascosto', !!ST.upgrade); $('boxUpg').classList.toggle('nascosto', !ST.upgrade);
+  preparaData(); preparaDati(); vai(3);
+});
+
+/* ---------- 3 · Primo giorno ---------- */
+function isoDa(itStr) { var p = itStr.split('/'); return p[2] + '-' + p[1] + '-' + p[0]; }
+function itDa(iso) { var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+function preparaData() {
+  var oggi = isoDa(CAT.oggi), p = oggi.split('-');
+  var ultimo = new Date(Number(p[0]), Number(p[1]), 0).getDate();   // ultimo giorno del mese corrente
+  var max = p[0] + '-' + p[1] + '-' + ('0' + ultimo).slice(-2);
+  $('primo').min = oggi; $('primo').max = max;
+  if ($('primo').value > max) $('primo').value = max;
+  if (!$('primo').value || $('primo').value < oggi) $('primo').value = oggi;
+  anteprima();
+}
+$('primo').addEventListener('change', anteprima);
+function dataInParole(iso) {
+  var p = iso.split('-'), d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  var g = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'][d.getDay()];
+  var m = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'][d.getMonth()];
+  return g.charAt(0).toUpperCase() + g.slice(1) + ' ' + d.getDate() + ' ' + m + ' ' + d.getFullYear();
+}
+function anteprima() {
+  if (ST.upgrade) {
+    $('anteprima').textContent = 'Calcolo…';
+    srv('preventivo', [ST.abb.id, '', '', ST.upgrade], function (r) {
+      if (!r.ok) { $('anteprima').textContent = r.errore; return; }
+      var p = r.piano;
+      if (ST.upgrade.cessione) {
+        $('boxUpg').innerHTML = '<label>🔁 Cessione</label><p style="margin:0">Subentra a <b>' + esc(ST.upgrade.cedente) + '</b> nell\'abbonamento <b>' + esc(ST.upgrade.pacchetto) + '</b>.<br>Accesso da oggi, scadenza <b>' + p.scadenza +
+          '</b> (la stessa)' + (p.rinnovo ? ', con rinnovo tacito' : ', senza rinnovo tacito') + '.<br>Alla firma non si paga nulla: le rate proseguono dal ' + p.inizio + '.</p>';
+        $('anteprima').innerHTML = 'Rata: <b>' + esc(p.pianoRate) + '</b>.';
+        return;
+      }
+      $('boxUpg').innerHTML = '<label>⬆️ Upgrade</label><p style="margin:0">Sostituisce <b>' + esc(ST.upgrade.vecchio) + '</b>.<br>Il nuovo abbonamento parte il <b>' + p.inizio +
+        '</b> e scade il <b>' + p.scadenza + '</b> (stessa scadenza di prima), con rinnovo tacito.<br>Alla firma non si paga nulla: la nuova rata parte dal ' + p.inizio + '.</p>';
+      $('anteprima').innerHTML = 'Nuova rata: <b>' + esc(p.pianoRate) + '</b>.';
+    });
+    return;
+  }
+  $('primoTesto').innerHTML = $('primo').value ? '<small>Il tuo primo giorno di accesso</small>' + (($('primo').value === isoDa(CAT.oggi)) ? 'Oggi, ' + dataInParole($('primo').value).toLowerCase() : dataInParole($('primo').value)) : '';
+  if (!$('primo').value) { $('anteprima').textContent = 'Scegli una data.'; return; }
+  $('anteprima').textContent = 'Calcolo…';
+  srv('preventivo', [ST.abb.id, ST.promo, itDa($('primo').value)], function (r) {
+    if (!r.ok) { $('anteprima').textContent = r.errore; return; }
+    var p = r.piano;
+    $('anteprima').innerHTML = (ST.abb.tipo === 'giornaliero' ? 'Valido il <b>' + p.inizio + '</b>.' :
+      (p.prorata ? 'Pro rata <b>' + p.prorata + '</b>. ' : 'Nessun pro rata. ') + 'Abbonamento dal <b>' + p.inizio + '</b> al <b>' + p.scadenza + '</b>.');
+  });
+}
+$('vai3').addEventListener('click', function () {
+  $('errPrimo').textContent = '';
+  if (ST.upgrade) { vai(4); return; }
+  if (!$('primo').value) { $('errPrimo').textContent = 'Indica il tuo primo giorno al circolo.'; $('primo').focus(); return; }
+  if ($('promo').value.trim() && !ST.promo) { $('esitoPromo').classList.remove('nascosto', 'ok'); $('esitoPromo').classList.add('err'); $('esitoPromo').textContent = 'Premi Applica oppure cancella il codice.'; return; }
+  vai(4);
+});
+
+/* ---------- 4 · Dati ---------- */
+function campiPersona(pref, etichetta) {
+  return '<label for="' + pref + 'cf">Codice fiscale' + (etichetta ? ' ' + etichetta : '') + '</label>' +
+    '<input type="text" id="' + pref + 'cf" class="cf" maxlength="16" autocomplete="off" autocapitalize="characters" spellcheck="false">' +
+    '<div class="riga"><div><label for="' + pref + 'nome">Nome</label><input type="text" id="' + pref + 'nome" autocapitalize="words"></div>' +
+    '<div><label for="' + pref + 'cognome">Cognome</label><input type="text" id="' + pref + 'cognome" autocapitalize="words"></div></div>' +
+    '<div class="info nascosto" id="' + pref + 'esito"></div>';
+}
+var PERS = { t: { ok: false }, j: { ok: false } };
+function preparaDati() {
+  $('boxMinore').classList.toggle('nascosto', !!ST.abb.junior);
+  if (ST.abb.junior) { ST.perMinore = false; $('perMinore').checked = false; }
+  $('boxMinore').classList.toggle('on', !!ST.perMinore);
+  var junior = isJunior();
+  $('titDati').textContent = junior ? 'Dati del genitore' : 'I tuoi dati';
+  $('subDati').textContent = junior ? 'Il contratto è intestato al genitore che firma. Inizia dal tuo codice fiscale.' : 'Inizia dal codice fiscale: data e luogo di nascita li ricaviamo noi.';
+  if (!$('tcf')) { $('pTit').innerHTML = campiPersona('t', ''); $('pJunCampi').innerHTML = campiPersona('j', 'dello Junior'); collega('t'); collega('j'); }
+  $('pJun').classList.toggle('nascosto', !junior);
+  $('bloccoTel2').classList.toggle('nascosto', !junior);
+}
+function collega(pref) {
+  var t = null;
+  ['cf', 'nome', 'cognome'].forEach(function (k) {
+    $(pref + k).addEventListener('input', function () {
+      if (k === 'cf') this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      clearTimeout(t); t = setTimeout(function () { controllaCF(pref); }, 450);
+    });
+  });
+}
+function controllaCF(pref) {
+  var cf = $(pref + 'cf').value, n = $(pref + 'nome').value.trim(), c = $(pref + 'cognome').value.trim(), es = $(pref + 'esito');
+  PERS[pref].ok = false;
+  if (c.toLowerCase() === 'prova' && n) {
+    PERS[pref].ok = true; $(pref + 'cf').classList.remove('err');
+    es.classList.remove('nascosto', 'err'); es.classList.add('ok'); es.textContent = '🧪 Contratto di prova: il codice fiscale non viene controllato.';
+    return;
+  }
+  if (cf.length < 16) { es.classList.add('nascosto'); $(pref + 'cf').classList.remove('ok', 'err'); return; }
+  srv('datiDaCF', [cf, n, c], function (r) {
+    es.classList.remove('nascosto', 'ok', 'err');
+    if (!r.ok) { es.classList.add('err'); es.textContent = r.errore; $(pref + 'cf').classList.add('err'); return; }
+    $(pref + 'cf').classList.remove('err'); $(pref + 'cf').classList.add('ok');
+    var txt = (r.sesso === 'F' ? 'Nata' : 'Nato') + ' il <b>' + r.nascita + '</b> a <b>' + esc(r.luogo) + (r.provincia ? ' (' + r.provincia + ')' : '') + '</b> · ' + r.eta + ' anni';
+    var probl = '';
+    if (pref === 't' && r.eta < 18) probl = isJunior() ? 'Il genitore deve essere maggiorenne.' : 'Risulta minorenne: spunta in alto "L\'abbonamento è per un minorenne" e compila i dati del genitore.';
+    if (pref === 'j' && r.eta >= 18) probl = 'Lo Junior risulta maggiorenne: scegli un abbonamento adulti.';
+    if (r.nomeOk === false) probl = 'Nome e cognome non corrispondono al codice fiscale: controlla come sono scritti.';
+    if (probl) { es.classList.add('err'); es.innerHTML = txt + '<br>' + probl; return; }
+    es.classList.add('ok'); es.innerHTML = txt + (r.nomeOk ? ' · nome e cognome verificati ✓' : '');
+    PERS[pref].ok = r.nomeOk === true;
+  });
+}
+function suggerisci(email) {
+  var p = email.split('@'); if (p.length !== 2 || !p[1]) return '';
+  var d = p[1].toLowerCase(); if (DOMINI.indexOf(d) >= 0) return '';
+  var best = '', bd = 3;
+  DOMINI.forEach(function (x) { var k = dist(d, x); if (k < bd) { bd = k; best = x; } });
+  return best ? p[0] + '@' + best : '';
+}
+function dist(a, b) {
+  var m = []; for (var i = 0; i <= a.length; i++) { m[i] = [i]; for (var j = 1; j <= b.length; j++) m[i][j] = i ? Math.min(m[i - 1][j] + 1, m[i][j - 1] + 1, m[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)) : j; }
+  return m[a.length][b.length];
+}
+$('perMinore').addEventListener('change', function () {
+  ST.perMinore = this.checked; preparaDati();
+  controllaCF('t'); if (ST.perMinore) controllaCF('j');
+});
+$('email').addEventListener('input', function () {
+  var s = suggerisci(this.value.trim());
+  $('suggEmail').innerHTML = s ? 'Forse intendevi <a id="usaSugg">' + esc(s) + '</a>?' : '';
+  if (s) $('usaSugg').onclick = function () { $('email').value = s; $('suggEmail').innerHTML = ''; };
+});
+$('prov').addEventListener('input', function () { this.value = this.value.toUpperCase().replace(/[^A-Z]/g, ''); });
+$('cap').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
+
+function normCell(s) { var n = String(s).replace(/[\s.\-\/()]/g, ''); if (n.indexOf('0039') === 0) n = '+39' + n.substr(4); if (n.charAt(0) !== '+') n = '+39' + n; return n; }
+function datiTitolare() {
+  return { cf: $('tcf').value, nome: $('tnome').value, cognome: $('tcognome').value, via: $('via').value, civico: $('civico').value,
+    cap: $('cap').value, comune: $('comune').value, provincia: $('prov').value, cellulare: $('cell').value, telefono2: isJunior() ? $('tel2').value : '',
+    email: $('email').value, email2: $('email2').value };
+}
+function erroriDati() {
+  var e = [], junior = isJunior();
+  if (!PERS.t.ok) e.push((junior ? 'Genitore' : 'Dati') + ': controlla codice fiscale, nome e cognome.');
+  if (junior && !PERS.j.ok) e.push('Junior: controlla codice fiscale, nome e cognome.');
+  if (!$('via').value.trim() || !$('civico').value.trim()) e.push('Inserisci via e numero civico.');
+  if (!/^\d{5}$/.test($('cap').value)) e.push('Il CAP deve avere 5 cifre.');
+  if (!$('comune').value.trim() || $('prov').value.length !== 2) e.push('Inserisci comune e provincia.');
+  var c = normCell($('cell').value), t2 = normCell($('tel2').value);
+  if (!/^\+393\d{8,9}$/.test(c)) e.push('Il cellulare non è valido.');
+  if (junior) {
+    if (!/^\+\d{8,14}$/.test(t2)) e.push('Inserisci un secondo recapito valido.'); else if (t2 === c) e.push('Il secondo recapito deve essere diverso dal cellulare.');
+  }
+  var em = $('email').value.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(em)) e.push('L\'email non è valida.');
+  else if (em !== $('email2').value.trim().toLowerCase()) e.push('Le due email non coincidono.');
+  return e;
+}
+$('vai4').addEventListener('click', function () {
+  var e = erroriDati();
+  $('errDati').innerHTML = e.map(esc).join('<br>');
+  if (e.length) return;
+  attesa(true, 'Preparo il riepilogo…');
+  srv('preventivo', [ST.abb.id, ST.promo, itDa($('primo').value), ST.upgrade || null], function (r) {
+    attesa(false);
+    if (!r.ok) { $('errDati').textContent = r.errore; return; }
+    riepilogo(r.piano); vai(5);
+  });
+});
+
+
+/* ---------- 5 · Codice sconto ---------- */
+$('applica').addEventListener('click', function () {
+  var c = $('promo').value.replace(/\s+/g, '').toUpperCase();
+  var es = $('esitoPromo'); es.classList.remove('nascosto', 'ok', 'err');
+  if (!c) { ST.promo = ''; es.classList.add('nascosto'); anteprima(); return; }
+  srv('verificaPromo', [c, ST.abb.id], function (r) {
+    if (r.ok) { ST.promo = c; es.classList.add('ok'); es.textContent = '✓ ' + r.descrizione; }
+    else { ST.promo = ''; es.classList.add('err'); es.textContent = r.errore; }
+    anteprima();
+  });
+});
+$('promo').addEventListener('input', function () { if (ST.promo) { ST.promo = ''; anteprima(); } $('esitoPromo').classList.add('nascosto'); });
+/* ---------- 6 · Riepilogo e firma ---------- */
+function rr(k, v) { return '<tr><td>' + esc(k) + '</td><td class="v">' + v + '</td></tr>'; }
+function riepilogo(p) {
+  var t = datiTitolare(), junior = isJunior(), g = ST.abb.tipo === 'giornaliero';
+  $('riep').innerHTML =
+    rr(junior ? 'Genitore (intestatario)' : 'Tesserato', esc(t.nome + ' ' + t.cognome)) +
+    (junior ? rr('Junior', esc($('jnome').value + ' ' + $('jcognome').value)) : '') +
+    rr('Abbonamento', esc(p.area + ' · ' + p.abbonamento)) +
+    (ST.upgrade ? (ST.upgrade.cessione ? rr('Cessione', 'Subentra a ' + esc(ST.upgrade.cedente) + ', stessa scadenza, rate in prosecuzione') : rr('Upgrade', 'Sostituisce ' + esc(ST.upgrade.vecchio) + ' dal ' + p.inizio + ', stessa scadenza')) : '') +
+    (p.fasciaOraria ? rr('Fascia oraria', esc(p.fasciaOraria)) : '') +
+    (g ? rr('Valido il', p.inizio) : rr('Primo giorno di accesso', p.primoGiorno) + (p.prorata ? rr('Pro rata', p.prorata) : '') +
+      rr('Abbonamento dal', p.inizio) + rr('Scadenza', p.scadenza) + rr('Rinnovo', p.rinnovo ? 'Tacito, alle medesime condizioni' : 'Non previsto')) +
+    (p.promo ? rr('Promozione', esc(p.promo)) : '') +
+    rr('Email', esc(t.email.trim().toLowerCase())) + rr('Cellulare', esc(normCell(t.cellulare)));
+  $('boxDisdetta').innerHTML = p.rinnovo && p.disdettaEntro ? '<div class="box"><b>Data limite per la disdetta: ' + (p.disdettaOgniAnno ? esc(p.disdettaOgniAnno) + ' di ogni anno' : p.disdettaEntro) + '</b>' +
+    'La prima volta è il ' + p.disdettaEntro + '. Senza disdetta l\'abbonamento si rinnova alle medesime condizioni. Vale solo la disdetta dal sito, via email, PEC o raccomandata: non quella verbale, telefonica o via WhatsApp.</div>' : '';
+  $('pag').innerHTML = p.righeFirma.map(function (r) { return rr(r.voce, r.importo); }).join('') +
+    '<tr class="tot"><td>Da pagare alla firma</td><td class="v">' + p.totaleFirma + '</td></tr>' +
+    rr('Piano di pagamento', esc(p.pianoRate)) + (p.penale ? rr('Penale per rata non pagata', p.penale + ' dal 5 del mese') : '') +
+    (p.garanziaFino ? rr('Recesso entro 14 giorni (art. 14.1)', 'fino al ' + p.garanziaFino) : '');
+  ST.metodo = '';
+  var paga = p.totaleFirma !== '€ 0,00';
+  $('boxMetodo').classList.toggle('nascosto', !paga);
+  $('metodi').innerHTML = (CAT.metodi || []).map(function (m, i) {
+    var contanti = /^(contant|bancomat)/i.test(m), carta = m === 'Carte online';
+    return '<label class="sp" id="ml' + i + '" style="margin-top:8px"><input type="radio" name="metodo" value="' + esc(m) + '"><div><b>' + esc(m) + '</b>' +
+      (contanti ? '<span style="color:var(--red);font-weight:600">Utilizzabile solo se sei presente ora al circolo.</span>' : '') +
+      (carta ? 'Effettuerai il pagamento dopo la firma, sulla piattaforma SumUp.' + carte() : '') + '</div></label>';
+  }).join('');
+  document.querySelectorAll('input[name=metodo]').forEach(function (r, i) {
+    r.addEventListener('change', function () {
+      ST.metodo = this.value;
+      document.querySelectorAll('#metodi .sp').forEach(function (l) { l.classList.remove('on'); });
+      $('ml' + i).classList.add('on'); abilitaFirma();
+    });
+  });
+  CAT.spunte.forEach(function (s, i) { $('sp' + i).checked = false; $('spl' + i).classList.remove('on'); });
+  ST.letto = false; $('doc').scrollTop = 0; $('letto').className = 'letto'; $('letto').textContent = 'Scorri il contratto fino alla fine.';
+  abilitaFirma();
+}
+$('doc').addEventListener('scroll', function () {
+  if (!ST.letto && this.scrollTop + this.clientHeight >= this.scrollHeight - 30) {
+    ST.letto = true; $('letto').className = 'letto ok'; $('letto').textContent = '✓ Contratto letto fino alla fine'; abilitaFirma();
+  }
+});
+function abilitaFirma() {
+  var tutte = CAT.spunte.every(function (s, i) { return $('sp' + i).checked; });
+  var metodoOk = $('boxMetodo').classList.contains('nascosto') || !!ST.metodo;
+  $('firma').disabled = !(tutte && ST.letto && metodoOk && !erroriDati().length);
+}
+$('firma').addEventListener('click', function () {
+  $('errFirma').innerHTML = '';
+  var junior = isJunior();
+  var dati = {
+    abbId: ST.abb.id, promo: ST.promo, perMinore: !!ST.perMinore && !ST.abb.junior, primoGiorno: itDa($('primo').value), titolare: datiTitolare(),
+    minore: junior ? { cf: $('jcf').value, nome: $('jnome').value, cognome: $('jcognome').value } : null,
+    metodo: $('boxMetodo').classList.contains('nascosto') ? '' : ST.metodo,
+    upgrade: ST.upgrade || null,
+    spunte: CAT.spunte.map(function (s, i) { return $('sp' + i).checked; }),
+    offerte: ST.offerte, lettura: { aperto: true, finoInFondo: ST.letto }, client: ST.client
+  };
+  attesa(true, 'Invio il codice…');
+  srv('avviaFirma', [dati], function (r) {
+    attesa(false);
+    if (!r.ok) { $('errFirma').innerHTML = r.errori.map(esc).join('<br>'); return; }
+    ST.sessione = r.id;
+    $('otpA').innerHTML = 'Ti abbiamo inviato un codice di 6 cifre ' + (r.canale === 'SMS' ? 'via SMS al numero ' : 'via email a ') + '<b>' + esc(r.a) + '</b>.<br>Inserendolo firmi il contratto.';
+    disegnaOtp(); vai(6); attesaSms(r.canale);
+  });
+});
+
+/* ---------- 7 · OTP ---------- */
+function disegnaOtp() {
+  $('otp').innerHTML = [0, 1, 2, 3, 4, 5].map(function (i) { return '<input type="tel" inputmode="numeric" maxlength="1" id="o' + i + '" autocomplete="' + (i ? 'off' : 'one-time-code') + '">'; }).join('');
+  $('errOtp').textContent = '';
+  for (var i = 0; i < 6; i++) (function (i) {
+    var el = $('o' + i);
+    el.addEventListener('input', function () {
+      var v = this.value.replace(/\D/g, '');
+      if (v.length > 1) { v.split('').slice(0, 6 - i).forEach(function (d, k) { $('o' + (i + k)).value = d; }); }
+      else this.value = v;
+      var prossimo = Math.min(5, i + Math.max(1, v.length));
+      if (v) $('o' + prossimo).focus();
+      var codice = [0, 1, 2, 3, 4, 5].map(function (k) { return $('o' + k).value; }).join('');
+      if (codice.length === 6) firma(codice);
+    });
+    el.addEventListener('keydown', function (e) { if (e.key === 'Backspace' && !this.value && i) $('o' + (i - 1)).focus(); });
+  })(i);
+  setTimeout(function () { $('o0').focus(); }, 100);
+}
+function firma(codice) {
+  attesa(true, 'Firmo e salvo il contratto…');
+  srv('confermaFirma', [ST.sessione, codice], function (r) {
+    attesa(false);
+    if (!r.ok) { $('errOtp').textContent = r.errore; [0, 1, 2, 3, 4, 5].forEach(function (k) { $('o' + k).value = ''; }); $('o0').focus(); return; }
+    $('fatto').innerHTML = 'Contratto n. <b>' + esc(r.numero) + '</b> firmato e salvato.<br><br>' +
+      '<b>Grazie per aver scelto Officine Sportive! 💙</b><br>' + (ST.upgrade ? 'Ti abbiamo appena inviato il contratto alla tua email:' : 'Entro 30 minuti elaboreremo il tuo contratto e lo invieremo alla tua email:') + '<br><b>' +
+      esc($('email').value.trim().toLowerCase()) + '</b>';
+    $('boxPaga').innerHTML = r.pagamento ? (r.pagamento.url ? bottonePaga(r.pagamento.url, r.pagamento.importo, r.pagamento.ricorrente) :
+      '<div class="box"><b>Pagamento online non disponibile</b>In questo momento non riusciamo ad aprire il pagamento con carta. Senza pagamento il contratto non si attiva: riprova più tardi con un nuovo contratto, oppure scegli Contanti o Bancomat al circolo.</div>') : '';
+    vai(7);
+  });
+}
+/* ---------- Pagamento con carta (SumUp) ---------- */
+var LOGHI_CARTE = ["<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"84 100 127 83\" role=\"img\" aria-label=\"Visa\"><path d=\"M106.972 130.855L114.112 157.801H122.399L135.296 126.594H126.889L118.765 147.783L115.426 131.201L106.972 130.855Z\" fill=\"#1A1F71\"/><path d=\"M138.437 126.478L133.485 157.801H141.317L146.38 126.478H138.437Z\" fill=\"#1A1F71\"/><path d=\"M169.407 133.964L170.557 127.404C168.122 126.515 165.552 126.048 162.96 126.023C158.812 126.023 149.832 128.67 149.832 136.381C149.832 144.092 160.996 144.443 160.996 148.701C160.996 152.958 150.979 152.503 147.985 149.741L146.725 156.533C146.725 156.533 151.214 158.262 155.243 158.262C159.271 158.262 169.297 157.341 169.297 147.324C169.297 138.569 158.125 140.298 158.125 135.003C158.125 135.003 159.274 129.706 169.408 133.963L169.407 133.964Z\" fill=\"#1A1F71\"/><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M177.466 157.802H168.83C168.83 157.802 179.368 133.062 180.463 130.167C181.618 127.116 184.145 126.829 184.145 126.829H191.054L197.923 157.761H190.438L189.556 153.309H178.964L177.466 157.802ZM181.263 146.862H188.289L185.641 135.347L181.263 146.862Z\" fill=\"#1A1F71\"/><path d=\"M117.886 143.444L115.422 131.202C115.422 131.202 115.089 126.604 111.813 126.604H98.4336V127.242C98.4336 127.242 111.664 129.436 117.883 143.446L117.886 143.444Z\" fill=\"#1A1F71\"/><path d=\"M208.642 169.439H86.6885V180.525H208.642V169.439Z\" fill=\"#F8B600\"/><path d=\"M208.642 102.916H86.6885V114.003H208.642V102.916Z\" fill=\"#1A1F71\"/></svg>", "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"522 273 140 92\" role=\"img\" aria-label=\"Mastercard\"><path d=\"M567.597 361.852C590.826 361.852 609.657 342.705 609.657 319.085C609.657 295.466 590.826 276.319 567.597 276.319C544.368 276.319 525.537 295.466 525.537 319.085C525.537 342.705 544.368 361.852 567.597 361.852Z\" fill=\"#FF2F05\"/><path d=\"M616.669 362.564C639.899 362.564 658.73 343.417 658.73 319.798C658.73 296.178 639.899 277.031 616.669 277.031C593.44 277.031 574.609 296.178 574.609 319.798C574.609 343.417 593.44 362.564 616.669 362.564Z\" fill=\"#FFBC37\"/><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M592.749 284.621C603.014 292.418 609.66 304.871 609.66 318.901C609.66 333.484 602.481 346.362 591.521 354.081C581.255 346.283 574.609 333.83 574.609 319.8C574.609 305.217 581.788 292.34 592.749 284.621Z\" fill=\"#FF8729\"/></svg>", "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"720 80 135 127\" role=\"img\" aria-label=\"American Express\"><path d=\"M849.008 172.241H838.764V171.665C837.557 172.241 836.355 172.241 835.148 172.241H803.809V167.051H803.21V172.241H792.962V166.474C791.209 167.042 789.378 167.334 787.536 167.339H786.638V172.241H774.579C774.579 172.241 772.773 170.223 771.567 169.069C770.664 170.223 768.554 172.241 768.554 172.241H749.568V151.196H768.854C768.854 151.196 770.963 153.502 772.17 154.656C773.377 153.502 775.482 151.196 775.482 151.196H789.346C789.944 151.196 791.456 151.196 792.962 151.772V151.196H805.619C806.218 151.196 807.729 151.196 809.534 151.772V151.196H828.216V151.772C830.027 151.196 831.533 151.196 831.832 151.196H842.38V151.772C844.19 151.196 845.696 151.196 845.996 151.196H853.526V81.7288H722.448V135.634L726.971 125.541H736.611L737.818 128.136V125.541H749.269C749.269 125.541 751.074 129.29 751.678 131.02C752.58 129.29 754.091 125.541 754.091 125.541H789.346C789.944 125.541 791.456 125.541 793.261 126.117V125.541H803.51V126.694C805.016 125.829 806.821 125.252 808.327 125.252C808.327 125.252 813.753 125.252 814.053 125.541H823.698C823.698 125.541 824.6 127.848 824.905 128.136V125.541H835.448C835.448 125.541 836.954 127.848 837.258 128.136V125.541H847.502V146.587H837.258C837.258 146.587 835.752 144.28 835.448 143.703V146.587H822.491C822.491 146.587 821.289 143.991 820.985 143.415H817.668C817.369 143.991 816.162 146.587 816.162 146.587H807.43C806.223 146.587 805.021 146.01 803.814 145.433V146.875H787.541V141.684H786.942V146.875H755.288C755.288 146.587 747.758 146.875 747.758 146.875C747.758 146.875 747.758 146.587 747.458 146.587L734.497 146.875C734.497 146.875 733.29 144.28 732.991 143.703H729.679C729.38 144.568 728.173 146.875 728.173 146.875H722.148V204.812H853.227V171.665C852.629 171.953 851.117 172.241 849.611 172.241H849.013H849.008Z\" fill=\"#0087B1\"/><path d=\"M791.15 143.41V140.531C791.15 140.531 790.851 138.224 788.442 138.224H784.522V143.415H780.607V128.136H790.551C790.551 128.136 795.673 127.559 795.673 132.75C795.673 135.345 793.26 136.205 793.26 136.205C793.26 136.205 795.369 137.07 795.369 139.666V143.415H791.15V143.41ZM784.522 134.48H788.741C789.948 134.48 790.851 133.903 790.851 133.038C790.851 132.173 789.948 131.596 788.741 131.596H784.522V134.48ZM839.366 143.41L833.037 133.038V143.415H824.903L823.392 140.242H815.862L814.355 143.415H808.326C808.326 143.415 802.905 142.549 802.905 136.205C802.905 127.559 809.234 128.136 809.234 127.853H814.355V131.308H810.136C810.136 131.308 807.423 131.308 807.124 134.768V135.922C807.124 141.108 811.942 139.377 811.942 139.377L817.068 127.848H822.794L828.818 141.684V127.848H834.544L840.872 137.941V127.848H845.091V143.126H839.366V143.41ZM817.672 136.494H821.587L819.776 131.885L817.667 136.494H817.672ZM759.212 143.41V132.755L754.09 143.419H750.774L745.652 132.75V143.415H737.508L736.001 140.242H728.481L726.975 143.415H722.446L729.079 128.136H734.805L741.128 142.266V128.146H747.462L751.98 137.652L756.499 128.141H762.828V143.419H759.212V143.41ZM730.585 136.499H734.5L732.391 131.89L730.585 136.499ZM765.84 143.41V128.141H778.497V131.89H769.755V134.197H778.193V137.652H769.755V140.247H778.497V143.419H765.835L765.84 143.41ZM797.179 143.41V128.141H801.399V143.419H797.179V143.41ZM806.82 169.358V166.474C806.82 166.474 806.52 164.167 804.112 164.167H800.192V169.358H795.973V154.079H805.917C805.917 154.079 811.039 153.502 811.039 158.693C811.039 161.288 808.63 162.148 808.63 162.148C808.63 162.148 810.435 163.014 810.435 165.609V169.358H806.82ZM800.192 160.707H804.411C805.618 160.707 806.52 160.135 806.52 159.265C806.52 158.405 805.618 157.823 804.411 157.823H800.192V160.707ZM779.699 169.358H776.084L771.864 164.744L767.645 169.358H752.579V154.079H767.346L771.864 158.981L776.687 154.079H789.644C789.644 154.079 794.766 153.502 794.766 158.693C794.766 163.302 792.96 164.744 787.833 164.744H783.918V169.646H779.699V169.358ZM774.882 161.86L780.004 167.339V156.674L774.882 161.86ZM756.499 166.186H764.937L768.852 161.86L764.937 157.535H756.499V159.847H764.937V163.302H756.499V166.186ZM783.918 160.418H788.138C789.345 160.418 790.247 159.847 790.247 158.976C790.247 158.116 789.345 157.535 788.138 157.535H783.918V160.418ZM834.544 169.358H827.312V165.897H833.641C833.641 165.897 836.05 166.186 836.05 164.744C836.05 163.302 832.738 163.59 832.738 163.59C832.738 163.59 827.013 164.167 827.013 158.981C827.013 154.079 832.135 154.368 832.135 154.368H839.965V157.828H833.641C833.641 157.828 831.531 157.54 831.531 158.981C831.531 160.135 834.544 160.135 834.544 160.135C834.544 160.135 840.872 159.558 840.872 164.167C840.872 169.069 836.952 169.646 835.446 169.646C834.848 169.358 834.549 169.358 834.549 169.358H834.544ZM812.849 169.358V154.079H825.502V157.828H817.068V160.135H825.502V163.59H817.068V166.186H825.502V169.358H812.849ZM849.006 169.358H841.775V165.897H848.109C848.109 165.897 850.513 166.186 850.513 164.744C850.513 163.302 847.201 163.59 847.201 163.59C847.201 163.59 841.476 164.167 841.476 158.981C841.476 154.079 846.598 154.368 846.598 154.368H854.428V157.828H848.104C848.104 157.828 845.994 157.54 845.994 158.981C845.994 160.135 849.006 160.135 849.006 160.135C849.006 160.135 855.34 159.558 855.34 164.167C855.34 169.069 851.42 169.646 849.914 169.646C849.311 169.358 849.006 169.358 849.006 169.358Z\" fill=\"#0087B1\"/></svg>", "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"722 446 151 66\" role=\"img\" aria-label=\"Apple Pay\"><path d=\"M751.888 455.965C753.589 453.777 754.804 450.861 754.44 447.944C751.888 448.066 748.85 449.645 747.027 451.711C745.447 453.534 743.989 456.572 744.353 459.367C747.27 459.732 750.065 458.152 751.888 455.965Z\" fill=\"#000001\"/><path d=\"M754.439 460.097C750.307 459.854 746.783 462.406 744.838 462.406C742.894 462.406 739.856 460.218 736.575 460.218C732.321 460.34 728.433 462.649 726.245 466.537C721.87 474.193 725.03 485.495 729.405 491.693C731.471 494.731 734.023 498.134 737.304 498.012C740.464 497.891 741.679 495.946 745.446 495.946C749.213 495.946 750.307 498.012 753.71 497.891C757.112 497.769 759.3 494.852 761.366 491.693C763.796 488.169 764.768 484.766 764.768 484.644C764.647 484.523 758.084 482.092 758.084 474.558C757.963 468.239 763.188 465.201 763.432 465.079C760.636 460.704 756.019 460.218 754.439 460.097Z\" fill=\"#000001\"/><path d=\"M790.167 451.469C799.159 451.469 805.357 457.666 805.357 466.538C805.357 475.53 799.038 481.728 789.923 481.728H780.08V497.405H772.91V451.469H790.167ZM780.08 475.773H788.222C794.42 475.773 797.944 472.371 797.944 466.659C797.944 460.826 794.42 457.545 788.222 457.545H779.959V475.773H780.08Z\" fill=\"#000001\"/><path d=\"M807.179 488.047C807.179 482.214 811.675 478.568 819.696 478.082L828.931 477.596V475.044C828.931 471.277 826.379 469.089 822.248 469.089C818.237 469.089 815.807 471.034 815.199 473.95H808.637C809.002 467.874 814.227 463.378 822.491 463.378C830.633 463.378 835.858 467.631 835.858 474.436V497.526H829.296V492.057H829.175C827.23 495.825 822.977 498.133 818.602 498.133C811.797 498.133 807.179 494.002 807.179 488.047ZM828.931 485.009V482.335L820.668 482.821C816.536 483.065 814.227 484.887 814.227 487.804C814.227 490.721 816.658 492.665 820.303 492.665C825.164 492.665 828.931 489.384 828.931 485.009Z\" fill=\"#000001\"/><path d=\"M841.935 509.921V504.331C842.421 504.453 843.636 504.453 844.122 504.453C847.282 504.453 848.983 503.116 850.077 499.713C850.077 499.592 850.685 497.647 850.685 497.647L838.532 464.107H845.945L854.452 491.45H854.573L863.08 464.107H870.371L857.854 499.47C854.938 507.612 851.657 510.164 844.73 510.164C844.244 510.043 842.543 510.043 841.935 509.921Z\" fill=\"#000001\"/></svg>", "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"510 444 173 69\" role=\"img\" aria-label=\"Google Pay\"><path d=\"M590.75 477.984V497.473H584.533V449.338H600.914C605.114 449.338 608.643 450.766 611.499 453.538C614.439 456.311 615.951 459.671 615.951 463.703C615.951 467.819 614.439 471.18 611.499 473.952C608.643 476.724 605.114 478.068 600.914 478.068L590.75 477.984ZM590.75 455.219V472.02H601.082C603.518 472.02 605.619 471.18 607.215 469.499C608.895 467.819 609.735 465.887 609.735 463.619C609.735 461.435 608.895 459.419 607.215 457.823C605.619 456.143 603.602 455.303 601.082 455.303L590.75 455.219Z\" fill=\"#3C4043\"/><path d=\"M632.167 463.451C636.787 463.451 640.399 464.711 643.003 467.147C645.608 469.584 646.952 472.944 646.952 477.228V497.557H641.071V492.937H640.819C638.299 496.717 634.855 498.565 630.571 498.565C626.958 498.565 623.934 497.473 621.414 495.373C618.894 493.273 617.718 490.501 617.718 487.309C617.718 483.864 618.978 481.176 621.582 479.16C624.186 477.144 627.63 476.136 631.915 476.136C635.611 476.136 638.635 476.808 640.987 478.152V476.724C640.987 474.54 640.147 472.776 638.467 471.264C636.787 469.752 634.771 468.996 632.503 468.996C629.058 468.996 626.286 470.424 624.27 473.364L618.81 469.92C621.918 465.551 626.286 463.451 632.167 463.451ZM624.186 487.309C624.186 488.905 624.858 490.249 626.286 491.341C627.63 492.433 629.227 492.937 631.075 492.937C633.679 492.937 636.031 491.929 638.047 489.997C640.063 488.065 641.071 485.797 641.071 483.192C639.139 481.68 636.451 480.924 633.007 480.924C630.487 480.924 628.386 481.512 626.706 482.688C625.026 484.032 624.186 485.545 624.186 487.309Z\" fill=\"#3C4043\"/><path d=\"M680.637 464.459L659.972 511.922H653.587L661.232 495.289L647.707 464.459H654.427L664.256 488.149H664.424L674.001 464.459H680.637Z\" fill=\"#3C4043\"/><path d=\"M566.135 474.037C566.135 472.021 565.966 470.089 565.63 468.24H539.673V478.909H554.626C554.038 482.437 552.106 485.462 549.081 487.478V494.366H557.986C563.11 489.494 566.135 482.437 566.135 474.037Z\" fill=\"#5280BD\"/><path d=\"M548.997 487.479C546.561 489.159 543.368 490.167 539.588 490.167C532.364 490.167 526.231 485.295 524.047 478.742H514.891V485.883C519.427 494.871 528.751 501.088 539.588 501.088C547.065 501.088 553.281 498.651 557.901 494.451L548.997 487.479Z\" fill=\"#36A954\"/><path d=\"M523.293 473.366C523.293 471.518 523.629 469.753 524.133 468.073V460.933H514.976C513.128 464.629 512.036 468.913 512.036 473.366C512.036 477.818 513.128 482.018 514.976 485.798L524.133 478.658C523.545 476.978 523.293 475.214 523.293 473.366Z\" fill=\"#FABC06\"/><path d=\"M539.674 456.732C543.706 456.732 547.403 458.16 550.259 460.848L558.155 452.952C553.367 448.499 547.151 445.727 539.674 445.727C528.921 445.727 519.513 451.944 514.977 460.932L524.133 468.073C526.317 461.604 532.45 456.732 539.674 456.732Z\" fill=\"#E94435\"/></svg>", "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"269 448 186 85\" role=\"img\" aria-label=\"Samsung Pay\"><defs><clipPath id=\"clip0_13689_6460\">\n<rect width=\"181.583\" height=\"81.5294\" fill=\"white\" transform=\"translate(271.67 449.471)\"/>\n</clipPath></defs><g clip-path=\"url(#clip0_13689_6460)\"><path d=\"M280.839 508.007H276.887V497.783H280.839C283.918 497.783 286.008 500.064 286.008 502.876C286.008 505.727 283.918 508.007 280.839 508.007ZM281.219 492.995H271.718V520.739H276.887V512.796H281.181C286.958 512.796 291.215 508.388 291.215 502.876C291.215 497.404 286.958 492.995 281.219 492.995\" fill=\"black\"/><path d=\"M304.368 516.481C300.567 516.481 297.642 513.441 297.642 509.565C297.642 505.727 300.567 502.725 304.368 502.725C308.168 502.725 311.019 505.802 311.019 509.565C311.019 513.404 308.168 516.481 304.368 516.481ZM310.754 501.166C309.157 499.266 306.534 498.049 303.609 498.049C297.983 498.049 292.587 502.268 292.587 509.641C292.587 516.9 298.173 521.195 303.532 521.195C306.458 521.195 309.119 519.902 310.754 517.85V520.738H315.884V498.505H310.754V501.166Z\" fill=\"black\"/><path d=\"M329.607 513.48L323.413 498.506H317.939L327.061 519.637L322.386 531H327.593L340.857 498.506H335.46L329.607 513.48Z\" fill=\"black\"/><path d=\"M421.97 470.667H421.827L415.863 450.297H406.23V475.98H412.613L412.255 454.907H412.397L418.804 475.98H428.044V450.297H421.618L421.97 470.667Z\" fill=\"black\"/><path d=\"M305.209 452.701L305.354 452.699L308.814 476.247H315.786L311.002 450.297H299.457L294.646 476.247H301.661L305.209 452.701Z\" fill=\"black\"/><path d=\"M338.666 450.297L335.466 470.14H335.318L332.122 450.297H321.537L320.965 476.247H327.46L327.622 452.919H327.766L332.1 476.247H338.685L343.022 452.921L343.165 452.919L343.327 476.247H349.819L349.247 450.297H338.666Z\" fill=\"black\"/><path d=\"M281.103 477.262C285.798 477.262 289.659 475.661 290.276 471.329C290.591 469.089 290.359 467.622 290.248 467.076C289.152 461.641 279.307 460.021 278.572 456.981C278.449 456.454 278.479 455.908 278.544 455.618C278.728 454.785 279.292 453.875 280.914 453.875C282.435 453.875 283.325 454.812 283.325 456.227V457.834H289.802V456.006C289.802 450.354 284.724 449.47 281.051 449.47C276.439 449.47 272.666 450.999 271.979 455.231C271.79 456.388 271.765 457.424 272.038 458.731C273.164 464.035 282.386 465.568 283.723 468.927C283.977 469.554 283.896 470.359 283.774 470.846C283.563 471.711 282.975 472.593 281.246 472.593C279.623 472.593 278.638 471.653 278.638 470.24L278.632 467.725H271.673L271.671 469.725C271.671 475.514 276.226 477.262 281.103 477.262Z\" fill=\"black\"/><path d=\"M362.996 457.048C362.87 456.529 362.902 455.989 362.964 455.7C363.148 454.876 363.707 453.975 365.311 453.975C366.82 453.975 367.7 454.9 367.7 456.303V457.891H374.112V456.085C374.112 450.489 369.084 449.615 365.447 449.615C360.884 449.615 357.148 451.124 356.468 455.316C356.281 456.462 356.255 457.488 356.528 458.78C357.639 464.034 366.771 465.551 368.095 468.877C368.343 469.5 368.266 470.293 368.144 470.778C367.935 471.632 367.354 472.502 365.642 472.502C364.034 472.502 363.058 471.576 363.058 470.173L363.054 467.686H356.163L356.161 469.667C356.161 475.398 360.673 477.128 365.501 477.128C370.149 477.128 373.972 475.544 374.582 471.253C374.893 469.037 374.665 467.585 374.554 467.041C373.468 461.66 363.72 460.057 362.996 457.048Z\" fill=\"black\"/><path d=\"M398.998 450.293H392.43V469.491C392.433 469.824 392.423 470.202 392.368 470.482C392.24 471.12 391.685 472.362 389.881 472.362H389.88C388.074 472.362 387.516 471.12 387.391 470.482C387.335 470.202 387.322 469.824 387.328 469.491V450.293H380.765V468.899C380.752 469.378 380.802 470.354 380.825 470.607C381.28 475.451 385.108 477.02 389.881 477.02C394.651 477.02 398.479 475.451 398.932 470.607C398.958 470.354 399.007 469.378 398.998 468.899V450.293Z\" fill=\"black\"/><path d=\"M444.06 461.673V465.457H446.721V469.226C446.725 469.554 446.713 469.917 446.659 470.21C446.542 470.904 445.886 472.094 444.007 472.094C442.13 472.094 441.475 470.904 441.353 470.21C441.303 469.918 441.291 469.555 441.293 469.226V457.362C441.293 456.94 441.323 456.476 441.398 456.134C441.541 455.494 442.096 454.251 443.983 454.251C445.967 454.251 446.46 455.562 446.577 456.134C446.655 456.508 446.661 457.125 446.659 457.123V458.577H453.204V457.712C453.199 457.712 453.227 456.831 453.144 456.004C452.665 451.137 448.636 449.592 444.035 449.592C439.43 449.592 435.504 451.152 434.926 456.004C434.872 456.437 434.816 457.251 434.816 457.712L434.814 468.63C434.816 469.119 434.829 469.476 434.904 470.338C435.338 475.066 439.43 476.752 444.033 476.752C448.632 476.752 452.73 475.065 453.159 470.338C453.237 469.476 453.248 469.119 453.253 468.63V461.673H444.06Z\" fill=\"black\"/></g></svg>"];   // carte accettate da SumUp per i pagamenti online
+var N_CARTE = 0;
+/* Ogni gruppo di loghi ha id propri (sfumature JCB, ritaglio Samsung Pay), così si vedono anche se compaiono due volte. */
+function carte() {
+  var k = '_c' + (++N_CARTE);
+  return '<span class="carte">' + LOGHI_CARTE.map(function (l) { return '<span>' + l.replace(/(_13689_6460)/g, '$1' + k) + '</span>'; }).join('') + '</span>';
+}
+function bottonePaga(url, importo, ric) {
+  return '<div class="info" style="margin-top:18px;text-align:left"><b>Ultimo passaggio: il pagamento</b><br>Paga ora <b>' + esc(importo) + '</b> (pro rata e prima rata) con carta di credito o di debito. Il pagamento avviene sulla piattaforma SumUp: al termine tornerai qui.<br><b>Hai 30 minuti per pagare: dopo, il contratto viene annullato.</b>' + carte() + '</div>' +
+    '<a class="btn firma" style="text-align:center;text-decoration:none" href="' + esc(url) + '" target="_top">💳 Paga ora con carta · ' + esc(importo) + '</a>';
+}
+function esitoPagamento() {
+  attesa(true, 'Verifico il pagamento…');
+  srv('statoPagamento', [PAGATO], function (r) {
+    attesa(false);
+    $('nuovo').classList.add('nascosto');
+    if (!r.ok) { $('fatto').innerHTML = 'Il tempo per il pagamento è scaduto e il contratto è stato annullato.<br>Puoi firmarne uno nuovo quando vuoi.'; $('boxPaga').innerHTML = ''; $('nuovo').classList.remove('nascosto'); vai(7); return; }
+    if (r.stato === 'PAID') {
+      $('fatto').innerHTML = 'Contratto n. <b>' + esc(r.numero) + '</b><br><br><b>Pagamento di ' + esc(r.importo) + ' ricevuto. Grazie! 💙</b><br>' + 'Ti aspettiamo a Officine Sportive.';
+      $('boxPaga').innerHTML = '';
+    } else if (r.stato === 'PENDING') {
+      $('fatto').innerHTML = 'Contratto n. <b>' + esc(r.numero) + '</b> firmato.<br><br>Il pagamento non risulta ancora completato.';
+      $('boxPaga').innerHTML = bottonePaga(r.url, r.importo, r.ricorrente);
+    } else {
+      $('fatto').innerHTML = 'Contratto n. <b>' + esc(r.numero) + '</b> firmato.<br><br><b>Il pagamento non è andato a buon fine.</b> Puoi riprovare, anche con un\'altra carta.';
+      $('boxPaga').innerHTML = '<button class="btn firma" id="riprova">💳 Riprova il pagamento · ' + esc(r.importo) + '</button>';
+      $('riprova').addEventListener('click', function () {
+        attesa(true, 'Preparo il pagamento…');
+        srv('riprovaPagamento', [PAGATO], function (x) {
+          attesa(false);
+          if (x.ok && x.url) { $('boxPaga').innerHTML = bottonePaga(x.url, r.importo, r.ricorrente); return; }
+          esitoPagamento();
+        });
+      });
+    }
+    vai(7);
+  });
+}
+
+/* Se l'SMS non arriva entro 90 secondi, lo stesso codice parte da solo anche via email. */
+var timerSms = null;
+function attesaSms(canale) {
+  clearTimeout(timerSms);
+  if (canale !== 'SMS') return;
+  timerSms = setTimeout(function () {
+    if (PASSO !== 6) return;
+    srv('otpViaEmail', [ST.sessione], function (r) {
+      if (r.ok) $('otpA').innerHTML += '<br><br>📧 L\'SMS tarda? Ti abbiamo inviato <b>lo stesso codice anche via email</b> a <b>' + esc(r.a) + '</b>.';
+    }, function () {});
+  }, 90000);
+}
+$('reinvia').addEventListener('click', function () {
+  srv('reinviaOtp', [ST.sessione], function (r) {
+    if (!r.ok) { $('errOtp').textContent = r.errore; return; }
+    $('errOtp').textContent = 'Nuovo codice inviato ' + (r.canale === 'SMS' ? 'via SMS a ' : 'via email a ') + r.a + '. Usa l\'ultimo che ricevi.';
+    attesaSms(r.canale);
+  });
+});
+$('nuovo').addEventListener('click', function () { location.reload(); });
+
+/* ---------- Back office: si entra SOLO dal link dello staff (?staff), mai dalla pagina dei soci ---------- */
+var TOKEN = '';
+function dispositivo() {
+  try { var d = localStorage.getItem('osdev'); if (!d) { d = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('osdev', d); } return d; } catch (e) { return 'x'; }
+}
+function mostraReg(on) { $('boReg').classList.toggle('nascosto', !on); $('boAccesso').classList.toggle('nascosto', on); $('errReg').textContent = ''; }
+$('vaiReg').addEventListener('click', function () { mostraReg(true); $('regNome').focus(); });
+$('vaiAcc').addEventListener('click', function () { mostraReg(false); $('pin').focus(); });
+$('registra').addEventListener('click', function () {
+  srv('boRegistra', [$('regNome').value, $('regPin').value, $('regPin2').value, dispositivo()], function (r) {
+    if (!r.ok) { $('errReg').textContent = r.errore; return; }
+    $('regPin').value = ''; $('regPin2').value = '';
+    entrato(r);
+  });
+});
+$('entra').addEventListener('click', entra);
+$('pin').addEventListener('keydown', function (e) { if (e.key === 'Enter') entra(); });
+function entra() {
+  srv('boLogin', [$('pin').value, dispositivo()], function (r) {
+    if (!r.ok) { $('errPin').textContent = r.errore; $('pin').value = ''; return; }
+    entrato(r);
+  });
+}
+function entrato(r) {
+  {
+    TOKEN = r.token; $('boNome').textContent = r.nome; ST.emailStaff = r.emailStaff;
+    $('vPin').classList.remove('on'); $('vBo').classList.add('on'); FILTRO = 'da'; document.querySelectorAll('[data-filtro]').forEach(function (x) { x.classList.toggle('on', x.dataset.filtro === 'da'); }); elenco(); caricaPromo();
+  }
+}
+var tc = null;
+$('cerca').addEventListener('input', function () { clearTimeout(tc); tc = setTimeout(elenco, 350); });
+function scaduta(e) { if (String(e).indexOf('SESSIONE') >= 0) { $('vBo').classList.remove('on'); TOKEN = ''; alert('Sessione scaduta: rientra con il PIN.'); return true; } }
+var FILTRO = 'da';
+document.querySelectorAll('[data-filtro]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    FILTRO = b.dataset.filtro;
+    document.querySelectorAll('[data-filtro]').forEach(function (x) { x.classList.toggle('on', x === b); });
+    elenco();
+  });
+});
+function caricaPromo() {
+  srv('boPromo', [TOKEN], function (l) {
+    $('listaPromo').innerHTML = l.length ? l.map(function (x) {
+      return '<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b style="color:var(--brand);font-size:15px">' + esc(x.codice) + '</b> · ' + esc(x.fino) +
+        '<br>' + esc(x.descrizione) + '<br><span style="color:var(--muted)">Vale per: ' + esc(x.abbonamenti) + '</span>' +
+        (x.note ? '<br>📝 ' + esc(x.note) : '') + '</div>';
+    }).join('') : '<p class="sub">Nessun codice attivo.</p>';
+  }, function () {});
+}
+function dr(k, v) { return v ? '<tr><td>' + esc(k) + '</td><td>' + esc(v) + '</td></tr>' : ''; }
+function elenco() {
+  srv('boElenco', [TOKEN, $('cerca').value, FILTRO], function (res) {
+    var l = res.contratti || [];
+    $('nDa').textContent = res.daInserire; $('nDa').style.display = res.daInserire ? '' : 'none';
+    $('boLista').innerHTML = l.length ? l.map(function (c) {
+      var d = c.dettagli || {}, j = d.junior;
+      if (c.prova) return '<div class="bo-riga" style="opacity:.75"><b>' + esc(c.numero) + '</b> · ' + esc(c.data) + '<span class="stato" style="background:#EEE;color:#666">PROVA</span><br>' +
+        esc(c.intestatario) + ' · ' + esc(c.abbonamento) + ' · ' + esc(c.totale) +
+        '<div class="az"><button class="p" data-pdf="' + esc(c.numero) + '">Scarica PDF</button><button data-invia="' + esc(c.numero) + '">Invia per email</button></div></div>';
+      return '<div class="bo-riga ' + (c.inserito ? 'verde' : 'rosso') + '">' +
+        '<b>' + esc(c.numero) + '</b> · ' + esc(c.data) + '<span class="tag">' + esc(c.area) + '</span>' +
+        (c.inserito ? '<span class="stato verde">✓ Nel gestionale</span>' : '<span class="stato rosso">Da inserire</span>') +
+        (c.upgrade ? '<span class="stato" style="background:#FFF4D6;color:#5C4300">' + (/^Cessione/.test(c.upgrade) ? '🔁 Cessione' : '⬆️ Upgrade') + '</span>' : '') +
+        (c.carta && c.carta.indexOf('Pagato') !== 0 ? '<span class="stato rosso">💳 Carta: ' + esc(c.carta.toLowerCase()) + '</span>' : '') +
+        ((c.carta || '').indexOf('Pagato') === 0 ? '<span class="stato verde">💳 Pagato</span>' : '') + '<br>' +
+        esc(c.intestatario) + ' · ' + esc(c.cf) + (c.junior ? '<br>Junior: ' + esc(c.junior) : '') + '<br>' +
+        esc(c.abbonamento) + ' · ' + esc(c.inizio) + ' – ' + esc(c.scadenza) + ' · ' + esc(c.totale) +
+        (c.inserito ? '<div style="font-size:12px;color:var(--ok);margin-top:4px">Inserito il ' + esc(c.inserito) + '</div>' : '') +
+        '<div class="det" id="det-' + esc(c.numero) + '">' +
+          '<h4>Socio</h4><table>' + dr('Nome', d.nome) + dr('Cognome', d.cognome) + dr('Codice fiscale', c.cf) + dr('Nato il / a', d.nascita) +
+          dr('Indirizzo', d.indirizzo) + dr('Cellulare', c.cellulare) + dr('Secondo recapito', d.telefono2) + dr('Email', c.email) + '</table>' +
+          (j ? '<h4>Junior</h4><table>' + dr('Nome', j.nome) + dr('Cognome', j.cognome) + dr('Codice fiscale', j.cf) + dr('Nato il / a', j.nascita) + '</table>' : '') +
+          '<h4>Abbonamento</h4><table>' + dr('Attività', c.area) + dr('Abbonamento', c.abbonamento) + dr('Inizio', c.inizio) + dr('Scadenza', c.scadenza) +
+          dr('Disdetta entro', c.disdetta) + dr('Pagato alla firma', c.totale) + dr('Pagamento alla firma', c.metodo) + dr('Pagamento con carta', c.carta) + dr('Upgrade', c.upgrade) + dr('Rata / prezzo', c.rata) + dr('Codice sconto', c.promo) + '</table>' +
+        '</div>' +
+        '<div class="az"><button data-det="' + esc(c.numero) + '">Dati per il gestionale</button>' +
+          (c.inserito ? '' : '<button class="ok" data-segna="' + esc(c.numero) + '">✓ Inserito</button>') + '</div>' +
+        '<div class="az"><button class="p" data-pdf="' + esc(c.numero) + '">Scarica PDF</button><button data-invia="' + esc(c.numero) + '">Invia per email</button></div></div>';
+    }).join('') : '<p class="sub">' + (FILTRO === 'da' ? 'Tutti i contratti sono inseriti nel gestionale. 👍' : 'Nessun contratto trovato.') + '</p>';
+  }, function (e) { if (!scaduta(e)) alert('Errore nel caricare i contratti.'); });
+}
+$('boLista').addEventListener('click', function (e) {
+  var dt = e.target.closest('[data-det]'), sg = e.target.closest('[data-segna]');
+  if (dt) { var box = document.getElementById('det-' + dt.dataset.det); box.classList.toggle('on'); dt.textContent = box.classList.contains('on') ? 'Chiudi i dati' : 'Dati per il gestionale'; return; }
+  if (sg) {
+    if (!sg.classList.contains('conferma')) { sg.classList.add('conferma'); sg.textContent = 'Confermi? Tocca di nuovo'; setTimeout(function () { sg.classList.remove('conferma'); sg.textContent = '✓ Inserito'; }, 4000); return; }
+    attesa(true, 'Salvo…');
+    srv('boSegnaGestionale', [TOKEN, sg.dataset.segna], function (r) { attesa(false); if (!r.ok) { alert(r.errore); return; } elenco(); },
+      function (e) { if (!scaduta(e)) alert('Non riuscito, riprova.'); });
+    return;
+  }
+  var p = e.target.closest('[data-pdf]'), s = e.target.closest('[data-invia]');
+  if (p) {
+    attesa(true, 'Preparo il PDF…');
+    srv('boPdf', [TOKEN, p.dataset.pdf], function (r) {
+      attesa(false);
+      var b = atob(r.base64), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i);
+      var url = URL.createObjectURL(new Blob([a], { type: 'application/pdf' }));
+      var l = document.createElement('a'); l.href = url; l.download = r.nome; document.body.appendChild(l); l.click(); l.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    }, function (e) { if (!scaduta(e)) alert('Errore nel preparare il PDF.'); });
+  }
+  if (s) {
+    var a = prompt('A quale email invio il contratto ' + s.dataset.invia + '?', ST.emailStaff || '');
+    if (!a) return;
+    attesa(true, 'Invio…');
+    srv('boInvia', [TOKEN, s.dataset.invia, a], function (r) { attesa(false); alert(r.ok ? 'Contratto inviato a ' + a : r.errore); },
+      function (e) { if (!scaduta(e)) alert('Invio non riuscito.'); });
+  }
+});
+$('apriUpg').addEventListener('click', function () {
+  $('upgVecchio').value = ''; $('upgScad').value = ''; $('errUpg').textContent = ''; $('vUpg').classList.add('on');
+});
+$('iniziaUpg').addEventListener('click', function () {
+  var v = $('upgVecchio').value.trim(), d = $('upgScad').value;
+  if (!v || !d) { $('errUpg').textContent = 'Compila abbonamento attuale e scadenza.'; return; }
+  ST.upgrade = { token: TOKEN, vecchio: v, scadenza: itDa(d) };
+  $('bannerUpg').innerHTML = '<b>⬆️ UPGRADE</b> · gestito da ' + esc($('boNome').textContent) + '<br>Sostituisce <b>' + esc(v) + '</b> · scadenza <b>' + esc(itDa(d)) +
+    '</b><br><button class="link" id="annullaUpg">Annulla l\'upgrade</button>';
+  $('bannerUpg').classList.remove('nascosto');
+  $('annullaUpg').addEventListener('click', function () { location.reload(); });
+  $('vUpg').classList.remove('on'); $('vBo').classList.remove('on');
+  vai(1);
+});
+$('apriCes').addEventListener('click', function () {
+  ['cesNome', 'cesCognome', 'cesCell', 'cesPac', 'cesRata', 'cesScad'].forEach(function (k) { $(k).value = ''; });
+  $('cesTacito').checked = false; $('errCes').textContent = ''; $('cesEsito').classList.add('nascosto'); $('cesCampi').classList.add('nascosto');
+  $('vCes').classList.add('on');
+});
+$('cesCerca').addEventListener('click', function () {
+  $('errCes').textContent = '';
+  attesa(true, 'Cerco nei report di Wellness…');
+  srv('boCessioneCerca', [TOKEN, { nome: $('cesNome').value, cognome: $('cesCognome').value, cellulare: $('cesCell').value }], function (r) {
+    attesa(false);
+    if (!r.ok) { $('errCes').textContent = r.errore; return; }
+    var e = $('cesEsito'); e.classList.remove('nascosto'); $('cesCampi').classList.remove('nascosto');
+    if (r.trovato) {
+      e.style.background = '#DBF1E8'; e.style.color = '#0E5C45';
+      e.innerHTML = '✓ Trovato nel report di Wellness del ' + esc(r.del) + ': <b>' + esc(r.socio) + '</b><br>' + esc(r.pacchetto) + ' · scadenza ' + esc(r.scadenza) +
+        (r.rataCalcolata ? '<br>Rata calcolata dal prezzo totale: controllala.' : '') + (r.disdetto ? '<br><b>⚠️ Attenzione: su Wellness questo abbonamento risulta disdetto.</b>' : '');
+      $('cesPac').value = r.pacchetto; $('cesRata').value = String(r.rata).replace('.', ',');
+      var m = String(r.scadenza).match(/^(\d{2})\/(\d{2})\/(\d{4})$/); $('cesScad').value = m ? m[3] + '-' + m[2] + '-' + m[1] : '';
+      $('cesTacito').checked = !!r.tacito;
+    } else {
+      e.style.background = '#FFF4D6'; e.style.color = '#5C4300';
+      e.textContent = '⚠️ ' + r.motivo;
+    }
+  }, function (er) { if (!scaduta(er)) { attesa(false); $('errCes').textContent = 'Si è verificato un problema. Riprova.'; } });
+});
+$('iniziaCes').addEventListener('click', function () {
+  var ced = ($('cesNome').value.trim() + ' ' + $('cesCognome').value.trim()).trim(), pac = $('cesPac').value.trim(), rata = $('cesRata').value.trim(), d = $('cesScad').value;
+  if ($('cesCampi').classList.contains('nascosto')) { $('errCes').textContent = 'Prima premi «Cerca le condizioni».'; return; }
+  if (ced.split(' ').length < 2 || !pac || !rata || !d) { $('errCes').textContent = 'Compila chi cede, abbonamento, rata e scadenza.'; return; }
+  ST.upgrade = { token: TOKEN, cessione: true, cedente: ced, pacchetto: pac, rata: rata, scadenza: itDa(d), tacito: $('cesTacito').checked, vecchio: 'cessione da ' + ced };
+  $('bannerUpg').innerHTML = '<b>🔁 CESSIONE</b> · gestita da ' + esc($('boNome').textContent) + '<br>Subentra a <b>' + esc(ced) + '</b> · ' + esc(pac) + ' · ' + esc(rata) + ' €/mese · scadenza <b>' + esc(itDa(d)) +
+    '</b><br>Scegli il tipo di abbonamento più vicino (serve per le condizioni generali): nome, rata e scadenza restano quelli del vecchio socio.<br><button class="link" id="annullaUpg">Annulla la cessione</button>';
+  $('bannerUpg').classList.remove('nascosto');
+  $('annullaUpg').addEventListener('click', function () { location.reload(); });
+  $('vCes').classList.remove('on'); $('vBo').classList.remove('on');
+  vai(1);
+});
+var REV = '';
+$('apriRev').addEventListener('click', function () {
+  ['revCf', 'revNome', 'revCognome', 'revCell', 'revEmail', 'revAbb', 'revDataD', 'revScad', 'revCodice'].forEach(function (k) { $(k).value = ''; });
+  $('errRev').textContent = ''; $('errRevOtp').textContent = ''; REV = '';
+  $('revDati').classList.remove('nascosto'); $('revOtp').classList.add('nascosto'); $('revFatto').classList.add('nascosto');
+  $('vRev').classList.add('on');
+});
+$('revInvia').addEventListener('click', function () {
+  var d = { cf: $('revCf').value, nome: $('revNome').value, cognome: $('revCognome').value, cellulare: $('revCell').value, email: $('revEmail').value,
+    abbonamento: $('revAbb').value,
+    dataDisdetta: $('revDataD').value ? itDa($('revDataD').value) : '', scadenza: $('revScad').value ? itDa($('revScad').value) : '' };
+  $('errRev').textContent = '';
+  attesa(true, 'Invio il codice…');
+  srv('boRevocaAvvia', [TOKEN, d], function (r) {
+    attesa(false);
+    if (!r.ok) { $('errRev').innerHTML = r.errori.map(esc).join('<br>'); return; }
+    REV = r.id;
+    $('revOtpA').innerHTML = 'Abbiamo inviato un codice di 6 cifre ' + (r.canale === 'SMS' ? 'via SMS al numero ' : 'via email a ') + '<b>' + esc(r.a) + '</b>. Fallo inserire al socio: equivale alla sua firma.';
+    $('revDati').classList.add('nascosto'); $('revOtp').classList.remove('nascosto'); setTimeout(function () { $('revCodice').focus(); }, 100);
+  }, function (e) { if (!scaduta(e)) { attesa(false); $('errRev').textContent = 'Si è verificato un problema. Riprova.'; } });
+});
+$('revFirma').addEventListener('click', function () {
+  $('errRevOtp').textContent = '';
+  attesa(true, 'Firmo e salvo…');
+  srv('boRevocaConferma', [TOKEN, REV, $('revCodice').value], function (r) {
+    attesa(false);
+    if (!r.ok) { $('errRevOtp').textContent = r.errore; return; }
+    $('revFattoT').innerHTML = 'Documento n. <b>' + esc(r.numero) + '</b> salvato.<br>Il socio lo riceve subito per email.';
+    $('revOtp').classList.add('nascosto'); $('revFatto').classList.remove('nascosto');
+  }, function (e) { if (!scaduta(e)) { attesa(false); $('errRevOtp').textContent = 'Si è verificato un problema. Riprova.'; } });
+});
+/* ---------- Liberatoria certificato medico ---------- */
+var LIB = {};
+$('apriLib').addEventListener('click', function () {
+  ['libNome', 'libCognome', 'libCell', 'libEmail', 'libCodice'].forEach(function (k) { $(k).value = ''; });
+  $('errLib').textContent = ''; $('errLibOtp').textContent = ''; LIB = {};
+  $('libCk1').checked = false; $('libCk2').checked = false; $('libCk3').checked = false; $('libFirma').disabled = true; LIB_LETTO = false;
+  $('libScrollMsg').style.display = ''; ['splCk1','splCk2','splCk3'].forEach(function (id) { $(id).style.opacity = '0.4'; $(id).style.pointerEvents = 'none'; });
+  $('libForm').classList.remove('nascosto'); $('libOtp').classList.add('nascosto'); $('libFatto').classList.add('nascosto');
+  $('vLib').classList.add('on');
+});
+$('libInvia').addEventListener('click', function () {
+  var nome = $('libNome').value.trim(), cognome = $('libCognome').value.trim(), cell = $('libCell').value.trim(), email = $('libEmail').value.trim();
+  if (!nome || !cognome) { $('errLib').textContent = 'Inserisci nome e cognome.'; return; }
+  if (!cell) { $('errLib').textContent = 'Inserisci il numero di cellulare.'; return; }
+  if (!email || email.indexOf('@') < 0) { $('errLib').textContent = 'Inserisci la mail del socio.'; return; }
+  $('errLib').textContent = '';
+  attesa(true, 'Invio OTP...');
+  srv('libAvvia', [TOKEN, { nome: nome, cognome: cognome, cellulare: cell, email: email }], function (r) {
+    attesa(false);
+    if (!r.ok) { $('errLib').innerHTML = r.errore; return; }
+    LIB = r;
+    var n = r.numero;
+    $('libTesto').innerHTML = '<b>LIBERATORIA TEMPORANEA PER ACCESSO ALL\'IMPIANTO SPORTIVO</b><br><br>'
+      + 'Il/La sottoscritto/a <b>' + esc(nome) + ' ' + esc(cognome) + '</b>, socio/a della A.S.D./S.S.D. Officine Sportive con sede in Fiumicino (RM):<br><br>'
+      + '<b>1.</b> Dichiara di essere consapevole che l\'accesso all\'impianto sportivo senza certificato medico avviene sotto la propria esclusiva responsabilita.<br><br>'
+      + '<b>2.</b> Dichiara di non essere a conoscenza di patologie o condizioni fisiche che impediscano l\'attivita sportiva.<br><br>'
+      + '<b>3.</b> Solleva e manleva la A.S.D./S.S.D. Officine Sportive da qualsiasi responsabilita per danni o infortuni.<br><br>'
+      + '<b>4.</b> Si impegna a presentare il certificato medico entro <b>30 giorni</b>.<br><br>'
+      + '<b>5. DIVIETO TASSATIVO.</b> Fino alla presentazione del certificato medico, e fatto <b>divieto assoluto</b> di utilizzare: <b>piscina, sauna, bagno turco e idromassaggio</b>. E vietato svolgere attivita ad alta intensita (tapis roulant, corsi ad alto impatto, sforzi eccessivi). Sono consentite esclusivamente <b>attivita leggere</b>. Il/La sottoscritto/a e consapevole che il circolo non puo controllare il rispetto di questo divieto e se ne assume la piena responsabilita.<br><br>'
+      + '<b>6.</b> E consapevole che questa e la liberatoria n. <b>' + n + ' di 2</b>.' + (n === 2 ? ' Dopo questa non sara piu possibile accedere senza certificato medico.' : '');
+    var via = r.canale === 'SMS' ? 'via SMS a' : 'via email a';
+    $('libOtpA').innerHTML = 'Codice OTP inviato ' + via + ' <b>' + esc(r.mask) + '</b>. Fallo inserire al socio.';
+    $('libForm').classList.add('nascosto'); $('libOtp').classList.remove('nascosto');
+    setTimeout(function () { $('libCodice').focus(); }, 100);
+  }, function (e) { if (!scaduta(e)) { attesa(false); $('errLib').textContent = 'Si e verificato un problema. Riprova.'; } });
+});
+var LIB_LETTO = false;
+$('libTesto').addEventListener('scroll', function () {
+  if (LIB_LETTO) return;
+  var el = $('libTesto');
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10) {
+    LIB_LETTO = true;
+    $('libScrollMsg').style.display = 'none';
+    ['splCk1','splCk2','splCk3'].forEach(function (id) { $(id).style.opacity = '1'; $(id).style.pointerEvents = 'auto'; });
+  }
+});
+function libChk() { var ok = LIB_LETTO && $('libCk1').checked && $('libCk2').checked && $('libCk3').checked && $('libCodice').value.trim().length === 6; $('libFirma').disabled = !ok; }
+$('libCk1').addEventListener('change', libChk); $('libCk2').addEventListener('change', libChk); $('libCk3').addEventListener('change', libChk); $('libCodice').addEventListener('input', libChk);
+$('libFirma').addEventListener('click', function () {
+  $('errLibOtp').textContent = '';
+  attesa(true, 'Firmo e salvo...');
+  srv('libConferma', [TOKEN, LIB.id, $('libCodice').value.trim()], function (r) {
+    attesa(false);
+    if (!r.ok) { $('errLibOtp').textContent = r.errore; return; }
+    $('libFattoT').innerHTML = esc(LIB.nomeSocio) + ' puo accedere al circolo.<br>Liberatoria n. <b>' + r.numero + ' di 2</b>. Certificato medico da presentare entro il <b>' + esc(r.scadenza) + '</b>.';
+    $('libOtp').classList.add('nascosto'); $('libFatto').classList.remove('nascosto');
+  }, function (e) { if (!scaduta(e)) { attesa(false); $('errLibOtp').textContent = 'Si e verificato un problema. Riprova.'; } });
+});
+$('esci').addEventListener('click', function () { srv('boEsci', [TOKEN], function () {}); TOKEN = ''; $('vBo').classList.remove('on'); });
+</script>
+</body>
+</html>

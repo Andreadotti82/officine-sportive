@@ -2,7 +2,7 @@
 // Chiamata internamente dopo il salvataggio in Supabase
 // POST /api/mail-guestpass  { nome, cognome, email }
 
-const SENDGRID_KEY = process.env.SENDGRID_API_KEY || '';
+const RESEND_KEY = process.env.RESEND_API_KEY || '';
 const FROM_EMAIL = 'info@officinesportive.it';
 const FROM_NAME = 'Officine Sportive';
 
@@ -13,34 +13,34 @@ export default async function handler(req, res) {
   const { nome, cognome, email } = req.body || {};
   if (!nome || !email) return res.status(400).json({ ok: false, errore: 'Dati mancanti' });
 
-  if (!SENDGRID_KEY) {
-    console.log('SendGrid non configurato, mail non inviata');
-    return res.status(200).json({ ok: true, mail: false, motivo: 'SendGrid non configurato' });
+  if (!RESEND_KEY) {
+    console.log('Resend non configurato, mail non inviata');
+    return res.status(200).json({ ok: true, mail: false, motivo: 'Resend non configurato' });
   }
 
   const htmlBody = buildGuestPassEmail(nome, cognome);
 
   try {
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${SENDGRID_KEY}`,
+        'Authorization': `Bearer ${RESEND_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        personalizations: [{ to: [{ email, name: `${nome} ${cognome}` }] }],
-        from: { email: FROM_EMAIL, name: FROM_NAME },
-        reply_to: { email: FROM_EMAIL, name: FROM_NAME },
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: [email],
+        reply_to: FROM_EMAIL,
         subject: '🎟️ Il tuo Guest Pass: 2 giorni gratis al circolo Officine Sportive',
-        content: [{ type: 'text/html', value: htmlBody }]
+        html: htmlBody
       })
     });
 
-    if (response.status >= 200 && response.status < 300) {
+    if (response.ok) {
       return res.status(200).json({ ok: true, mail: true });
     } else {
       const err = await response.text();
-      console.error('Errore SendGrid:', response.status, err);
+      console.error('Errore Resend:', response.status, err);
       return res.status(200).json({ ok: true, mail: false, motivo: 'Errore invio' });
     }
   } catch (err) {

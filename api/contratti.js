@@ -270,6 +270,8 @@ function calcolaPiano(abb, promo, firma, opz) {
   p.righeFirma.forEach(r => { r.importo = euro(r.importo); });
   p.prorata.forEach(r => { r.importo = euro(r.importo); });
   p.prorataTotale = euro(p.prorataTotale);
+  // Stringa leggibile per il frontend
+  p.prorataDescrizione = p.prorata.length ? p.prorata.map(r => r.importo + ' (' + r.mese + ')').join(' + ') + ' = ' + p.prorataTotale : '';
   if (p.penale) p.penale = euro(p.penale);
   return p;
 }

@@ -598,7 +598,7 @@ function anteprima() {
     if (!r.ok) { $('anteprima').textContent = r.errore; return; }
     var p = r.piano;
     $('anteprima').innerHTML = (ST.abb.tipo === 'giornaliero' ? 'Valido il <b>' + p.inizio + '</b>.' :
-      (p.prorata ? 'Pro rata <b>' + p.prorata + '</b>. ' : 'Nessun pro rata. ') + 'Abbonamento dal <b>' + p.inizio + '</b> al <b>' + p.scadenza + '</b>.');
+      (p.prorataDescrizione ? 'Pro rata <b>' + p.prorataDescrizione + '</b>. ' : 'Nessun pro rata. ') + 'Abbonamento dal <b>' + p.inizio + '</b> al <b>' + p.scadenza + '</b>.');
   });
 }
 $('vai3').addEventListener('click', function () {
@@ -742,7 +742,7 @@ function riepilogo(p) {
     rr('Abbonamento', esc(p.area + ' · ' + p.abbonamento)) +
     (ST.upgrade ? (ST.upgrade.cessione ? rr('Cessione', 'Subentra a ' + esc(ST.upgrade.cedente) + ', stessa scadenza, rate in prosecuzione') : rr('Upgrade', 'Sostituisce ' + esc(ST.upgrade.vecchio) + ' dal ' + p.inizio + ', stessa scadenza')) : '') +
     (p.fasciaOraria ? rr('Fascia oraria', esc(p.fasciaOraria)) : '') +
-    (g ? rr('Valido il', p.inizio) : rr('Primo giorno di accesso', p.primoGiorno) + (p.prorata ? rr('Pro rata', p.prorata) : '') +
+    (g ? rr('Valido il', p.inizio) : rr('Primo giorno di accesso', p.primoGiorno) + (p.prorataDescrizione ? rr('Pro rata', p.prorataDescrizione) : '') +
       rr('Abbonamento dal', p.inizio) + rr('Scadenza', p.scadenza) + rr('Rinnovo', p.rinnovo ? 'Tacito, alle medesime condizioni' : 'Non previsto')) +
     (p.promo ? rr('Promozione', esc(p.promo)) : '') +
     rr('Email', esc(t.email.trim().toLowerCase())) + rr('Cellulare', esc(normCell(t.cellulare)));

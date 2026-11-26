@@ -8,5 +8,8 @@
     { "src": "/contratti", "dest": "/public/contratti.html" },
     { "src": "/contratti/", "dest": "/public/contratti.html" },
     { "src": "/", "dest": "/public/index.html" }
+  ],
+  "redirects": [
+    { "source": "/staff", "destination": "/contratti?staff", "permanent": false }
   ]
 }

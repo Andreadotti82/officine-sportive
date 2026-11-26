@@ -76,10 +76,17 @@ async function catalogo() {
 
 // === CODICE FISCALE ===
 function cfControllo(cf15) {
-  const set1='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', val1=[1,0,5,7,9,13,15,17,19,21,2,4,18,20,11,3,6,8,12,14,16,10,22,25,24,23];
-  const set2='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', val2=[0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25];
+  // Tabella ufficiale: posizioni dispari (1-based) = indice pari (0-based)
+  const dispari = { '0':1,'1':0,'2':5,'3':7,'4':9,'5':13,'6':15,'7':17,'8':19,'9':21,
+    'A':1,'B':0,'C':5,'D':7,'E':9,'F':13,'G':15,'H':17,'I':19,'J':21,
+    'K':2,'L':4,'M':18,'N':20,'O':11,'P':3,'Q':6,'R':8,'S':12,'T':14,
+    'U':16,'V':10,'W':22,'X':25,'Y':24,'Z':23 };
+  const pari = { '0':0,'1':1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,
+    'A':0,'B':1,'C':2,'D':3,'E':4,'F':5,'G':6,'H':7,'I':8,'J':9,
+    'K':10,'L':11,'M':12,'N':13,'O':14,'P':15,'Q':16,'R':17,'S':18,'T':19,
+    'U':20,'V':21,'W':22,'X':23,'Y':24,'Z':25 };
   let s=0;
-  for(let i=0;i<15;i++){const c=cf15[i],idx=set1.indexOf(c);if(idx<0)return false;s+=(i%2===0)?val1[idx]:val2[idx];}
+  for(let i=0;i<15;i++){const c=cf15[i]; s+=(i%2===0)?dispari[c]:pari[c];}
   return 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[s%26];
 }
 

@@ -29,7 +29,9 @@ export default async function handler(req, res) {
     );
 
     if (!response.ok) {
-      return res.status(500).json({ ok: false, errore: 'Errore nel caricamento' });
+      const errBody = await response.text();
+      console.error('Supabase errore:', response.status, errBody);
+      return res.status(500).json({ ok: false, errore: 'Errore Supabase: ' + response.status, dettaglio: errBody });
     }
 
     const righe = await response.json();
@@ -37,6 +39,6 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('Errore lista:', err);
-    return res.status(500).json({ ok: false, errore: 'Errore nel caricamento' });
+    return res.status(500).json({ ok: false, errore: 'Errore catch: ' + err.message });
   }
 }

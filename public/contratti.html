@@ -604,6 +604,7 @@ function anteprima() {
 $('vai3').addEventListener('click', function () {
   $('errPrimo').textContent = '';
   if (ST.upgrade) { vai(4); return; }
+  if (!$('primo').value) { preparaData(); }
   if (!$('primo').value) { $('errPrimo').textContent = 'Indica il tuo primo giorno al circolo.'; $('primo').focus(); return; }
   if ($('promo').value.trim() && !ST.promo) { $('esitoPromo').classList.remove('nascosto', 'ok'); $('esitoPromo').classList.add('err'); $('esitoPromo').textContent = 'Premi Applica oppure cancella il codice.'; return; }
   vai(4);

@@ -122,8 +122,14 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:10px}
   <div id="bannerUpg" class="nascosto" style="background:#FFF4D6;border:2px solid #E0A800;color:#5C4300;border-radius:14px;padding:12px 14px;margin:0 0 14px;font-size:14px;line-height:1.45"></div>
   <div class="steps" id="steps"></div>
 
+  <!-- Loading -->
+  <div id="caricamento" class="card" style="text-align:center;padding:40px 20px">
+    <div style="font-size:24px;margin-bottom:12px">⏳</div>
+    <p style="color:var(--muted);font-size:14px">Caricamento in corso…</p>
+  </div>
+
   <!-- 1 · Attività -->
-  <section id="s1" class="card">
+  <section id="s1" class="card nascosto">
     <h1>Benvenuto</h1>
     <p class="sub">Compila il contratto in pochi minuti. Alla fine lo firmi con il codice che ricevi sul cellulare.</p>
     <h2>Scegli l'attività</h2>
@@ -472,8 +478,12 @@ function caricaCatalogo() {
 caricaCatalogo();
 
 function inizializza(c) {
+  console.log('CAT caricato:', JSON.stringify(c).slice(0, 200));
+  var loading = $('caricamento'); if (loading) loading.style.display = 'none';
   oscuraAree();
-  $('doc').innerHTML = c.condizioni + '<h3>Informativa privacy</h3>' + c.informativa + '<p style="text-align:center;color:#5A707A;margin:18px 0">— Fine del contratto —</p>';
+  var cond = c.condizioni || '';
+  var info = c.informativa || '';
+  if (cond || info) $('doc').innerHTML = cond + '<h3>Informativa privacy</h3>' + info + '<p style="text-align:center;color:#5A707A;margin:18px 0">— Fine del contratto —</p>';
   $('spunte').innerHTML = c.spunte.map(function (s, i) {
     return '<label class="sp" id="spl' + i + '"><input type="checkbox" id="sp' + i + '"><div><b>' + (i + 1) + ' · ' + esc(s.titolo) + '</b>' + esc(s.testo) + '</div></label>';
   }).join('');

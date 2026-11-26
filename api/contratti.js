@@ -522,6 +522,7 @@ async function confermaFirma(id, codice) {
   await supaFetch(`/rest/v1/contratti?id=eq.${id}`, 'PATCH', patch, { 'Prefer': 'return=minimal' });
 
   // Se pagamento online → crea checkout SumUp
+  console.log('[FIRMA] metodo:', c.pagamento_metodo, 'totale_firma:', c.totale_firma, 'SUMUP:', !!SUMUP_KEY, !!SUMUP_MERCHANT);
   if (c.pagamento_metodo === 'Carte online' && SUMUP_KEY && SUMUP_MERCHANT) {
     try {
       const checkout = await creaSumUpCheckout(c);

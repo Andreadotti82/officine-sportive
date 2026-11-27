@@ -1,7 +1,9 @@
-// Jarvis: un solo indirizzo per i processi spostati da Google (per ora il Fit Check).
+// Jarvis: un solo indirizzo per i processi spostati da Google (Fit Check, report di Wellness).
+export const config = { api: { bodyParser: { sizeLimit: '4mb' } } };
 import { fcDati, fcPrenota, fcAnnulla, fcGiro } from './_fitcheck.js';
+import { wCarica } from './_wellness.js';
 
-const FUNZIONI = { fcDati, fcPrenota, fcAnnulla, fcGiro };
+const FUNZIONI = { fcDati, fcPrenota, fcAnnulla, fcGiro, wCarica };
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

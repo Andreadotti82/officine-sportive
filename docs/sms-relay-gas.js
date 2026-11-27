@@ -1,45 +1,52 @@
 /**
- * SMS Relay — Google Apps Script
- * Incolla questo codice in un nuovo progetto Apps Script.
- * Poi: Esegui il deployment → Nuova distribuzione → App web → Chiunque.
- * Copia l'URL del deployment e mettilo come VERCEL env var SMS_RELAY_URL.
+ * Ponte SMS Officine Sportive — Google Apps Script
+ * Skebby blocca le richieste dai server Vercel ma accetta quelle da Google:
+ * Vercel chiama questo ponte, il ponte manda l'SMS.
+ * Le credenziali Skebby restano su Vercel e arrivano con ogni richiesta
+ * (senza credenziali valide il ponte non può mandare nulla).
+ * Deployment: App web, esegui come "Me", accesso "Chiunque".
  */
-
 function doPost(e) {
   try {
-    var data = JSON.parse(e.postData.contents);
-    // Verifica chiave segreta
-    var secret = PropertiesService.getScriptProperties().getProperty('RELAY_SECRET');
-    if (secret && data.secret !== secret) {
-      return ContentService.createTextOutput(JSON.stringify({ ok: false, errore: 'Non autorizzato' }))
-        .setMimeType(ContentService.MimeType.JSON);
+    var d = JSON.parse(e.postData.contents);
+    if (!d.auth || !d.numero || !d.testo) return out_({ ok: false, errore: 'Dati mancanti' });
+
+    var login = UrlFetchApp.fetch('https://api.skebby.it/API/v1.0/REST/login', {
+      headers: { Authorization: 'Basic ' + d.auth }, muteHttpExceptions: true
+    });
+    if (login.getResponseCode() !== 200) {
+      return out_({ ok: false, errore: 'Login Skebby ' + login.getResponseCode() + ': ' + login.getContentText().slice(0, 200) });
+    }
+    var k = login.getContentText().trim().split(';');
+
+    var body = { message_type: 'GP', message: d.testo, recipient: [d.numero], returnCredits: true };
+    if (d.mittente) body.sender = d.mittente;
+    var r = UrlFetchApp.fetch('https://api.skebby.it/API/v1.0/REST/sms', {
+      method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      headers: { user_key: k[0], Session_key: k[1] },
+      payload: JSON.stringify(body)
+    });
+    if (r.getResponseCode() >= 300) {
+      return out_({ ok: false, errore: 'Invio ' + r.getResponseCode() + ': ' + r.getContentText().slice(0, 300) });
     }
 
-    inviaSms_(data.numero, data.testo);
-    return ContentService.createTextOutput(JSON.stringify({ ok: true }))
-      .setMimeType(ContentService.MimeType.JSON);
+    var credito = null;
+    try {
+      var st = JSON.parse(UrlFetchApp.fetch('https://api.skebby.it/API/v1.0/REST/status?getMoney=true', {
+        headers: { user_key: k[0], Session_key: k[1] }, muteHttpExceptions: true
+      }).getContentText());
+      var gp = (st.sms || []).filter(function (x) { return x.type === 'GP'; })[0];
+      if (gp) credito = Number(gp.quantity);
+    } catch (_) {}
+
+    return out_({ ok: true, credito: credito });
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ ok: false, errore: String(err) }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return out_({ ok: false, errore: String(err) });
   }
 }
 
-function loginSkebby_() {
-  var props = PropertiesService.getScriptProperties();
-  var auth = Utilities.base64Encode(props.getProperty('SMS_USER') + ':' + props.getProperty('SMS_PASSWORD'), Utilities.Charset.UTF_8);
-  var r = UrlFetchApp.fetch('https://api.skebby.it/API/v1.0/REST/login', {
-    headers: { Authorization: 'Basic ' + auth }, muteHttpExceptions: true
-  });
-  if (r.getResponseCode() !== 200) throw new Error('Login Skebby fallito: ' + r.getResponseCode());
-  return r.getContentText().trim().split(';');
-}
+function doGet() { return out_({ ok: true, servizio: 'ponte SMS Officine Sportive' }); }
 
-function inviaSms_(numero, testo) {
-  var k = loginSkebby_();
-  var r = UrlFetchApp.fetch('https://api.skebby.it/API/v1.0/REST/sms', {
-    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-    headers: { user_key: k[0], Session_key: k[1] },
-    payload: JSON.stringify({ message_type: 'GP', message: testo, recipient: [numero], returnCredits: true })
-  });
-  if (r.getResponseCode() >= 300) throw new Error('SMS non inviato: ' + r.getContentText());
+function out_(o) {
+  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 }

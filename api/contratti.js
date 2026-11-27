@@ -13,7 +13,6 @@ const SUMUP_KEY = process.env.SUMUP_API_KEY || '';
 const SUMUP_MERCHANT = process.env.SUMUP_MERCHANT_CODE || '';
 const RESEND_KEY = process.env.RESEND_API_KEY || '';
 const SMS_RELAY_URL = process.env.SMS_RELAY_URL || '';
-const SMS_RELAY_SECRET = process.env.SMS_RELAY_SECRET || '';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -673,63 +672,37 @@ async function libAvviaSocio(dati) { return { ok: false, errore: 'In fase di mig
 async function libConfermaSocio(id, codice) { return { ok: false, errore: 'In fase di migrazione.' }; }
 
 // === HELPER: SMS via Skebby ===
-async function inviaSms(numero, testo) {
-  // Metodo 1: Relay via Google Apps Script (Skebby funziona da Google)
-  if (SMS_RELAY_URL) {
-    try {
-      console.log('[SMS] Invio via relay GAS a', numero);
-      const r = await fetch(SMS_RELAY_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        redirect: 'follow',
-        body: JSON.stringify({ numero, testo, secret: SMS_RELAY_SECRET })
-      });
-      const body = await r.text();
-      console.log('[SMS] Relay risposta:', r.status, body.slice(0, 200));
-      try { const j = JSON.parse(body); if (j.ok) return true; } catch (_) {}
-      // GAS redirect: se ritorna HTML, prova a seguire il redirect
-      if (r.ok || r.status === 302) {
-        console.log('[SMS] Relay potrebbe aver funzionato (status', r.status + ')');
-      }
-      return false;
-    } catch (e) { console.error('[SMS] Errore relay:', e.message); }
-  }
+// Skebby blocca le richieste dai server Vercel: l'SMS parte dal ponte su Google
+// (SMS_RELAY_URL), a cui passiamo le credenziali Skebby che restano su Vercel.
+function numeroSkebby(n) {
+  let s = String(n || '').replace(/[^\d+]/g, '');
+  if (s.startsWith('00')) s = '+' + s.slice(2);
+  if (!s.startsWith('+')) s = (s.startsWith('39') && s.length >= 11 ? '+' : '+39') + s;
+  return s;
+}
 
-  // Metodo 2: Chiamata diretta a Skebby (fallback)
-  if (!SKEBBY_USER || !SKEBBY_PASS) return false;
+async function inviaSms(numero, testo) {
+  if (!SKEBBY_USER || !SKEBBY_PASS) { console.error('[SMS] Credenziali Skebby mancanti'); return false; }
+  if (!SMS_RELAY_URL) { console.error('[SMS] SMS_RELAY_URL non configurato'); return false; }
+  const dest = numeroSkebby(numero);
   try {
     const auth = Buffer.from(SKEBBY_USER + ':' + SKEBBY_PASS).toString('base64');
-    console.log('[SMS] Login Skebby diretto, user:', SKEBBY_USER);
-    const loginR = await fetch('https://api.skebby.it/API/v1.0/REST/login', {
-      method: 'GET',
-      headers: {
-        'Authorization': 'Basic ' + auth,
-        'User-Agent': 'OfficineSportive/1.0',
-        'Accept': 'application/json, text/plain, */*'
-      }
-    });
-    const loginBody = await loginR.text();
-    console.log('[SMS] Skebby login:', loginR.status, loginBody.slice(0, 100));
-    if (!loginR.ok) return false;
-    const keys = loginBody.trim().split(';');
-
-    const smsR = await fetch('https://api.skebby.it/API/v1.0/REST/sms', {
+    const r = await fetch(SMS_RELAY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'user_key': keys[0], 'Session_key': keys[1],
-        'User-Agent': 'OfficineSportive/1.0',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ message_type: 'GP', message: testo, recipient: [numero], returnCredits: true })
+      headers: { 'Content-Type': 'application/json' },
+      redirect: 'follow',
+      body: JSON.stringify({ numero: dest, testo, auth })
     });
-    if (!smsR.ok) {
-      console.error('[SMS] Invio fallito:', smsR.status, await smsR.text());
-      return false;
+    const body = await r.text();
+    let j = null;
+    try { j = JSON.parse(body); } catch (_) {}
+    if (j && j.ok) {
+      console.log('[SMS] Inviato a', dest, '- credito residuo:', j.credito);
+      return true;
     }
-    console.log('[SMS] Inviato a', numero);
-    return true;
-  } catch (e) { console.error('[SMS] Errore:', e.message || e); return false; }
+    console.error('[SMS] Ponte errore:', r.status, (j && j.errore) || body.slice(0, 200));
+    return false;
+  } catch (e) { console.error('[SMS] Errore ponte:', e.message || e); return false; }
 }
 
 // === HELPER: OTP via Email ===

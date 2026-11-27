@@ -92,7 +92,7 @@ async function manda(dest, oggetto, html, mittente, opz = {}) {
 }
 
 // --- Grafica delle mail (identica a Google) ---
-function cornice(titolo, corpo) {
+export function cornice(titolo, corpo) {
   return '<div style="background:#F4F9F9;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;color:#3A3A3A">' +
     '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden">' +
     '<tr><td style="padding:18px;text-align:center;border-bottom:4px solid #0A9BA5"><img src="' + URL_LOGO + '" height="80" alt="Circolo Officine Sportive" style="height:80px"></td></tr>' +
@@ -102,7 +102,7 @@ function cornice(titolo, corpo) {
     'Mail automatica: per qualsiasi cosa chiamaci allo ' + escHtml(TELEFONO) + ' o scrivi a ' + escHtml(EMAIL_INFO) + '.<br>' +
     'Circolo ' + escHtml(NOME_CIRCOLO) + ' · ' + escHtml(INDIRIZZO) + '<br><b>Palestra · Piscina · Spa · Padel · Centri estivi</b></div></div>';
 }
-const firmaJarvis = '<table role="presentation" style="margin:20px 0 0"><tr><td style="vertical-align:middle;padding-right:10px"><img src="https://officine-sportive.vercel.app/jarvis-logo.gif" width="56" height="56" alt="Jarvis"></td>' +
+export const firmaJarvis = '<table role="presentation" style="margin:20px 0 0"><tr><td style="vertical-align:middle;padding-right:10px"><img src="https://officine-sportive.vercel.app/jarvis-logo.gif" width="56" height="56" alt="Jarvis"></td>' +
   '<td style="vertical-align:middle;font-size:15px">Un caro saluto,<br><b>Jarvis</b></td></tr></table>';
 function riquadro(p) {
   const r = (icona, et, val) => '<tr><td style="padding:8px 0;width:34px;font-size:22px;vertical-align:top">' + icona + '</td>' +

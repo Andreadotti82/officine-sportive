@@ -10,8 +10,9 @@ import { APPS } from './_gas/app.js';
 import { gasImporta } from './_gas/importa.js';
 import { db } from './_jarvis-base.js';
 import { infoProva } from './_imap.js';
+import { mailStaff } from './_staff.js';
 
-const FUNZIONI = { fcDati, fcPrenota, fcAnnulla, fcGiro, wCarica, apRun, gmRun, ponteRun, gasRun, gasEsegui, gasImporta, infoProva };
+const FUNZIONI = { fcDati, fcPrenota, fcAnnulla, fcGiro, wCarica, apRun, gmRun, ponteRun, gasRun, gasEsegui, gasImporta, infoProva, mailStaff };
 const errorePagina = '<p style="font-family:Arial;padding:30px;text-align:center">Il servizio non risponde in questo momento: riprova tra un attimo.</p>';
 
 async function pagina(res, crea, nome) {

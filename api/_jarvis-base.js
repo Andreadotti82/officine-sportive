@@ -22,7 +22,7 @@ export async function inviaMail(to, subject, html, mittente, opz = {}) {
     method: 'POST',
     headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ from: (mittente || 'Officine Sportive') + ' <info@officinesportive.it>', to: Array.isArray(to) ? to : [to], subject, html,
-      ...(opz.cc ? { cc: Array.isArray(opz.cc) ? opz.cc : [opz.cc] } : {}), ...(opz.allegati ? { attachments: opz.allegati } : {}) })
+      ...(opz.cc ? { cc: Array.isArray(opz.cc) ? opz.cc : [opz.cc] } : {}), ...(opz.allegati ? { attachments: opz.allegati } : {}), ...(opz.replyTo ? { reply_to: opz.replyTo } : {}) })
   });
   if (!r.ok) throw new Error('Resend ' + r.status + ': ' + (await r.text()).slice(0, 200));
 }

@@ -541,10 +541,10 @@ async function confermaFirma(id, codice) {
 
 async function reinviaOtp(id) {
   // Genera nuovo OTP e invia
-
+  const cr = await getCrypto();
   const otp = String(Math.floor(100000 + Math.random() * 900000));
-  const otpSalt = c.randomBytes(12).toString('hex');
-  const otpHash = c.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
+  const otpSalt = cr.randomBytes(12).toString('hex');
+  const otpHash = cr.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
 
   const r = await supaFetch(`/rest/v1/contratti?id=eq.${id}&select=cellulare,email,nome,junior,genitore_cellulare`);
   const rows = await r.json();
@@ -558,17 +558,23 @@ async function reinviaOtp(id) {
 
   const tel = c.junior ? c.genitore_cellulare : c.cellulare;
   if (SKEBBY_USER && tel) {
-    await inviaSms(tel, `Officine Sportive: il tuo nuovo codice è ${otp}. Valido 10 minuti.`);
-    return { ok: true, metodo: 'sms' };
+    const smsOk = await inviaSms(tel, `Officine Sportive: il tuo nuovo codice è ${otp}. Valido 10 minuti.`);
+    if (smsOk) return { ok: true, metodo: 'sms', canale: 'SMS', a: tel };
   }
-  return { ok: true, metodo: 'nessuno', otp_debug: otp };
+  if (RESEND_KEY && c.email) {
+    try {
+      await inviaOtpEmail(c.email, c.nome, otp);
+      return { ok: true, metodo: 'email', canale: 'email', a: c.email };
+    } catch (e) { console.error('[OTP] Reinvio email fallito:', e.message || e); }
+  }
+  return { ok: false, errore: 'Non riesco a inviare il codice: controlla cellulare ed email.' };
 }
 
 async function otpViaEmail(id) {
-
+  const cr = await getCrypto();
   const otp = String(Math.floor(100000 + Math.random() * 900000));
-  const otpSalt = c.randomBytes(12).toString('hex');
-  const otpHash = c.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
+  const otpSalt = cr.randomBytes(12).toString('hex');
+  const otpHash = cr.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
 
   const r = await supaFetch(`/rest/v1/contratti?id=eq.${id}&select=email,nome`);
   const rows = await r.json();
@@ -581,7 +587,7 @@ async function otpViaEmail(id) {
 
   if (RESEND_KEY && rows[0].email) {
     await inviaOtpEmail(rows[0].email, rows[0].nome, otp);
-    return { ok: true };
+    return { ok: true, a: rows[0].email };
   }
   return { ok: false, errore: 'Email non disponibile.' };
 }

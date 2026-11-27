@@ -888,7 +888,7 @@ function attesaSms(canale) {
   timerSms = setTimeout(function () {
     if (PASSO !== 6) return;
     srv('otpViaEmail', [ST.sessione], function (r) {
-      if (r.ok) $('otpA').innerHTML += '<br><br>📧 L\'SMS tarda? Ti abbiamo inviato <b>lo stesso codice anche via email</b> a <b>' + esc(r.a) + '</b>.';
+      if (r.ok) $('otpA').innerHTML += '<br><br>📧 L\'SMS tarda? Ti abbiamo inviato <b>un nuovo codice via email</b> a <b>' + esc(r.a) + '</b>: usa quello.';
     }, function () {});
   }, 90000);
 }

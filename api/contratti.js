@@ -702,7 +702,11 @@ async function inviaSms(numero, testo) {
     console.log('[SMS] Login Skebby diretto, user:', SKEBBY_USER);
     const loginR = await fetch('https://api.skebby.it/API/v1.0/REST/login', {
       method: 'GET',
-      headers: { 'Authorization': 'Basic ' + auth }
+      headers: {
+        'Authorization': 'Basic ' + auth,
+        'User-Agent': 'OfficineSportive/1.0',
+        'Accept': 'application/json, text/plain, */*'
+      }
     });
     const loginBody = await loginR.text();
     console.log('[SMS] Skebby login:', loginR.status, loginBody.slice(0, 100));
@@ -711,7 +715,12 @@ async function inviaSms(numero, testo) {
 
     const smsR = await fetch('https://api.skebby.it/API/v1.0/REST/sms', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'user_key': keys[0], 'Session_key': keys[1] },
+      headers: {
+        'Content-Type': 'application/json',
+        'user_key': keys[0], 'Session_key': keys[1],
+        'User-Agent': 'OfficineSportive/1.0',
+        'Accept': 'application/json'
+      },
       body: JSON.stringify({ message_type: 'GP', message: testo, recipient: [numero], returnCredits: true })
     });
     if (!smsR.ok) {

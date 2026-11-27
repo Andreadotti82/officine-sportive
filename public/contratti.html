@@ -347,7 +347,8 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:10px}
     <label for="libCognome">Cognome</label><input type="text" id="libCognome" autocapitalize="words">
     <label for="libCell">Cellulare (ricevera il codice OTP)</label><input type="tel" id="libCell">
     <label for="libEmail">Email</label><input type="email" id="libEmail">
-    <label class="sp" style="margin-top:8px"><input type="checkbox" id="libSenzaEmail"><div><b>Non ho un indirizzo email</b>: ricevo tutto via SMS</div></label>
+    <label class="sp" style="margin-top:8px"><input type="checkbox" id="libSenzaEmail"><div><b>Non ho un indirizzo email</b></div></label>
+    <div id="libSoloSms" class="nascosto" style="background:#F0F7F8;border:1px solid #C8E0E3;border-radius:10px;padding:10px 12px;margin:6px 0 4px;font-size:14px">📱 Riceverai tutto via SMS al tuo cellulare.</div>
     <div class="msg" id="errLib"></div>
     <button class="btn" id="libInvia" style="background:#0E9F86">Invia il codice OTP</button>
   </div>
@@ -1101,14 +1102,14 @@ $('revFirma').addEventListener('click', function () {
 var LIB = {};
 $('apriLib').addEventListener('click', function () {
   ['libNome', 'libCognome', 'libCell', 'libEmail', 'libCodice'].forEach(function (k) { $(k).value = ''; });
-  $('libSenzaEmail').checked = false; $('libEmail').disabled = false;
+  $('libSenzaEmail').checked = false; $('libEmail').disabled = false; $('libSoloSms').classList.add('nascosto');
   $('errLib').textContent = ''; $('errLibOtp').textContent = ''; LIB = {};
   $('libCk1').checked = false; $('libCk2').checked = false; $('libCk3').checked = false; $('libFirma').disabled = true; LIB_LETTO = false;
   $('libScrollMsg').style.display = ''; ['splCk1','splCk2','splCk3'].forEach(function (id) { $(id).style.opacity = '0.4'; $(id).style.pointerEvents = 'none'; });
   $('libForm').classList.remove('nascosto'); $('libOtp').classList.add('nascosto'); $('libFatto').classList.add('nascosto');
   $('vLib').classList.add('on');
 });
-$('libSenzaEmail').addEventListener('change', function () { $('libEmail').disabled = this.checked; if (this.checked) $('libEmail').value = ''; });
+$('libSenzaEmail').addEventListener('change', function () { $('libEmail').disabled = this.checked; if (this.checked) $('libEmail').value = ''; $('libSoloSms').classList.toggle('nascosto', !this.checked); });
 if (LIB_PUBBLICA) {
   // Pagina pubblica (QR in reception): il socio fa la liberatoria da solo, senza back office.
   document.addEventListener('DOMContentLoaded', function () {

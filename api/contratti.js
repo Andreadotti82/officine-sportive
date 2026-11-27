@@ -55,6 +55,8 @@ async function supaFetchSrv(path, method, body, extraHeaders) {
 }
 
 async function supaFetch(path, method, body, extraHeaders) {
+  // Con la chiave segreta configurata, tutto passa dal server: la chiave pubblica non legge più i contratti.
+  if (SUPABASE_SERVICE_KEY) return supaFetchSrv(path, method, body, extraHeaders);
   method = method || 'GET';
   const headers = { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, ...(extraHeaders || {}) };
   const opts = { method, headers };

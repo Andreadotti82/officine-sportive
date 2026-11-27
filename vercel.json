@@ -5,6 +5,10 @@
   ],
   "rewrites": [
     {
+      "source": "/link",
+      "destination": "/api/jarvis?pagina=link"
+    },
+    {
       "source": "/staff",
       "destination": "/contratti.html"
     },
@@ -59,7 +63,7 @@
     },
     "api/jarvis.js": {
       "maxDuration": 60,
-      "includeFiles": "{api/_codici/**,public/jarvis-logo.gif}"
+      "includeFiles": "{api/_codici/**,api/_pagine/**,public/jarvis-logo.gif}"
     }
   },
   "redirects": [

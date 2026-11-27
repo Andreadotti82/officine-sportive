@@ -11,6 +11,7 @@ import { gasImporta } from './_gas/importa.js';
 import { db } from './_jarvis-base.js';
 import { infoProva } from './_imap.js';
 import { mailStaff } from './_staff.js';
+import { linkPagina } from './_link.js';
 
 const FUNZIONI = { fcDati, fcPrenota, fcAnnulla, fcGiro, wCarica, apRun, gmRun, ponteRun, gasRun, gasEsegui, gasImporta, infoProva, mailStaff };
 const errorePagina = '<p style="font-family:Arial;padding:30px;text-align:center">Il servizio non risponde in questo momento: riprova tra un attimo.</p>';
@@ -28,6 +29,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   const q = req.query || {};
+  if (req.method === 'GET' && q.pagina === 'link') return pagina(res, () => linkPagina(q), 'link');
   if (req.method === 'GET' && q.pagina === 'gm') return pagina(res, () => gmPagina(q), 'gm');
   if (req.method === 'GET' && PONTI[q.ponte]) return pagina(res, () => pontePagina(q.ponte, q), q.ponte);
   if (req.method === 'GET' && APPS[q.gas]) return pagina(res, () => gasPagina(q.gas, q), q.gas);

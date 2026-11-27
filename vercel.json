@@ -54,7 +54,8 @@
       "maxDuration": 60
     },
     "api/jarvis.js": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "{api/_codici/**,public/jarvis-logo.gif}"
     }
   },
   "redirects": [

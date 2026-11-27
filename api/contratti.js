@@ -1206,7 +1206,10 @@ async function libAvviaCore(dati, operatore) {
   const otp = String(cr.randomInt(0, 1000000)).padStart(6, '0');
   const salt = cr.randomBytes(12).toString('hex');
   const hash = cr.pbkdf2Sync(otp, salt, 150000, 32, 'sha256').toString('hex');
-  const prova = String(cfg.liberatoriaProva || '').toUpperCase() === 'SI' || cognome.toLowerCase() === 'prova';
+  // Cognome «Prova»: tutto come un socio vero (SMS al suo numero), ma la liberatoria si cancella dopo 30 minuti e non conta.
+  // Solo la vecchia impostazione «liberatoriaProva = SI» dirotta il codice sulla mail degli avvisi.
+  const dirotta = String(cfg.liberatoriaProva || '').toUpperCase() === 'SI';
+  const prova = dirotta || cognome.toLowerCase() === 'prova';
 
   const ins = await supaFetchSrv('/rest/v1/liberatorie', 'POST', {
     cognome, nome, cellulare: cell, email, operatore, prova, stato: 'in_attesa',
@@ -1217,10 +1220,10 @@ async function libAvviaCore(dati, operatore) {
   const riga = righe[0];
 
   let canale = '';
-  if (!prova && String(cfg.canaleOTP || 'SMS').toUpperCase() === 'SMS') {
+  if (!dirotta && String(cfg.canaleOTP || 'SMS').toUpperCase() === 'SMS') {
     if (await inviaSms(cell, `Officine Sportive: il tuo codice per la liberatoria è ${otp}. Vale 10 minuti.`)) canale = 'SMS';
   }
-  const destMail = prova ? (cfg.emailAllarmi || email) : email;
+  const destMail = dirotta ? (cfg.emailAllarmi || email) : email;
   if (!canale && destMail) {
     try {
       await inviaMail(destMail, 'Il tuo codice per la liberatoria: ' + otp,

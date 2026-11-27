@@ -801,8 +801,11 @@ async function giroContratti(chiave) {
   // PDF mancanti (es. errore al momento della firma): si rifanno qui.
   const rm = await supaFetchSrv('/rest/v1/contratti?firmato=eq.true&annullato=eq.false&pdf_path=is.null&dettagli=not.is.null&select=*&limit=5');
   let rifatti = 0;
-  for (const c of (await rm.json() || [])) {
-    try { await creaPdfContratto(c); rifatti++; } catch (e) { console.error('[GIRO] PDF', c.numero, e.message || e); }
+  const errori = [];
+  const daRifare = await rm.json();
+  if (!Array.isArray(daRifare)) errori.push('lettura: ' + JSON.stringify(daRifare).slice(0, 200));
+  for (const c of (Array.isArray(daRifare) ? daRifare : [])) {
+    try { await creaPdfContratto(c); rifatti++; } catch (e) { console.error('[GIRO] PDF', c.numero, e.message || e); errori.push(c.numero + ': ' + String(e.message || e).slice(0, 300)); }
   }
   const limite = encodeURIComponent(new Date(Date.now() - 30 * 60000).toISOString());
   const r = await supaFetchSrv(`/rest/v1/contratti?firmato=eq.true&annullato=eq.false&pdf_inviato_il=is.null&pdf_path=not.is.null&firmato_il=lt.${limite}&select=*&limit=20`);
@@ -814,10 +817,10 @@ async function giroContratti(chiave) {
       await inviaPdfSocio(c);
       await supaFetchSrv(`/rest/v1/contratti?id=eq.${c.id}`, 'PATCH', { pdf_inviato_il: new Date().toISOString() }, { 'Prefer': 'return=minimal' });
       inviati++;
-    } catch (e) { console.error('[GIRO] PDF al socio', c.numero, e.message || e); }
+    } catch (e) { console.error('[GIRO] PDF al socio', c.numero, e.message || e); errori.push('mail ' + c.numero + ': ' + String(e.message || e).slice(0, 200)); }
   }
   await pulisciProve();
-  return { ok: true, inviati, rifatti };
+  return { ok: true, inviati, rifatti, errori };
 }
 
 async function reinviaOtp(id) {

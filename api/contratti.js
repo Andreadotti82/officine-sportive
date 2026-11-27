@@ -12,7 +12,6 @@ const SKEBBY_PASS = process.env.SKEBBY_PASS || '';
 const SUMUP_KEY = process.env.SUMUP_API_KEY || '';
 const SUMUP_MERCHANT = process.env.SUMUP_MERCHANT_CODE || '';
 const RESEND_KEY = process.env.RESEND_API_KEY || '';
-const SMS_RELAY_URL = process.env.SMS_RELAY_URL || '';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -678,8 +677,6 @@ async function libAvviaSocio(dati) { return { ok: false, errore: 'In fase di mig
 async function libConfermaSocio(id, codice) { return { ok: false, errore: 'In fase di migrazione.' }; }
 
 // === HELPER: SMS via Skebby ===
-// Skebby blocca le richieste dai server Vercel: l'SMS parte dal ponte su Google
-// (SMS_RELAY_URL), a cui passiamo le credenziali Skebby che restano su Vercel.
 function numeroSkebby(n) {
   let s = String(n || '').replace(/[^\d+]/g, '');
   if (s.startsWith('00')) s = '+' + s.slice(2);
@@ -689,26 +686,25 @@ function numeroSkebby(n) {
 
 async function inviaSms(numero, testo) {
   if (!SKEBBY_USER || !SKEBBY_PASS) { console.error('[SMS] Credenziali Skebby mancanti'); return false; }
-  if (!SMS_RELAY_URL) { console.error('[SMS] SMS_RELAY_URL non configurato'); return false; }
   const dest = numeroSkebby(numero);
   try {
     const auth = Buffer.from(SKEBBY_USER + ':' + SKEBBY_PASS).toString('base64');
-    const r = await fetch(SMS_RELAY_URL, {
+    const login = await fetch('https://api.skebby.it/API/v1.0/REST/login', {
+      headers: { 'Authorization': 'Basic ' + auth }
+    });
+    const loginBody = await login.text();
+    if (!login.ok) { console.error('[SMS] Login Skebby:', login.status, loginBody.slice(0, 200)); return false; }
+    const k = loginBody.trim().split(';');
+    const r = await fetch('https://api.skebby.it/API/v1.0/REST/sms', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      redirect: 'follow',
-      body: JSON.stringify({ numero: dest, testo, auth })
+      headers: { 'Content-Type': 'application/json', 'user_key': k[0], 'Session_key': k[1] },
+      body: JSON.stringify({ message_type: 'GP', message: testo, recipient: [dest], returnCredits: true })
     });
     const body = await r.text();
-    let j = null;
-    try { j = JSON.parse(body); } catch (_) {}
-    if (j && j.ok) {
-      console.log('[SMS] Inviato a', dest, '- credito residuo:', j.credito);
-      return true;
-    }
-    console.error('[SMS] Ponte errore:', r.status, (j && j.errore) || body.slice(0, 200));
-    return false;
-  } catch (e) { console.error('[SMS] Errore ponte:', e.message || e); return false; }
+    if (!r.ok) { console.error('[SMS] Invio fallito:', r.status, body.slice(0, 300)); return false; }
+    console.log('[SMS] Inviato a', dest);
+    return true;
+  } catch (e) { console.error('[SMS] Errore:', e.message || e); return false; }
 }
 
 // === HELPER: OTP via Email ===

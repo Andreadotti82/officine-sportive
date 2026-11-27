@@ -1,6 +1,8 @@
-import https from 'node:https';
+let _https = null;
+async function getHttps() { if (!_https) _https = await import('node:https'); return _https.default; }
 
-function req(options, body) {
+async function req(options, body) {
+  const https = await getHttps();
   return new Promise((resolve, reject) => {
     const r = https.request(options, res => {
       let data = '';

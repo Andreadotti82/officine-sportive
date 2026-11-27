@@ -1,6 +1,22 @@
 const SKEBBY_USER = process.env.SKEBBY_USER || '';
 const SKEBBY_PASS = process.env.SKEBBY_PASS || '';
 
+let _https = null;
+async function getHttps() { if (!_https) _https = await import('node:https'); return _https.default; }
+function httpsReq(options, body) {
+  return getHttps().then(https => new Promise((resolve, reject) => {
+    const r = https.request(options, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => resolve({ status: res.statusCode, body: data, http: res.httpVersion }));
+    });
+    r.on('error', reject);
+    r.setTimeout(10000, () => { r.destroy(); reject(new Error('timeout')); });
+    if (body) r.write(body);
+    r.end();
+  }));
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ errore: 'GET only' });
 
@@ -57,7 +73,26 @@ export default async function handler(req, res) {
         const body4 = await r4.text();
         log.push({ step: 'login_ct', status: r4.status, body: body4.slice(0, 200) });
 
-        return res.status(200).json({ ok: false, errore: 'Login Skebby fallito in tutti i modi', log });
+        // Ultimo tentativo: node:https puro (HTTP/1.1 forzato)
+        try {
+          const h1 = await httpsReq({
+            hostname: 'api.skebby.it', path: '/API/v1.0/REST/login', method: 'GET',
+            headers: { 'Authorization': 'Basic ' + auth }
+          });
+          log.push({ step: 'https_h1_login', status: h1.status, http: h1.http, body: h1.body.slice(0, 200) });
+          if (h1.status === 200) {
+            const k = h1.body.trim().split(';');
+            const sb = JSON.stringify({ message_type: 'GP', message: 'Test HTTP/1.1 Officine Sportive', recipient: [numero], returnCredits: true });
+            const h2 = await httpsReq({
+              hostname: 'api.skebby.it', path: '/API/v1.0/REST/sms', method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'user_key': k[0], 'Session_key': k[1], 'Content-Length': Buffer.byteLength(sb) }
+            }, sb);
+            log.push({ step: 'https_h1_sms', status: h2.status, body: h2.body.slice(0, 200) });
+            return res.status(200).json({ ok: h2.status < 300, log });
+          }
+        } catch (e) { log.push({ step: 'https_h1_errore', msg: e.message }); }
+
+        return res.status(200).json({ ok: false, errore: 'Login Skebby fallito con fetch e https', log });
       }
       // Token funziona
       const keys2 = body2.trim().split(';');

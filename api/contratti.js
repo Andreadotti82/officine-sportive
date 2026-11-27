@@ -492,8 +492,11 @@ async function avviaFirma(dati) {
     } catch (e) { console.error('[OTP] Errore email:', e); }
   }
 
-  // Nessun canale funzionante — mostra OTP a schermo
-  return { ok: true, id: saved.id, numero: saved.numero, canale: 'test', a: dest || emailDest, otp_test: otp };
+  // Nessun canale funzionante: niente codice, niente firma. Il contratto non firmato viene annullato.
+  console.error('[OTP] Nessun canale disponibile per', saved.numero, '- contratto annullato');
+  await supaFetch(`/rest/v1/contratti?id=eq.${saved.id}`, 'PATCH',
+    { annullato: true, annullato_il: new Date().toISOString() }, { 'Prefer': 'return=minimal' });
+  return { ok: false, errori: ['I sistemi sono momentaneamente bloccati: questo contratto non può essere firmato ora. Riprova più tardi.'] };
 }
 
 async function confermaFirma(id, codice) {

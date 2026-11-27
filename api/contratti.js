@@ -2,6 +2,8 @@
 // Riceve POST { fn, args } e smista alla funzione giusta
 // Replica le funzioni di google.script.run del vecchio GAS
 
+import { CONDIZIONI, INFORMATIVA, SPUNTE } from './_testi-contratto.js';
+
 let _crypto = null;
 async function getCrypto() { if (!_crypto) _crypto = await import('node:crypto'); return _crypto; }
 
@@ -61,23 +63,20 @@ function euroInteri(n) { return arrotonda(n); }
 // === CATALOGO ===
 async function catalogo() {
   // Tutte le query in parallelo per velocizzare il caricamento
-  const [r1, r2, r3, r4, r5] = await Promise.all([
+  const [r1, r2, r3] = await Promise.all([
     supaFetch('/rest/v1/listino?attivo=eq.true&order=ordine'),
     supaFetch('/rest/v1/promo?attivo=eq.true'),
-    supaFetch('/rest/v1/turni_docs?path=eq.contratti/config&select=data'),
-    supaFetch('/rest/v1/turni_docs?path=eq.contratti/condizioni&select=data'),
-    supaFetch('/rest/v1/turni_docs?path=eq.contratti/informativa&select=data')
+    supaFetch('/rest/v1/turni_docs?path=eq.contratti/config&select=data')
   ]);
-  const [lista, promoList, cfgRows, condRows, infoRows] = await Promise.all([
-    r1.json(), r2.json(), r3.json(), r4.json(), r5.json()
-  ]);
+  const [lista, promoList, cfgRows] = await Promise.all([r1.json(), r2.json(), r3.json()]);
 
   return {
     listino: lista,
     promo: promoList,
     impostazioni: cfgRows.length ? cfgRows[0].data : {},
-    condizioni: condRows.length && condRows[0].data ? condRows[0].data.html || '' : '',
-    informativa: infoRows.length && infoRows[0].data ? infoRows[0].data.html || '' : '',
+    condizioni: CONDIZIONI,
+    informativa: INFORMATIVA,
+    spunte: SPUNTE,
     oggi: fmtData(new Date())
   };
 }
@@ -277,13 +276,7 @@ function calcolaPiano(abb, promo, firma, opz) {
 }
 
 // === TESTI SPUNTE ===
-function testiSpunte() {
-  return [
-    'Dichiaro di aver preso visione delle condizioni generali di contratto e dell\'informativa privacy e di accettarle integralmente.',
-    'Acconsento al trattamento dei miei dati personali per le finalità indicate nell\'informativa privacy.',
-    'Acconsento all\'utilizzo di immagini e video per la comunicazione del circolo, come indicato nelle condizioni generali.'
-  ];
-}
+function testiSpunte() { return SPUNTE; }
 
 // === BACK OFFICE ===
 async function boLogin(pin, dispositivo) {

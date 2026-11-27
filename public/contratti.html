@@ -447,11 +447,7 @@ function caricaCatalogo() {
       }),
       condizioni: data.condizioni || '',
       informativa: data.informativa || '',
-      spunte: [
-        { titolo: 'Condizioni generali e privacy', testo: ' Dichiaro di aver preso visione delle condizioni generali di contratto e dell\'informativa privacy e di accettarle integralmente.' },
-        { titolo: 'Trattamento dati', testo: ' Acconsento al trattamento dei miei dati personali per le finalità indicate nell\'informativa privacy.' },
-        { titolo: 'Immagini e video', testo: ' Acconsento all\'utilizzo di immagini e video per la comunicazione del circolo, come indicato nelle condizioni generali.' }
-      ],
+      spunte: data.spunte || [],
       areeNascoste: data.impostazioni && data.impostazioni.areeNascoste || [],
       pagamento: data.impostazioni && data.impostazioni.modalitaPagamento || ['Contanti', 'Bancomat'],
       metodi: data.impostazioni && data.impostazioni.modalitaPagamento || ['Contanti', 'Bancomat'],

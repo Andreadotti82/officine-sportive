@@ -44,5 +44,12 @@
     "api/jarvis.js": {
       "maxDuration": 60
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/gm",
+      "destination": "https://script.google.com/macros/s/AKfycbxom9ST_8sRTWmx_Pp18hJpntQAv4rtMcgo8j48vVpgfYvzot1sAcgzpgvYI8OVu3Sn/exec",
+      "permanent": false
+    }
+  ]
 }

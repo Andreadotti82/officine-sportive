@@ -1354,7 +1354,7 @@ function escHtml(t) { return String(t || '').replace(/&/g, '&amp;').replace(/</g
 function cornice(contenuto) {
   return '<div style="background:#EEF4F5;padding:24px 12px;font-family:Montserrat,Arial,Helvetica,sans-serif;color:#14323F">' +
     '<div style="max-width:560px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #D4E0E3">' +
-    '<div style="padding:20px 26px;text-align:center;border-bottom:4px solid #1A9DA7"><img src="https://www.officinesportive.it/wp-content/uploads/2025/11/logo-officine-sportive-top.png" width="200" alt="Officine Sportive" style="width:200px;max-width:60%;height:auto"></div>' +
+    '<div style="padding:20px 26px;text-align:center;border-bottom:4px solid #1A9DA7"><img src="https://officine-sportive.vercel.app/logo-os.png" width="200" alt="Officine Sportive" style="width:200px;max-width:60%;height:auto"></div>' +
     '<div style="padding:24px 26px;font-size:15px;line-height:1.55">' + contenuto + '</div>' +
     '<div style="border-top:1px solid #D4E0E3;padding:16px 26px;font-size:14px;color:#14323F"><table><tr>' +
     '<td style="vertical-align:middle;padding-right:14px"><img src="https://officine-sportive.vercel.app/logo-os-soci.gif" width="150" alt="Officine Sportive" style="width:150px;height:auto"></td>' +

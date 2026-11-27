@@ -16,7 +16,7 @@ const ORA_CHIUSURA = 22, MINUTI_PRIMA_CHIUSURA = 60, DURATA_MINIMA_FASCIA = 60, 
 const NOME_CIRCOLO = 'Officine Sportive', INDIRIZZO = 'Via Fratelli Wright snc, 00054 Fiumicino';
 const TELEFONO = '06 6595 5545', EMAIL_INFO = 'info@officinesportive.it';
 const URL_PAGINA = 'https://officine-sportive.vercel.app/fitcheck';
-const URL_LOGO = 'https://www.officinesportive.it/wp-content/uploads/2025/11/logo-officine-sportive-top.png';
+const URL_LOGO = 'https://officine-sportive.vercel.app/logo-os.png';
 
 const GG = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
 const MM = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];

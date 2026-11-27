@@ -1085,14 +1085,15 @@ function tDati(){const cur=mkOf(new Date()),nx=shiftMonth(cur,1),core=cfg.staff.
     return{orari,mon5,pub:m.status==='pubblicato'?1:0,risp:core.filter(p=>(getUnav(mk,p.id)||{}).submitted).map(p=>p.id),giorni:g,crit}};
   const piani={};for(const pl of upcomingPlans())piani[pl.mailKey]={pub:planPub(pl.id)?1:0,risp:core.filter(p=>(respOf(pl.id,p.id)||{}).submitted).map(p=>p.id)};
   return{v:1,mg:mg?1:0,coord:cfg.coordinatorId,staff:core.map(p=>[p.id,p.name,p.email]),mesi:{[cur]:mese(cur),[nx]:mese(nx)},piani}}
+/* Invio in sottofondo agli script Google: nessuna finestra si apre più (27/11/2026). */
+function bgGet(u){try{return fetch(u,{mode:'no-cors',credentials:'omit',cache:'no-store'}).then(()=>true).catch(()=>false)}catch(_){return Promise.resolve(false)}}
 function tUrl(D){const json=JSON.stringify(D);const b64=btoa(unescape(encodeURIComponent(json))).replace(/\+/g,'-').replace(/\//g,'_');return cfg.scriptUrl+'?k='+T_KEY+'&d='+b64}
 function tSend(w,force){let D;try{D=tDati()}catch(e){try{w&&w.close()}catch(_){}return}const h=JSON.stringify(D);
   if(!force&&h===lsGet('t.sent')){try{w&&w.close()}catch(_){}return}
-  try{if(w&&!w.closed)w.location.href=tUrl(D);else w=window.open(tUrl(D),'t-sync')}catch(_){w=null}
-  if(w){lsSet('t.sent',h);lsSet('t.sentAt',String(Date.now()));setTimeout(()=>{try{w.close()}catch(_){}},5000)}}
+  bgGet(tUrl(D)).then(ok=>{if(ok){lsSet('t.sent',h);lsSet('t.sentAt',String(Date.now()))}})}
 document.addEventListener('click',e=>{if(!cfg.scriptUrl||!live||!ready)return;const el=e.target.closest('[data-action]'),a=el&&el.dataset.action;
   if(a&&typeof GM_SYNC_ACTIONS!=='undefined'&&GM_SYNC_ACTIONS.includes(a))return; // quel tocco apre già la pagina del Good Morning: mando al prossimo
-  if(a&&T_ACTIONS.includes(a)){let w=null;try{w=window.open('about:blank','t-sync')}catch(_){}setTimeout(()=>tSend(w,false),1500);return}
+  if(a&&T_ACTIONS.includes(a)){setTimeout(()=>tSend(null,false),1500);return}
   let h='';try{h=JSON.stringify(tDati())}catch(_){return}
   if(h!==lsGet('t.sent')&&Date.now()-Number(lsGet('t.sentAt')||0)>90000)tSend(null,false)},true);
 /* ===== Collegamento con Good Morning & Good Night =====
@@ -1102,7 +1103,7 @@ const GM_URL='https:\/\/script.google.com/macros/s/AKfycbxom9ST_8sRTWmx_Pp18hJpn
 const GM_KEY='4fea9d692e77b3fd';
 const GM_SYNC_ACTIONS=['publish','unpublish','approve','save-cell','save-add','save-gaps','manual-month','hw-sync','plan-save','plan-unpub'];
 const gmCambiati=new Set();
-function gmPrepara(){ gmCambiati.clear(); let w=null; try{ w=window.open('about:blank','gm-turni'); }catch(e){ w=null; } return {w}; }
+function gmPrepara(){ gmCambiati.clear(); return {}; }
 /* Fit Check: i turni dei personal trainer abilitati viaggiano insieme ai turni del Good Morning,
    che li gira in automatico alla prenotazione del Fit Check. */
 const FIT_PT={aurora:'a',alept:'l'};
@@ -1158,17 +1159,14 @@ document.addEventListener('click',()=>{
   let L=[]; try{ L=hwDaMandare(); }catch(e){ return; }
   if(!L.length) return;
   const mk=L[0];
-  try{ const w=window.open(hwUrl(mk),'hw-auto'); if(w){ hwSegna(mk); setTimeout(()=>{ try{ w.close(); }catch(e){} },6000); } }catch(e){}
+  hwSegna(mk); bgGet(hwUrl(mk)).then(ok=>{ if(!ok) lsSet('hw2.sent.'+mk,''); });
 },true);
 function gmInvia(gm){
-  const mesi=[...gmCambiati]; gmCambiati.clear();
-  if(!mesi.length){ try{ gm.w&&gm.w.close(); }catch(e){} return; }
-  const mk=mesi.sort().pop();
-  let w=gm.w;
-  try{ if(w&&!w.closed) w.location.href=gmUrl(mk); else w=window.open(gmUrl(mk),'gm-turni'); }catch(e){ w=null; }
-  if(!w){ toast('Turni salvati. Per aggiornarli anche nel Good Morning consenti le finestre pop-up e riprova.'); return; }
-  setTimeout(()=>{ try{ w.location.href=hwUrl(mk); hwSegna(mk); }catch(e){} toast('✓ Turni aggiornati anche nel Good Morning'); setTimeout(()=>{ try{ w.close(); }catch(e){} toast('✓ Turni inviati anche a Homework'); }, 6000); }, 5000);
-  for(const altro of mesi){ setTimeout(()=>{ try{ const w2=window.open(gmUrl(altro),'gm-turni2'); setTimeout(()=>{ try{ w2.location.href=hwUrl(altro); }catch(e){} setTimeout(()=>{ try{ w2&&w2.close(); }catch(e){} },6000); },5000); }catch(e){} }, 12000); }
+  const mesi=[...gmCambiati].sort(); gmCambiati.clear();
+  if(!mesi.length) return;
+  (async()=>{ let ok=true;
+    for(const mk of mesi){ ok=(await bgGet(gmUrl(mk)))&&ok; if(await bgGet(hwUrl(mk))) hwSegna(mk); else ok=false; }
+    toast(ok?'✓ Turni aggiornati anche nel Good Morning e in Homework':'Turni salvati. Il Good Morning non ha risposto: riprova tra poco.'); })();
 }
 const availTimers={};
 function saveAvail(mk,sid,patch){const key=mk+'_'+sid;const cur=clone(getUnav(mk,sid))||{month:mk,staff:sid,days:{},note:'',submitted:false};Object.assign(cur,patch);cur.updatedAt=Date.now();localAvail[key]=cur;

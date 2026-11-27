@@ -129,6 +129,8 @@ export async function logoDataUri() {
 
 /** HTML -> PDF con Chromium (stesso motore di Google). */
 export async function htmlInPdf(html) {
+  // Vercel gira su Amazon Linux 2023: Chromium deve estrarre le sue librerie (libnss3 & co.).
+  if (!process.env.AWS_LAMBDA_JS_RUNTIME) process.env.AWS_LAMBDA_JS_RUNTIME = 'nodejs' + process.versions.node.split('.')[0] + '.x';
   const chromium = (await import('@sparticuz/chromium')).default;
   const puppeteer = (await import('puppeteer-core')).default;
   const browser = await puppeteer.launch({

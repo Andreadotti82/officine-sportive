@@ -1,5 +1,6 @@
 // Lettura della casella info@ (Register) via IMAP, senza librerie esterne.
 import tls from 'node:tls';
+import dns from 'node:dns/promises';
 import { segreto } from './_jarvis-base.js';
 
 const HOST_PROVA = ['imap.securemail.pro', 'mail.securemail.pro', 'imaps.securemail.pro', 'imaps.register.it', 'imap.register.it', 'mail.register.it', 'imap.email-it.webapps.net', 'mail.officinesportive.it'];
@@ -45,7 +46,10 @@ export async function infoProva(chiave) {
   const user = String(process.env.INFO_MAIL_USER || '').trim().replace(/\.+$/, ''), pass = String(process.env.INFO_MAIL_PASS || '').replace(/[\r\n]+$/,'');
   if (!user || !pass) return { ok: false, errore: 'variabili mancanti', user: !!user, pass: !!pass };
   const esiti = [];
-  for (const host of (process.env.INFO_MAIL_HOST ? [process.env.INFO_MAIL_HOST] : ['mail.securemail.pro'])) {
+  let mx = []; try { mx = (await dns.resolveMx('officinesportive.it')).map(x => x.exchange); } catch (e) { mx = ['errore ' + e.code]; }
+  esiti.push({ mx });
+  const candidati = ['mail.securemail.pro', 'imap.securemail.pro', 'imap.webapps.net', 'mail.webapps.net', 'imap.email-it.webapps.net', 'email-it.webapps.net', ...mx.filter(h => !/^errore/.test(h))];
+  for (const host of (process.env.INFO_MAIL_HOST ? [process.env.INFO_MAIL_HOST] : candidati)) {
     try {
       const s = await sessione(host);
       const l = await s.cmd('LOGIN ' + q(user) + ' ' + q(pass));

@@ -3,6 +3,8 @@
 // Replica le funzioni di google.script.run del vecchio GAS
 
 import { CONDIZIONI, INFORMATIVA, SPUNTE } from './_testi-contratto.js';
+import { COMUNI } from './_comuni.js';
+import { htmlContratto, htmlRegistro, logoDataUri, htmlInPdf } from './_pdf-contratto.js';
 
 let _crypto = null;
 async function getCrypto() { if (!_crypto) _crypto = await import('node:crypto'); return _crypto; }
@@ -81,7 +83,12 @@ async function pulisciProve() {
   if (!SUPABASE_SERVICE_KEY) return;
   const limite = encodeURIComponent(new Date(Date.now() - 30 * 60000).toISOString());
   try {
-    await supaFetchSrv(`/rest/v1/contratti?prova=eq.true&or=(firmato_il.lt.${limite},and(firmato_il.is.null,creato_il.lt.${limite}))`, 'DELETE', null, { 'Prefer': 'return=minimal' });
+    const limite60 = encodeURIComponent(new Date(Date.now() - 60 * 60000).toISOString());
+    const filtro = `prova=eq.true&or=(and(firmato_il.lt.${limite},pdf_inviato_il.not.is.null),firmato_il.lt.${limite60},and(firmato_il.is.null,creato_il.lt.${limite}))`;
+    const rp = await supaFetchSrv(`/rest/v1/contratti?${filtro}&pdf_path=not.is.null&select=pdf_path`);
+    const pdfProva = (await rp.json() || []).map(x => x.pdf_path).filter(Boolean);
+    if (pdfProva.length) await fetch(`${SUPABASE_URL}/storage/v1/object/contratti`, { method: 'DELETE', headers: { ...storageAuth(), 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: pdfProva }) });
+    await supaFetchSrv(`/rest/v1/contratti?${filtro}`, 'DELETE', null, { 'Prefer': 'return=minimal' });
     await supaFetchSrv(`/rest/v1/liberatorie?prova=eq.true&or=(firmata_il.lt.${limite},and(firmata_il.is.null,creata_il.lt.${limite}))`, 'DELETE', null, { 'Prefer': 'return=minimal' });
   } catch (e) { console.error('[PROVE] Pulizia non riuscita:', e.message || e); }
 }
@@ -107,58 +114,76 @@ async function catalogo() {
   };
 }
 
-// === CODICE FISCALE ===
+// === CODICE FISCALE (identico alla versione Google, con omocodia e luogo di nascita) ===
+const CF_MESI = 'ABCDEHLMPRST';
+const CF_OMOCODIA = 'LMNPQRSTUV';
+const CF_DISPARI = { '0':1,'1':0,'2':5,'3':7,'4':9,'5':13,'6':15,'7':17,'8':19,'9':21,
+  'A':1,'B':0,'C':5,'D':7,'E':9,'F':13,'G':15,'H':17,'I':19,'J':21,'K':2,'L':4,'M':18,'N':20,
+  'O':11,'P':3,'Q':6,'R':8,'S':12,'T':14,'U':16,'V':10,'W':22,'X':25,'Y':24,'Z':23 };
+function cfPulisci(cf) { return String(cf || '').toUpperCase().replace(/\s+/g, ''); }
 function cfControllo(cf15) {
-  // Tabella ufficiale: posizioni dispari (1-based) = indice pari (0-based)
-  const dispari = { '0':1,'1':0,'2':5,'3':7,'4':9,'5':13,'6':15,'7':17,'8':19,'9':21,
-    'A':1,'B':0,'C':5,'D':7,'E':9,'F':13,'G':15,'H':17,'I':19,'J':21,
-    'K':2,'L':4,'M':18,'N':20,'O':11,'P':3,'Q':6,'R':8,'S':12,'T':14,
-    'U':16,'V':10,'W':22,'X':25,'Y':24,'Z':23 };
-  const pari = { '0':0,'1':1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,
-    'A':0,'B':1,'C':2,'D':3,'E':4,'F':5,'G':6,'H':7,'I':8,'J':9,
-    'K':10,'L':11,'M':12,'N':13,'O':14,'P':15,'Q':16,'R':17,'S':18,'T':19,
-    'U':20,'V':21,'W':22,'X':23,'Y':24,'Z':25 };
-  let s=0;
-  for(let i=0;i<15;i++){const c=cf15[i]; s+=(i%2===0)?dispari[c]:pari[c];}
-  return 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[s%26];
+  let s = 0;
+  for (let i = 0; i < 15; i++) {
+    const c = cf15.charAt(i);
+    if ((i + 1) % 2 === 1) s += CF_DISPARI[c];
+    else s += /[0-9]/.test(c) ? Number(c) : c.charCodeAt(0) - 65;
+  }
+  return String.fromCharCode(65 + (s % 26));
 }
-
+function cfNormalizza(cf) {
+  const a = cf.split('');
+  [6, 7, 9, 10, 12, 13, 14].forEach(p => { const k = CF_OMOCODIA.indexOf(a[p]); if (k >= 0) a[p] = String(k); });
+  return a.join('');
+}
 function analizzaCF(cf, oggi) {
-  cf = String(cf || '').toUpperCase().replace(/\s+/g, '');
-  if (cf.length !== 16) return { valido: false, errore: 'Il codice fiscale deve avere 16 caratteri.' };
-  if (!/^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/.test(cf)) return { valido: false, errore: 'Formato non valido.' };
-  const atteso = cfControllo(cf.slice(0, 15));
-  if (cf[15] !== atteso) return { valido: false, errore: 'Codice di controllo errato.' };
-
-  const anno = parseInt(cf.slice(6, 8));
-  const mesi = 'ABCDEHLMPRST';
-  const mese = mesi.indexOf(cf[8]);
-  if (mese < 0) return { valido: false, errore: 'Mese non valido.' };
-  let giorno = parseInt(cf.slice(9, 11));
-  const sesso = giorno > 40 ? 'F' : 'M';
-  if (giorno > 40) giorno -= 40;
-
-  const oggiD = oggi ? new Date(oggi) : new Date();
-  const annoNascita = anno + (anno > oggiD.getFullYear() % 100 ? 1900 : 2000);
-  const nascita = dt(annoNascita, mese, giorno);
-
-  const eta = oggiD.getFullYear() - nascita.getFullYear() - (oggiD < new Date(oggiD.getFullYear(), mese, giorno) ? 1 : 0);
-
-  return { valido: true, sesso, nascita: fmtData(nascita), eta, minore: eta < 18 };
+  cf = cfPulisci(cf);
+  oggi = oggi ? new Date(oggi) : new Date();
+  if (!/^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$/.test(cf))
+    return { valido: false, errore: 'Il codice fiscale non ha un formato valido.' };
+  if (cfControllo(cf.substr(0, 15)) !== cf.charAt(15))
+    return { valido: false, errore: 'Il codice fiscale non è corretto: controlla di averlo scritto bene.' };
+  const n = cfNormalizza(cf);
+  const yy = Number(n.substr(6, 2)), mese = CF_MESI.indexOf(n.charAt(8));
+  let gg = Number(n.substr(9, 2));
+  const sesso = gg > 40 ? 'F' : 'M';
+  if (gg > 40) gg -= 40;
+  const anno = (yy > oggi.getFullYear() % 100 ? 1900 : 2000) + yy;
+  const nascita = dt(anno, mese, gg);
+  if (nascita.getMonth() !== mese || gg < 1) return { valido: false, errore: 'La data di nascita nel codice fiscale non è valida.' };
+  const eta = etaAl(nascita, oggi);
+  return { valido: true, cf, sesso, nascitaData: nascita, nascita: fmtData(nascita), eta, minore: eta < 18, codiceComune: n.substr(11, 4) };
 }
-
+function etaAl(nascita, data) {
+  let e = data.getFullYear() - nascita.getFullYear();
+  if (data.getMonth() < nascita.getMonth() || (data.getMonth() === nascita.getMonth() && data.getDate() < nascita.getDate())) e--;
+  return e;
+}
+function cfConsonanti(s) { return s.replace(/[^BCDFGHJKLMNPQRSTVWXYZ]/g, ''); }
+function cfVocali(s) { return s.replace(/[^AEIOU]/g, ''); }
+function cfPrepara(s) { return String(s || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Z]/g, ''); }
+function cfCodiceCognome(c) { const s = cfPrepara(c); return (cfConsonanti(s) + cfVocali(s) + 'XXX').substr(0, 3); }
+function cfCodiceNome(nome) {
+  const s = cfPrepara(nome), c = cfConsonanti(s);
+  if (c.length >= 4) return c.charAt(0) + c.charAt(2) + c.charAt(3);
+  return (c + cfVocali(s) + 'XXX').substr(0, 3);
+}
 function verificaNomeCF(nome, cognome, cf) {
-  if (!nome || !cognome || !cf || cf.length < 6) return { corrispondente: false };
-  // Simplified check
-  return { corrispondente: true };
+  cf = cfPulisci(cf);
+  const ok = cfCodiceCognome(cognome) === cf.substr(0, 3) && cfCodiceNome(nome) === cf.substr(3, 3);
+  return { corrispondente: ok };
 }
-
+function luogoNascita(codice) {
+  if (codice.charAt(0) === 'Z') return { nome: 'Stato estero (' + codice + ')', provincia: 'EE' };
+  const c = COMUNI[codice];
+  return c ? { nome: c[0], provincia: c[1] } : { nome: 'Comune ' + codice, provincia: '' };
+}
 function datiDaCF(cf, nome, cognome) {
   const a = analizzaCF(cf);
   if (!a.valido) return { ok: false, errore: a.errore };
-  const v = verificaNomeCF(nome, cognome, cf);
+  const l = luogoNascita(a.codiceComune);
+  const v = nome && cognome ? verificaNomeCF(nome, cognome, cf) : { corrispondente: null };
   return { ok: true, sesso: a.sesso, nascita: a.nascita, eta: a.eta, minore: a.minore,
-    luogo: '', provincia: '', nomeOk: v.corrispondente };
+    luogo: l.nome, provincia: l.provincia, nomeOk: v.corrispondente };
 }
 
 // === VERIFICA PROMO ===
@@ -336,21 +361,55 @@ async function boLogin(pin, dispositivo) {
   return { ok: false, errore: 'PIN non valido.' };
 }
 
+function dataOraRoma(iso) {
+  if (!iso) return '';
+  return new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso)).replace(',', '');
+}
+function dataIt(s) { return s ? String(s).slice(0, 10).split('-').reverse().join('/') : ''; }
+function rigaElenco(c) {
+  const d = c.dettagli || {}, t = d.titolare || {}, m = d.minore || null, p = d.piano || c.piano || {};
+  const junior = c.junior;
+  const intest = junior ? (c.genitore_nome || t.nome || '') + ' ' + (c.genitore_cognome || t.cognome || '') : c.nome + ' ' + c.cognome;
+  const carta = c.pagamento_metodo === 'Carte online' ? (c.pagamento_stato === 'pagato' ? 'Pagato' + (c.pagato_il ? ' il ' + dataOraRoma(c.pagato_il) : '') : 'In attesa di pagamento') : '';
+  return {
+    numero: c.numero, data: dataOraRoma(c.firmato_il || c.data_firma || c.creato_il),
+    area: c.area || c.categoria || p.area || '', abbonamento: c.abbonamento_nome || p.abbonamento || '',
+    intestatario: intest.trim(), cf: junior ? (c.genitore_cf || t.cf || '') : (c.codice_fiscale || ''),
+    email: c.email || '', cellulare: c.cellulare || '',
+    junior: junior ? (m ? m.nome + ' ' + m.cognome : c.nome + ' ' + c.cognome) : '',
+    inizio: p.inizio || '', scadenza: p.scadenza || dataIt(c.scadenza), disdetta: p.disdettaEntro || c.data_limite_disdetta || '',
+    totale: c.totale_firma != null ? euro(c.totale_firma) : (p.totaleFirma || ''), rata: c.importo_rata != null ? euro(c.importo_rata) : '',
+    promo: c.codice_promo || '', metodo: c.pagamento_metodo || '', carta, upgrade: d.upgrade ? (d.upgrade.cessione ? 'Cessione da: ' + d.upgrade.cedente : 'Sostituisce: ' + d.upgrade.vecchio) : '',
+    inserito: c.inserito_gestionale ? (dataOraRoma(c.inserito_il) + (c.inserito_da ? ' da ' + c.inserito_da : '')) || 'sì' : '',
+    prova: !!c.prova,
+    dettagli: {
+      nome: t.nome || (junior ? c.genitore_nome : c.nome) || '', cognome: t.cognome || (junior ? c.genitore_cognome : c.cognome) || '',
+      nascita: t.nascita ? t.nascita + (t.luogoNascita ? ' · ' + t.luogoNascita : '') : (c.data_nascita ? dataIt(c.data_nascita) + (c.luogo_nascita ? ' · ' + c.luogo_nascita : '') : ''),
+      indirizzo: t.via ? t.via + ' ' + t.civico + ', ' + t.cap + ' ' + t.comune + ' (' + t.provincia + ')' : [c.indirizzo, c.cap, c.comune, c.provincia ? '(' + c.provincia + ')' : ''].filter(Boolean).join(' '),
+      telefono2: t.telefono2 || '',
+      junior: m ? { nome: m.nome, cognome: m.cognome, cf: m.cf, nascita: m.nascita + (m.luogoNascita ? ' · ' + m.luogoNascita : '') } : null
+    }
+  };
+}
+
 async function boElenco(token, cerca, filtro) {
-  // Verifica sessione
   const sessione = await verificaSessione(token);
   if (!sessione) return { ok: false, errore: 'Sessione scaduta.' };
   await pulisciProve();
-
-  // Leggi contratti
-  let query = '/rest/v1/contratti?annullato=eq.false&order=creato_il.desc&limit=50';
-  if (filtro === 'da_inserire') query += '&inserito_gestionale=eq.false&firmato=eq.true';
-  if (cerca) query += `&or=(nome.ilike.%25${encodeURIComponent(cerca)}%25,cognome.ilike.%25${encodeURIComponent(cerca)}%25)`;
-
-  const r = await supaFetch(query);
-  const contratti = await r.json();
-
-  return { ok: true, contratti };
+  const base = '/rest/v1/contratti?firmato=eq.true&annullato=eq.false';
+  const rd = await supaFetch(base + '&prova=eq.false&inserito_gestionale=is.false&select=id');
+  const daInserire = (await rd.json() || []).length;
+  let q = base + '&order=firmato_il.desc.nullslast&limit=80&select=*';
+  if (filtro === 'da') q += '&prova=eq.false&inserito_gestionale=is.false';
+  if (filtro === 'fatti') q += '&inserito_gestionale=is.true';
+  cerca = String(cerca || '').trim().replace(/[,()*%]/g, ' ').trim();
+  if (cerca) {
+    const k = encodeURIComponent('*' + cerca + '*');
+    q += `&or=(numero.ilike.${k},nome.ilike.${k},cognome.ilike.${k},codice_fiscale.ilike.${k},email.ilike.${k},genitore_cognome.ilike.${k},abbonamento_nome.ilike.${k})`;
+  }
+  const r = await supaFetch(q);
+  const rows = await r.json();
+  return { ok: true, contratti: (Array.isArray(rows) ? rows : []).map(rigaElenco), daInserire };
 }
 
 async function boPromo(token) {
@@ -374,20 +433,34 @@ async function boSegnaGestionale(token, numero) {
   return { ok: true };
 }
 
+async function contrattoPerNumero(numero) {
+  const r = await supaFetch(`/rest/v1/contratti?numero=eq.${encodeURIComponent(numero || '')}&select=*`);
+  const rows = await r.json();
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
 async function boPdf(token, numero) {
   const sessione = await verificaSessione(token);
   if (!sessione) return { ok: false, errore: 'Sessione scaduta.' };
-
-  const r = await supaFetch(`/rest/v1/contratti?numero=eq.${numero}&select=pdf_url`);
-  const rows = await r.json();
-  if (!rows.length || !rows[0].pdf_url) return { ok: false, errore: 'PDF non disponibile.' };
-
-  return { ok: true, url: rows[0].pdf_url };
+  const c = await contrattoPerNumero(numero);
+  if (!c) return { ok: false, errore: 'Contratto non trovato.' };
+  let pdf = await leggiPdf(c);
+  if (!pdf && !c.pdf_url && c.dettagli && c.firmato) pdf = await creaPdfContratto(c);
+  if (pdf) return { ok: true, base64: pdf.toString('base64'), nome: nomeFilePdf(c) };
+  if (c.pdf_url) return { ok: true, url: c.pdf_url };   // contratti firmati su Google: PDF su Drive
+  return { ok: false, errore: 'PDF non disponibile.' };
 }
 
 async function boInvia(token, numero, email) {
-  // TODO: invio PDF via Resend (serve DNS verificato)
-  return { ok: false, errore: 'Invio mail non ancora attivo (DNS in verifica).' };
+  const sessione = await verificaSessione(token);
+  if (!sessione) return { ok: false, errore: 'Sessione scaduta.' };
+  email = String(email || '').trim().toLowerCase();
+  if (!emailValida(email)) return { ok: false, errore: 'Indirizzo email non valido.' };
+  const c = await contrattoPerNumero(numero);
+  if (!c) return { ok: false, errore: 'Contratto non trovato.' };
+  if (!c.pdf_path && !c.dettagli) return { ok: false, errore: 'Questo contratto è stato firmato sulla versione Google: il PDF è su Drive.' };
+  try { await inviaPdfSocio(c, email); } catch (e) { console.error('[BO] Invio PDF', numero, e.message || e); return { ok: false, errore: 'Invio non riuscito, riprova.' }; }
+  return { ok: true };
 }
 
 async function boEsci(token) {
@@ -428,137 +501,317 @@ async function generaNumero() {
   return `OS-${anno}-${String(last + 1).padStart(4, '0')}`;
 }
 
-async function avviaFirma(dati) {
-  const numero = await generaNumero();
-
-  const c = await getCrypto();
-  const otp = String(Math.floor(100000 + Math.random() * 900000)); // 6 cifre
-  const otpSalt = c.randomBytes(12).toString('hex');
-  const otpHash = c.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
-
-  // Il frontend manda: { titolare: {cf,nome,cognome,via,civico,cap,comune,provincia,cellulare,email}, minore: {cf,nome,cognome}|null, abbId, promo, primoGiorno, metodo, ... }
-  const t = dati.titolare || {};
-  const m = dati.minore || null;
-  const junior = !!dati.perMinore || !!(m && m.nome);
-  const primoGiorno = dati.primoGiorno ? dati.primoGiorno.split('/').reverse().join('-') : null;
-
-  // Calcola piano per salvare importi nel contratto
-  let pianoData = null, totaleFirma = null, importoRata = null, importoProrata = null;
-  try {
-    const prev = await preventivo(dati.abbId, dati.promo, dati.primoGiorno);
-    if (prev.ok && prev.piano) {
-      pianoData = prev.piano;
-      // totaleFirma e importoRata sono stringhe euro "€ 39,00" — estrarre il numero
-      const parseEuro = s => s ? Number(String(s).replace('€', '').replace(/\s/g, '').replace(',', '.')) : null;
-      totaleFirma = parseEuro(prev.piano.totaleFirma);
-      importoRata = parseEuro(prev.piano.rataMensile || prev.piano.pianoRate);
-      importoProrata = parseEuro(prev.piano.prorataTotale);
+// === VALIDAZIONE DATI (come la versione Google) ===
+function pulisciTesto(s, max) { return String(s || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().substr(0, max || 80); }
+function maiuscoleNome(s) { return pulisciTesto(s).toLowerCase().replace(/(^|[\s'’-])([a-zà-ù])/g, (m, a, b) => a + b.toUpperCase()); }
+function normalizzaCell(s) {
+  let n = String(s || '').replace(/[\s.\-\/()]/g, '');
+  if (n.indexOf('0039') === 0) n = '+39' + n.substr(4);
+  if (n.charAt(0) !== '+') n = '+39' + n;
+  return n;
+}
+function emailValida(e) { return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(e); }
+function eProva(cognome) { return String(cognome || '').trim().toLowerCase() === 'prova'; }
+function validaPersona(p, etichetta, conContatti, secondoObbligatorio) {
+  const e = [];
+  const out = { nome: maiuscoleNome(p.nome), cognome: maiuscoleNome(p.cognome), cf: cfPulisci(p.cf) };
+  if (!out.nome || !out.cognome) e.push(etichetta + ': inserisci nome e cognome.');
+  const a = analizzaCF(out.cf);
+  if (eProva(out.cognome) && !a.valido) {
+    out.cf = out.cf || 'PROVA'; out.sesso = 'M'; out.nascita = ''; out.luogoNascita = '(prova)';
+    out.eta = etichetta === 'Junior' ? 10 : 30;
+  } else if (!a.valido) e.push(etichetta + ': ' + a.errore);
+  else {
+    if (out.nome && out.cognome && !eProva(out.cognome) && !verificaNomeCF(out.nome, out.cognome, out.cf).corrispondente)
+      e.push(etichetta + ': nome e cognome non corrispondono al codice fiscale.');
+    const l = luogoNascita(a.codiceComune);
+    out.sesso = a.sesso; out.nascita = a.nascita; out.eta = a.eta;
+    out.luogoNascita = l.nome + (l.provincia ? ' (' + l.provincia + ')' : '');
+  }
+  if (conContatti) {
+    out.via = pulisciTesto(p.via); out.civico = pulisciTesto(p.civico, 10);
+    out.cap = String(p.cap || '').replace(/\D/g, ''); out.comune = maiuscoleNome(p.comune);
+    out.provincia = String(p.provincia || '').toUpperCase().replace(/[^A-Z]/g, '').substr(0, 2);
+    out.cellulare = normalizzaCell(p.cellulare); out.telefono2 = secondoObbligatorio ? normalizzaCell(p.telefono2) : '';
+    out.email = String(p.email || '').trim().toLowerCase();
+    if (!out.via || !out.civico) e.push('Inserisci via e numero civico.');
+    if (!/^\d{5}$/.test(out.cap)) e.push('Il CAP deve avere 5 cifre.');
+    if (!out.comune || out.provincia.length !== 2) e.push('Inserisci comune e provincia (2 lettere).');
+    if (!/^\+393\d{8,9}$/.test(out.cellulare)) e.push('Il cellulare non è valido: serve un cellulare italiano per ricevere il codice.');
+    if (secondoObbligatorio) {
+      if (!/^\+\d{8,14}$/.test(out.telefono2)) e.push('Inserisci un secondo recapito telefonico valido.');
+      else if (out.telefono2 === out.cellulare) e.push('Il secondo recapito deve essere diverso dal cellulare.');
     }
-  } catch (e) { console.error('[FIRMA] Errore calcolo piano:', e); }
+    if (!emailValida(out.email)) e.push('L\'email non è valida.');
+    else if (out.email !== String(p.email2 || '').trim().toLowerCase()) e.push('Le due email non coincidono.');
+  }
+  return { dati: out, errori: e };
+}
+function pulisciClient(c) {
+  c = c || {};
+  return { ip: pulisciTesto(c.ip, 60), ua: pulisciTesto(c.ua, 300), schermo: pulisciTesto(c.schermo, 30), lingua: pulisciTesto(c.lingua, 20) };
+}
+function mascherato(s) {
+  s = String(s || '');
+  return s.indexOf('@') > 0 ? s.replace(/(.{2}).+(@.+)/, '$1***$2') : s.replace(/^(.{6}).+(.{2})$/, '$1***$2');
+}
+async function aggiungiEvento(id, testo, extra) {
+  const r = await supaFetch(`/rest/v1/contratti?id=eq.${id}&select=dettagli`);
+  const rows = await r.json();
+  const d = (rows[0] && rows[0].dettagli) || {};
+  d.eventi = (d.eventi || []).concat([[new Date().toISOString(), testo]]);
+  Object.assign(d, extra || {});
+  await supaFetch(`/rest/v1/contratti?id=eq.${id}`, 'PATCH', { dettagli: d }, { 'Prefer': 'return=minimal' });
+  return d;
+}
 
-  const record = {
-    numero,
-    tipo: dati.tipo || 'nuovo',
-    nome: t.nome || '', cognome: t.cognome || '',
-    codice_fiscale: t.cf || null, cellulare: t.cellulare || '', email: t.email || null,
-    indirizzo: (t.via || '') + (t.civico ? ' ' + t.civico : '') || null,
-    comune: t.comune || null, cap: t.cap || null, provincia: t.provincia || null,
-    junior,
-    genitore_nome: junior ? t.nome : null, genitore_cognome: junior ? t.cognome : null,
-    genitore_cf: junior ? t.cf : null, genitore_cellulare: junior ? t.cellulare : null,
-    abbonamento_id: dati.abbId || null, codice_promo: dati.promo || null,
-    primo_giorno: primoGiorno, pagamento_metodo: dati.metodo || 'Contanti',
-    totale_firma: totaleFirma, importo_rata: importoRata, importo_prorata: importoProrata,
-    piano: pianoData ? JSON.stringify(pianoData) : null,
-    otp_hash: otpHash, otp_salt: otpSalt,
-    otp_scadenza: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minuti
-    creato_da: 'online',
-    prova: (t.cognome || '').toLowerCase() === 'prova'
+async function avviaFirma(dati) {
+  dati = dati || {};
+  const cfg = await configContratti();
+  const rl = await supaFetch(`/rest/v1/listino?id=eq.${encodeURIComponent(dati.abbId || '')}`);
+  const listino = await rl.json();
+  if (!Array.isArray(listino) || !listino.length) return { ok: false, errori: ['Abbonamento non disponibile.'] };
+  const abb = listino[0];
+  const junior = !!abb.junior || !!dati.perMinore;
+  let errori = [];
+
+  let promo = null;
+  if (dati.promo) {
+    const rp = await verificaPromo(dati.promo, abb.id);
+    if (!rp.valido) errori.push(rp.errore); else promo = rp.promo;
+  }
+  const t = validaPersona(dati.titolare || {}, junior ? 'Genitore' : 'Dati', true, junior);
+  errori = errori.concat(t.errori);
+  if (t.dati.eta !== undefined && t.dati.eta < 18)
+    errori.push(junior ? 'Il genitore deve essere maggiorenne.' : 'Il titolare risulta minorenne: attiva "L\'abbonamento è per un minorenne" e compila i dati del genitore.');
+  let m = null;
+  if (junior) {
+    m = validaPersona(dati.minore || {}, 'Junior', false);
+    errori = errori.concat(m.errori);
+    if (m.dati.eta !== undefined && m.dati.eta >= 18) errori.push('Lo Junior risulta maggiorenne: scegli un abbonamento adulti.');
+    if (m.dati.cf && m.dati.cf === t.dati.cf) errori.push('Il codice fiscale dello Junior è uguale a quello del genitore.');
+  }
+  const sp = dati.spunte || [];
+  if (!(sp[0] && sp[1] && sp[2])) errori.push('Per firmare servono tutte e tre le spunte.');
+  if (!dati.lettura || !dati.lettura.aperto) errori.push('Prima di firmare apri e leggi il contratto completo.');
+  if (errori.length) return { ok: false, errori };
+
+  const prev = await preventivo(abb.id, promo ? promo.codice : '', dati.primoGiorno);
+  if (!prev.ok) return { ok: false, errori: [prev.errore || 'Errore nel calcolo del piano.'] };
+  const piano = prev.piano;
+  const oggi = new Date();
+  piano.dataFirma = fmtData(oggi);
+  piano.garanziaFino = abb.tipo === 'lungo' && String(abb.area).toLowerCase() !== 'centro estivo' ? fmtData(aggiungiGiorni(oggi, 14)) : null;
+  if (piano.disdettaEntro && abb.tipo !== 'breve' && Number(abb.durata_mesi) === 12) {
+    const pd = piano.disdettaEntro.split('/');
+    piano.disdettaOgniAnno = '5 ' + MESI_IT[Number(pd[1]) - 1];
+  }
+  piano.prezzoEuro = euro(piano.prezzo);
+  const parseEuro = s => s ? Number(String(s).replace('€', '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.')) : 0;
+  const totaleFirma = parseEuro(piano.totaleFirma);
+  let metodo = '';
+  if (totaleFirma > 0) {
+    metodo = String(dati.metodo || '').trim();
+    const metodi = cfg.modalitaPagamento || ['Contanti', 'Bancomat'];
+    if (metodi.indexOf(metodo) < 0) return { ok: false, errori: ['Seleziona la modalità di pagamento alla firma.'] };
+  }
+
+  const cr = await getCrypto();
+  const otp = String(cr.randomInt(0, 1000000)).padStart(6, '0');
+  const otpSalt = cr.randomBytes(12).toString('hex');
+  const otpHash = cr.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
+  const T = t.dati, M = m ? m.dati : null;
+  const adesso = new Date().toISOString();
+  const dettagli = {
+    titolare: T, minore: M, abb: { id: abb.id, nome: abb.nome, area: abb.area, tipo: abb.tipo, durata_mesi: abb.durata_mesi, descrizione: abb.descrizione || '', fine_stagione: abb.fine_stagione || '' },
+    promo: promo ? { codice: promo.codice, descrizione: promo.descrizione || '' } : null,
+    piano, metodo, offerte: (dati.offerte || []).slice(0, 20).map(o => pulisciTesto(o, 120)),
+    lettura: dati.lettura, client: pulisciClient(dati.client), spunte: SPUNTE.map(s => s.titolo), spunteAlle: adesso,
+    eventi: [[adesso, 'Contratto visualizzato e spunte 1, 2, 3 approvate']]
   };
+  const record = {
+    numero: 'BOZZA-' + cr.randomBytes(5).toString('hex'),
+    tipo: 'nuovo', area: abb.area,
+    nome: junior && M ? M.nome : T.nome, cognome: junior && M ? M.cognome : T.cognome,
+    codice_fiscale: junior && M ? M.cf : T.cf, sesso: junior && M ? M.sesso : T.sesso,
+    luogo_nascita: junior && M ? M.luogoNascita : T.luogoNascita,
+    cellulare: T.cellulare, email: T.email,
+    indirizzo: (T.via + ' ' + T.civico).trim(), comune: T.comune, cap: T.cap, provincia: T.provincia,
+    junior,
+    genitore_nome: junior ? T.nome : null, genitore_cognome: junior ? T.cognome : null,
+    genitore_cf: junior ? T.cf : null, genitore_cellulare: junior ? T.cellulare : null,
+    categoria: abb.area, abbonamento_id: abb.id, abbonamento_nome: abb.nome, durata_mesi: abb.durata_mesi || null,
+    codice_promo: promo ? promo.codice : null, promo_nome: promo ? (promo.descrizione || promo.codice) : null,
+    primo_giorno: piano.primoGiorno.split('/').reverse().join('-'),
+    scadenza: piano.scadenza ? piano.scadenza.split('/').reverse().join('-') : null,
+    rinnovo_tacito: !!piano.rinnovo, data_limite_disdetta: piano.disdettaEntro || null,
+    pagamento_metodo: metodo || (totaleFirma > 0 ? '' : 'Nessun pagamento'),
+    totale_firma: totaleFirma, importo_rata: piano.prezzo, importo_prorata: parseEuro(piano.prorataTotale),
+    piano, dettagli,
+    otp_hash: otpHash, otp_salt: otpSalt, otp_tentativi: 0,
+    otp_scadenza: new Date(Date.now() + 10 * 60000).toISOString(),
+    creato_da: 'online', prova: eProva(T.cognome)
+  };
+  if (junior && M) { const a = analizzaCF(M.cf); if (a.valido) record.data_nascita = a.nascitaData.toISOString().slice(0, 10); }
+  else { const a = analizzaCF(T.cf); if (a.valido) record.data_nascita = a.nascitaData.toISOString().slice(0, 10); }
 
   const r = await supaFetch('/rest/v1/contratti', 'POST', record, { 'Prefer': 'return=representation' });
   if (!r.ok) {
-    const err = await r.text();
-    console.error('Errore salvataggio contratto:', r.status, err);
-    console.error('Record inviato:', JSON.stringify(record).slice(0, 500));
+    console.error('Errore salvataggio contratto:', r.status, await r.text());
     return { ok: false, errori: ['Errore nel salvataggio (' + r.status + '). Riprova.'] };
   }
   const [saved] = await r.json();
 
-  const dest = t.cellulare || '';
-
-  // Invia OTP via SMS (Skebby)
-  let smsOk = false;
-  const hasSms = !!(SKEBBY_USER && SKEBBY_PASS);
-  console.log('[OTP] Config SMS:', hasSms, 'dest:', dest, 'RESEND:', !!RESEND_KEY);
-  if (hasSms) {
-    try {
-      smsOk = await inviaSms(dest,
-        `Officine Sportive: il tuo codice per firmare il contratto è ${otp}. Valido 10 minuti.`);
-      console.log('[OTP] SMS risultato:', smsOk);
-    } catch (e) { console.error('[OTP] Errore SMS:', e); }
+  let canale = '';
+  if (String(cfg.canaleOTP || 'SMS').toUpperCase() === 'SMS' && await inviaSms(T.cellulare, `Officine Sportive: il tuo codice per firmare il contratto è ${otp}. Valido 10 minuti.`)) canale = 'SMS';
+  let smsFallito = false;
+  if (!canale && T.email) {
+    smsFallito = true;
+    try { await inviaOtpEmail(T.email, T.nome, otp); canale = 'email'; } catch (e) { console.error('[OTP] Errore email:', e.message || e); }
   }
-
-  if (smsOk) {
-    return { ok: true, id: saved.id, numero: saved.numero, canale: 'SMS', a: dest };
+  if (!canale) {
+    console.error('[OTP] Nessun canale disponibile per', saved.id, '- contratto annullato');
+    await supaFetch(`/rest/v1/contratti?id=eq.${saved.id}`, 'PATCH', { annullato: true, annullato_il: new Date().toISOString() }, { 'Prefer': 'return=minimal' });
+    return { ok: false, errori: ['I sistemi sono momentaneamente bloccati: questo contratto non può essere firmato ora. Riprova più tardi.'] };
   }
+  const a = canale === 'SMS' ? T.cellulare : T.email;
+  await aggiungiEvento(saved.id, 'Codice OTP inviato via ' + canale + ' a ' + a + (smsFallito ? ' (SMS non disponibile)' : ''), { canale, smsFallito });
+  return { ok: true, id: saved.id, canale, a: mascherato(a) };
+}
 
-  // Se SMS fallisce, prova via email
-  const emailDest = t.email || '';
-  if (emailDest && RESEND_KEY) {
-    try {
-      await inviaOtpEmail(emailDest, t.nome, otp);
-      return { ok: true, id: saved.id, numero: saved.numero, canale: 'email', a: emailDest };
-    } catch (e) { console.error('[OTP] Errore email:', e); }
-  }
-
-  // Nessun canale funzionante: niente codice, niente firma. Il contratto non firmato viene annullato.
-  console.error('[OTP] Nessun canale disponibile per', saved.numero, '- contratto annullato');
-  await supaFetch(`/rest/v1/contratti?id=eq.${saved.id}`, 'PATCH',
-    { annullato: true, annullato_il: new Date().toISOString() }, { 'Prefer': 'return=minimal' });
-  return { ok: false, errori: ['I sistemi sono momentaneamente bloccati: questo contratto non può essere firmato ora. Riprova più tardi.'] };
+async function nuovoNumeroContratto(prova) {
+  const anno = new Date().getFullYear();
+  const pref = prova ? 'PROVA-' : `OS-${anno}-`;
+  const r = await supaFetch(`/rest/v1/contratti?numero=like.${encodeURIComponent(pref)}%25&select=numero&order=numero.desc&limit=1`);
+  const rows = await r.json();
+  const last = rows.length ? parseInt(rows[0].numero.split('-').pop(), 10) || 0 : 0;
+  return pref + String(last + 1).padStart(4, '0');
 }
 
 async function confermaFirma(id, codice) {
-  // Leggi il contratto
-  const r = await supaFetch(`/rest/v1/contratti?id=eq.${id}&select=*`);
+  const r = await supaFetch(`/rest/v1/contratti?id=eq.${encodeURIComponent(id || '')}&select=*`);
   const rows = await r.json();
-  if (!rows.length) return { ok: false, errore: 'Contratto non trovato.' };
+  if (!Array.isArray(rows) || !rows.length) return { ok: false, errore: 'Sessione scaduta: ricomincia.' };
   const c = rows[0];
-
-  if (c.firmato) return { ok: false, errore: 'Contratto già firmato.' };
-  if (new Date(c.otp_scadenza) < new Date()) return { ok: false, errore: 'Codice scaduto. Richiedi un nuovo codice.' };
-  if (c.otp_tentativi >= 5) return { ok: false, errore: 'Troppi tentativi. Richiedi un nuovo codice.' };
-
-  // Verifica OTP
+  if (c.firmato) return { ok: true, numero: c.numero, firmato: true };
+  if (c.annullato) return { ok: false, errore: 'Sessione scaduta: ricomincia.' };
+  if (new Date(c.otp_scadenza) < new Date()) return { ok: false, errore: 'Il codice è scaduto: chiedine uno nuovo.' };
+  if (c.otp_tentativi >= 5) return { ok: false, errore: 'Troppi tentativi: chiedi un nuovo codice.' };
 
   const cr = await getCrypto();
+  codice = String(codice || '').replace(/\D/g, '');
   const hash = cr.pbkdf2Sync(codice, c.otp_salt, 150000, 32, 'sha256').toString('hex');
-
   if (hash !== c.otp_hash) {
-    await supaFetch(`/rest/v1/contratti?id=eq.${id}`, 'PATCH', { otp_tentativi: c.otp_tentativi + 1 }, { 'Prefer': 'return=minimal' });
-    return { ok: false, errore: 'Codice non corretto. Riprova.' };
+    const t = c.otp_tentativi + 1;
+    await supaFetch(`/rest/v1/contratti?id=eq.${c.id}`, 'PATCH', { otp_tentativi: t }, { 'Prefer': 'return=minimal' });
+    return { ok: false, errore: 'Codice non corretto. Tentativi rimasti: ' + (5 - t) };
   }
 
-  // Firma confermata!
-  const patch = { firmato: true, firmato_il: new Date().toISOString(), pagamento_metodo: c.pagamento_metodo || 'Contanti' };
-  await supaFetch(`/rest/v1/contratti?id=eq.${id}`, 'PATCH', patch, { 'Prefer': 'return=minimal' });
+  // Firma valida: numero definitivo (OS-anno-n, oppure PROVA-n), poi PDF.
+  const d = c.dettagli || {};
+  d.eventi = (d.eventi || []).concat([[new Date().toISOString(), 'Codice OTP inserito correttamente: contratto firmato']]);
+  let numero = '';
+  for (let tentativo = 0; tentativo < 3 && !numero; tentativo++) {
+    const n = await nuovoNumeroContratto(c.prova);
+    const up = await supaFetch(`/rest/v1/contratti?id=eq.${c.id}`, 'PATCH', {
+      numero: n, firmato: true, firmato_il: new Date().toISOString(), data_firma: new Date().toISOString(),
+      dettagli: d, otp_hash: null, otp_salt: null
+    }, { 'Prefer': 'return=minimal' });
+    if (up.ok) numero = n;
+  }
+  if (!numero) return { ok: false, errore: 'Errore nel salvataggio della firma. Riprova.' };
+  c.numero = numero; c.dettagli = d; c.firmato = true;
 
-  // Se pagamento online → crea checkout SumUp
-  console.log('[FIRMA] metodo:', c.pagamento_metodo, 'totale_firma:', c.totale_firma, 'SUMUP:', !!SUMUP_KEY, !!SUMUP_MERCHANT);
-  if (c.pagamento_metodo === 'Carte online' && SUMUP_KEY && SUMUP_MERCHANT) {
+  try { await creaPdfContratto(c); } catch (e) { console.error('[PDF] Errore creazione PDF', numero, e.message || e); }
+
+  if (c.pagamento_metodo === 'Carte online' && SUMUP_KEY && SUMUP_MERCHANT && Number(c.totale_firma) > 0) {
     try {
       const checkout = await creaSumUpCheckout(c);
       if (checkout && checkout.url) {
-        await supaFetch(`/rest/v1/contratti?id=eq.${id}`, 'PATCH', {
-          sumup_checkout_id: checkout.id, pagamento_stato: 'in_attesa'
-        }, { 'Prefer': 'return=minimal' });
-        return { ok: true, numero: c.numero, firmato: true, pagamento: { url: checkout.url, importo: checkout.importo } };
+        await supaFetch(`/rest/v1/contratti?id=eq.${c.id}`, 'PATCH', { sumup_checkout_id: checkout.id, pagamento_stato: 'in_attesa' }, { 'Prefer': 'return=minimal' });
+        return { ok: true, numero, firmato: true, pagamento: { url: checkout.url, importo: checkout.importo } };
       }
     } catch (e) { console.error('[SUMUP] Errore creazione checkout:', e); }
+    return { ok: true, numero, firmato: true, pagamento: { errore: true } };
   }
+  return { ok: true, numero, firmato: true };
+}
 
-  return { ok: true, numero: c.numero, firmato: true };
+// === PDF: crea, archivia (Supabase Storage privato), scarica ===
+async function creaPdfContratto(c) {
+  const cfg = await configContratti();
+  const corpo = htmlContratto(c, cfg, await logoDataUri());
+  const cr = await getCrypto();
+  const impronta = cr.createHash('sha256').update(corpo, 'utf8').digest('hex');
+  const html = corpo.replace('%%REGISTRO%%', htmlRegistro(c, impronta));
+  const pdf = await htmlInPdf(html);
+  const path = `${new Date().getFullYear()}/${c.numero}.pdf`;
+  const up = await fetch(`${SUPABASE_URL}/storage/v1/object/contratti/${path}`, {
+    method: 'POST',
+    headers: { ...storageAuth(), 'Content-Type': 'application/pdf', 'x-upsert': 'true' },
+    body: pdf
+  });
+  if (!up.ok) throw new Error('Upload PDF ' + up.status + ' ' + (await up.text()).slice(0, 200));
+  await supaFetchSrv(`/rest/v1/contratti?id=eq.${c.id}`, 'PATCH', { pdf_path: path, impronta }, { 'Prefer': 'return=minimal' });
+  c.pdf_path = path; c.impronta = impronta;
+  return pdf;
+}
+function storageAuth() {
+  return SUPABASE_SERVICE_KEY.startsWith('sb_') ? { apikey: SUPABASE_SERVICE_KEY } : { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+}
+async function leggiPdf(c) {
+  if (!c.pdf_path) return null;
+  const r = await fetch(`${SUPABASE_URL}/storage/v1/object/contratti/${c.pdf_path}`, { headers: storageAuth() });
+  if (!r.ok) { console.error('[PDF] Lettura', c.pdf_path, r.status); return null; }
+  return Buffer.from(await r.arrayBuffer());
+}
+function nomeFilePdf(c) {
+  const t = (c.dettagli && c.dettagli.titolare) || { cognome: c.cognome, nome: c.nome };
+  const m = c.dettagli && c.dettagli.minore;
+  return c.numero + ' · ' + t.cognome + ' ' + t.nome + (m ? ' (Junior ' + m.nome + ')' : '') + '.pdf';
+}
+
+// Mail al socio con il contratto firmato in allegato.
+function htmlMailContratto(c) {
+  const d = c.dettagli || {}, p = d.piano || {}, t = d.titolare || { nome: c.nome };
+  const rr = (k, v) => '<tr><td style="padding:8px 0;border-bottom:1px solid #D4E0E3;color:#5A707A;width:42%">' + k + '</td><td style="padding:8px 0;border-bottom:1px solid #D4E0E3;font-weight:600">' + escHtml(v) + '</td></tr>';
+  const junior = d.minore ? d.minore.nome : '';
+  return cornice(
+    '<p style="margin:0 0 12px">Ciao ' + escHtml(t.nome) + '! 👋</p>' +
+    '<p style="margin:0 0 14px">Grazie per aver scelto Officine Sportive! In allegato trovi il tuo <b>contratto firmato</b>, con le condizioni generali e il regolamento: conservalo, ti sarà utile.</p>' +
+    '<table style="width:100%;border-collapse:collapse;font-size:14px;margin:0 0 16px">' +
+    rr('Contratto', 'n. ' + c.numero) + rr('Abbonamento', (p.area || c.area || '') + ' · ' + (p.abbonamento || c.abbonamento_nome || '') + (junior ? ' per ' + junior : '')) +
+    (p.inizio === p.scadenza ? rr('Valido il', p.inizio) : rr('Dal', p.inizio) + rr('Al', p.scadenza)) + '</table>' +
+    (p.rinnovo && p.disdettaEntro ? '<div style="border-left:4px solid #C0392B;background:#FDF2F0;padding:12px 14px;border-radius:8px;margin:0 0 16px;font-size:14px">' +
+      '<b>📌 Ricorda la data per la disdetta: entro il ' + escHtml(p.disdettaEntro) + '</b><br>Senza disdetta l\'abbonamento si rinnova alle medesime condizioni. La trovi anche nella prima pagina del contratto.</div>' : '') +
+    '<p style="margin:0">Per qualsiasi domanda contattaci: 📱 375 599 2375 · ☎️ 06 6595 5545 · ✉️ info@officinesportive.it</p>');
+}
+async function inviaPdfSocio(c, email) {
+  const pdf = await leggiPdf(c) || await creaPdfContratto(c);
+  const prova = String(c.numero).indexOf('PROVA') === 0 ? '[PROVA] ' : '';
+  await inviaMail(email || c.email, prova + 'Il tuo contratto Officine Sportive n. ' + c.numero, htmlMailContratto(c), null,
+    [{ filename: nomeFilePdf(c), content: pdf.toString('base64') }]);
+}
+
+// Giro programmato (ogni 10 minuti da Supabase): PDF ai soci 30 minuti dopo la firma, pulizia prove.
+async function giroContratti(chiave) {
+  const rk = await supaFetchSrv('/rest/v1/jarvis_segreti?nome=eq.giro&select=valore');
+  const k = await rk.json();
+  if (!Array.isArray(k) || !k.length || !chiave || chiave !== k[0].valore) return { ok: false };
+  const limite = encodeURIComponent(new Date(Date.now() - 30 * 60000).toISOString());
+  const r = await supaFetchSrv(`/rest/v1/contratti?firmato=eq.true&annullato=eq.false&pdf_inviato_il=is.null&pdf_path=not.is.null&firmato_il=lt.${limite}&select=*&limit=20`);
+  const rows = await r.json();
+  let inviati = 0;
+  for (const c of (Array.isArray(rows) ? rows : [])) {
+    if (c.pagamento_metodo === 'Carte online' && Number(c.totale_firma) > 0 && c.pagamento_stato !== 'pagato') continue;
+    try {
+      await inviaPdfSocio(c);
+      await supaFetchSrv(`/rest/v1/contratti?id=eq.${c.id}`, 'PATCH', { pdf_inviato_il: new Date().toISOString() }, { 'Prefer': 'return=minimal' });
+      inviati++;
+    } catch (e) { console.error('[GIRO] PDF al socio', c.numero, e.message || e); }
+  }
+  await pulisciProve();
+  return { ok: true, inviati };
 }
 
 async function reinviaOtp(id) {
@@ -568,7 +821,7 @@ async function reinviaOtp(id) {
   const otpSalt = cr.randomBytes(12).toString('hex');
   const otpHash = cr.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
 
-  const r = await supaFetch(`/rest/v1/contratti?id=eq.${id}&select=cellulare,email,nome,junior,genitore_cellulare`);
+  const r = await supaFetch(`/rest/v1/contratti?id=eq.${id}&select=cellulare,email,nome,junior,genitore_cellulare,genitore_nome,firmato`);
   const rows = await r.json();
   if (!rows.length) return { ok: false, errore: 'Contratto non trovato.' };
   const c = rows[0];
@@ -581,12 +834,13 @@ async function reinviaOtp(id) {
   const tel = c.junior ? c.genitore_cellulare : c.cellulare;
   if (SKEBBY_USER && tel) {
     const smsOk = await inviaSms(tel, `Officine Sportive: il tuo nuovo codice è ${otp}. Valido 10 minuti.`);
-    if (smsOk) return { ok: true, metodo: 'sms', canale: 'SMS', a: tel };
+    if (smsOk) { await aggiungiEvento(id, 'Codice OTP inviato di nuovo via SMS a ' + tel); return { ok: true, metodo: 'sms', canale: 'SMS', a: mascherato(tel) }; }
   }
   if (RESEND_KEY && c.email) {
     try {
-      await inviaOtpEmail(c.email, c.nome, otp);
-      return { ok: true, metodo: 'email', canale: 'email', a: c.email };
+      await inviaOtpEmail(c.email, c.junior ? c.genitore_nome : c.nome, otp);
+      await aggiungiEvento(id, 'Codice OTP inviato di nuovo via email a ' + c.email);
+      return { ok: true, metodo: 'email', canale: 'email', a: mascherato(c.email) };
     } catch (e) { console.error('[OTP] Reinvio email fallito:', e.message || e); }
   }
   return { ok: false, errore: 'Non riesco a inviare il codice: controlla cellulare ed email.' };
@@ -598,7 +852,7 @@ async function otpViaEmail(id) {
   const otpSalt = cr.randomBytes(12).toString('hex');
   const otpHash = cr.pbkdf2Sync(otp, otpSalt, 150000, 32, 'sha256').toString('hex');
 
-  const r = await supaFetch(`/rest/v1/contratti?id=eq.${id}&select=email,nome`);
+  const r = await supaFetch(`/rest/v1/contratti?id=eq.${id}&select=email,nome,junior,genitore_nome`);
   const rows = await r.json();
   if (!rows.length) return { ok: false };
 
@@ -608,8 +862,9 @@ async function otpViaEmail(id) {
   }, { 'Prefer': 'return=minimal' });
 
   if (RESEND_KEY && rows[0].email) {
-    await inviaOtpEmail(rows[0].email, rows[0].nome, otp);
-    return { ok: true, a: rows[0].email };
+    await inviaOtpEmail(rows[0].email, rows[0].junior ? rows[0].genitore_nome : rows[0].nome, otp);
+    await aggiungiEvento(id, 'SMS in ritardo: nuovo codice OTP inviato via email a ' + rows[0].email, { emailBackup: true });
+    return { ok: true, a: mascherato(rows[0].email) };
   }
   return { ok: false, errore: 'Email non disponibile.' };
 }
@@ -878,12 +1133,12 @@ function cornice(contenuto) {
     '<div style="margin-top:10px;font-size:11.5px;letter-spacing:.5px;color:#5A707A;text-align:center">Palestra · Piscina · Spa · Padel · Centri estivi</div></div>' +
     '</div></div>';
 }
-async function inviaMail(to, subject, html, mittente) {
+async function inviaMail(to, subject, html, mittente, allegati) {
   if (!RESEND_KEY) throw new Error('RESEND_KEY non configurata');
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: (mittente || 'Officine Sportive') + ' <info@officinesportive.it>', to: Array.isArray(to) ? to : [to], subject, html })
+    body: JSON.stringify({ from: (mittente || 'Officine Sportive') + ' <info@officinesportive.it>', to: Array.isArray(to) ? to : [to], subject, html, ...(allegati ? { attachments: allegati } : {}) })
   });
   if (!r.ok) throw new Error('Resend ' + r.status + ': ' + (await r.text()).slice(0, 200));
 }
@@ -931,7 +1186,7 @@ async function verificaSessione(token) {
 const FUNZIONI = {
   analizzaCF, verificaNomeCF, datiDaCF, catalogo, verificaPromo, preventivo,
   calcolaPiano: preventivo, // alias
-  testiSpunte, avviaFirma, reinviaOtp, confermaFirma, otpViaEmail,
+  testiSpunte, avviaFirma, reinviaOtp, confermaFirma, otpViaEmail, giroContratti,
   statoPagamento, riprovaPagamento,
   boLogin, boRegistrazioneAperta, boRegistra, boEsci, boElenco, boPromo,
   boSegnaGestionale, boPdf, boInvia,

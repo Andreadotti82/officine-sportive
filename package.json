@@ -3,5 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "description": "App del circolo Officine Sportive - Guest Pass e servizi ai soci",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@sparticuz/chromium": "^131.0.0",
+    "puppeteer-core": "^23.10.0"
+  }
 }

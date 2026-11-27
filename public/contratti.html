@@ -993,6 +993,8 @@ $('boLista').addEventListener('click', function (e) {
     attesa(true, 'Preparo il PDF…');
     srv('boPdf', [TOKEN, p.dataset.pdf], function (r) {
       attesa(false);
+      if (!r.ok) { alert(r.errore || 'PDF non disponibile.'); return; }
+      if (r.url) { window.open(r.url, '_blank'); return; }
       var b = atob(r.base64), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i);
       var url = URL.createObjectURL(new Blob([a], { type: 'application/pdf' }));
       var l = document.createElement('a'); l.href = url; l.download = r.nome; document.body.appendChild(l); l.click(); l.remove();

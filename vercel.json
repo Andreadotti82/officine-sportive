@@ -1,12 +1,37 @@
 {
   "version": 2,
-  "regions": ["cdg1"],
+  "regions": [
+    "cdg1"
+  ],
   "rewrites": [
-    { "source": "/staff", "destination": "/contratti.html" },
-    { "source": "/lista", "destination": "/lista.html" },
-    { "source": "/gradimento", "destination": "/gradimento.html" },
-    { "source": "/disiscrizione", "destination": "/disiscrizione.html" },
-    { "source": "/turni", "destination": "/turni.html" },
-    { "source": "/contratti", "destination": "/contratti.html" }
-  ]
+    {
+      "source": "/staff",
+      "destination": "/contratti.html"
+    },
+    {
+      "source": "/lista",
+      "destination": "/lista.html"
+    },
+    {
+      "source": "/gradimento",
+      "destination": "/gradimento.html"
+    },
+    {
+      "source": "/disiscrizione",
+      "destination": "/disiscrizione.html"
+    },
+    {
+      "source": "/turni",
+      "destination": "/turni.html"
+    },
+    {
+      "source": "/contratti",
+      "destination": "/contratti.html"
+    }
+  ],
+  "functions": {
+    "api/contratti.js": {
+      "maxDuration": 60
+    }
+  }
 }

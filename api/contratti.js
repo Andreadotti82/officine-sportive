@@ -4,7 +4,8 @@
 
 import { CONDIZIONI, INFORMATIVA, SPUNTE } from './_testi-contratto.js';
 import { COMUNI } from './_comuni.js';
-import { htmlContratto, htmlRegistro, logoDataUri, htmlInPdf } from './_pdf-contratto.js';
+import { htmlContratto } from './_pdf-contratto.js';
+import { pdfContratto } from './_pdf-lib-contratto.js';
 
 let _crypto = null;
 async function getCrypto() { if (!_crypto) _crypto = await import('node:crypto'); return _crypto; }
@@ -740,11 +741,11 @@ async function confermaFirma(id, codice) {
 // === PDF: crea, archivia (Supabase Storage privato), scarica ===
 async function creaPdfContratto(c) {
   const cfg = await configContratti();
-  const corpo = htmlContratto(c, cfg, await logoDataUri());
+  // Impronta SHA-256 del contenuto (riepilogo, condizioni, approvazioni, informativa), come su Google.
+  const corpo = htmlContratto(c, cfg, '');
   const cr = await getCrypto();
   const impronta = cr.createHash('sha256').update(corpo, 'utf8').digest('hex');
-  const html = corpo.replace('%%REGISTRO%%', htmlRegistro(c, impronta));
-  const pdf = await htmlInPdf(html);
+  const pdf = await pdfContratto(c, cfg, await logoPng(), impronta);
   const path = `${new Date().getFullYear()}/${c.numero}.pdf`;
   const up = await fetch(`${SUPABASE_URL}/storage/v1/object/contratti/${path}`, {
     method: 'POST',
@@ -755,6 +756,12 @@ async function creaPdfContratto(c) {
   await supaFetchSrv(`/rest/v1/contratti?id=eq.${c.id}`, 'PATCH', { pdf_path: path, impronta }, { 'Prefer': 'return=minimal' });
   c.pdf_path = path; c.impronta = impronta;
   return pdf;
+}
+let _logoPng = null;
+async function logoPng() {
+  if (_logoPng) return _logoPng;
+  try { const r = await fetch('https://www.officinesportive.it/wp-content/uploads/2025/11/logo-officine-sportive-top.png'); if (r.ok) _logoPng = Buffer.from(await r.arrayBuffer()); } catch (e) {}
+  return _logoPng;
 }
 function storageAuth() {
   return SUPABASE_SERVICE_KEY.startsWith('sb_') ? { apikey: SUPABASE_SERVICE_KEY } : { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };

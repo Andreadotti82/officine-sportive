@@ -115,32 +115,3 @@ export function htmlRegistro(c, impronta) {
     '<p class="small" style="margin-top:6px">Impronta informatica SHA-256 del contratto (riepilogo, condizioni, approvazioni e informativa):</p><p class="hash">' + impronta + '</p>');
   return r.join('');
 }
-
-let _logo = null;
-export async function logoDataUri() {
-  if (_logo !== null) return _logo;
-  try {
-    const r = await fetch(URL_LOGO);
-    const b = Buffer.from(await r.arrayBuffer());
-    _logo = 'data:' + (r.headers.get('content-type') || 'image/png') + ';base64,' + b.toString('base64');
-  } catch (e) { _logo = ''; }
-  return _logo;
-}
-
-/** HTML -> PDF con Chromium (stesso motore di Google). */
-export async function htmlInPdf(html) {
-  // Vercel gira su Amazon Linux 2023: Chromium deve estrarre le sue librerie (libnss3 & co.).
-  if (!process.env.AWS_LAMBDA_JS_RUNTIME) process.env.AWS_LAMBDA_JS_RUNTIME = 'nodejs' + process.versions.node.split('.')[0] + '.x';
-  const chromium = (await import('@sparticuz/chromium')).default;
-  const puppeteer = (await import('puppeteer-core')).default;
-  const browser = await puppeteer.launch({
-    args: chromium.args, defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath(), headless: true
-  });
-  try {
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'load' });
-    const pdf = await page.pdf({ format: 'A4', printBackground: true, preferCSSPageSize: true });
-    return Buffer.from(pdf);
-  } finally { await browser.close(); }
-}

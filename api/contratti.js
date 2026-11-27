@@ -1357,7 +1357,7 @@ function cornice(contenuto) {
     '<div style="padding:20px 26px;text-align:center;border-bottom:4px solid #1A9DA7"><img src="https://www.officinesportive.it/wp-content/uploads/2025/11/logo-officine-sportive-top.png" width="200" alt="Officine Sportive" style="width:200px;max-width:60%;height:auto"></div>' +
     '<div style="padding:24px 26px;font-size:15px;line-height:1.55">' + contenuto + '</div>' +
     '<div style="border-top:1px solid #D4E0E3;padding:16px 26px;font-size:14px;color:#14323F"><table><tr>' +
-    '<td style="vertical-align:middle;padding-right:14px"><img src="https://www.officinesportive.it/wp-content/uploads/2025/11/logo-officine-sportive-top.png" width="140" alt="Officine Sportive"></td>' +
+    '<td style="vertical-align:middle;padding-right:14px"><img src="https://officine-sportive.vercel.app/logo-os-soci.gif" width="150" alt="Officine Sportive" style="width:150px;height:auto"></td>' +
     '<td style="vertical-align:middle">Un caro saluto,<br><b style="color:#13556F">Il team di Officine Sportive</b></td></tr></table>' +
     '<div style="margin-top:10px;font-size:11.5px;letter-spacing:.5px;color:#5A707A;text-align:center">Palestra · Piscina · Spa · Padel · Centri estivi</div></div>' +
     '</div></div>';

@@ -125,7 +125,8 @@ async function mailSocio(tipo, p, prima) {
   if (!p.email) return;
   const nome = (p.nome || '').split(' ')[0] || 'ciao', tr = TRAINER[p.trainer].nome;
   const contatti = '<p>Imprevisti? Chiamaci allo <b>' + escHtml(TELEFONO) + '</b> o scrivi a <b>' + escHtml(EMAIL_INFO) + '</b>.</p>';
-  const saluto = '<p>Un caro saluto,<br><b>Il team di ' + escHtml(NOME_CIRCOLO) + '</b></p>';
+  const saluto = '<table role="presentation" style="margin:20px 0 0"><tr><td style="vertical-align:middle;padding-right:12px"><img src="https://officine-sportive.vercel.app/logo-os-soci.gif" width="150" alt="Officine Sportive" style="width:150px;height:auto"></td>' +
+    '<td style="vertical-align:middle;font-size:15px">Un caro saluto,<br><b>Il team di ' + escHtml(NOME_CIRCOLO) + '</b></td></tr></table>';
   let oggetto, titolo, corpo;
   if (tipo === 'conferma') {
     oggetto = '💪 Fit Check prenotato! Ti aspettiamo ' + giornoBreve(p.data); titolo = 'Fit Check prenotato! 💪';

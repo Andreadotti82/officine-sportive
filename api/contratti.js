@@ -798,6 +798,12 @@ async function giroContratti(chiave) {
   const rk = await supaFetchSrv('/rest/v1/jarvis_segreti?nome=eq.giro&select=valore');
   const k = await rk.json();
   if (!Array.isArray(k) || !k.length || !chiave || chiave !== k[0].valore) return { ok: false };
+  // PDF mancanti (es. errore al momento della firma): si rifanno qui.
+  const rm = await supaFetchSrv('/rest/v1/contratti?firmato=eq.true&annullato=eq.false&pdf_path=is.null&dettagli=not.is.null&select=*&limit=5');
+  let rifatti = 0;
+  for (const c of (await rm.json() || [])) {
+    try { await creaPdfContratto(c); rifatti++; } catch (e) { console.error('[GIRO] PDF', c.numero, e.message || e); }
+  }
   const limite = encodeURIComponent(new Date(Date.now() - 30 * 60000).toISOString());
   const r = await supaFetchSrv(`/rest/v1/contratti?firmato=eq.true&annullato=eq.false&pdf_inviato_il=is.null&pdf_path=not.is.null&firmato_il=lt.${limite}&select=*&limit=20`);
   const rows = await r.json();
@@ -811,7 +817,7 @@ async function giroContratti(chiave) {
     } catch (e) { console.error('[GIRO] PDF al socio', c.numero, e.message || e); }
   }
   await pulisciProve();
-  return { ok: true, inviati };
+  return { ok: true, inviati, rifatti };
 }
 
 async function reinviaOtp(id) {

@@ -37,6 +37,20 @@ export default async function handler(req, res) {
 }
 
 // === Helper Supabase ===
+// Chiave segreta di Supabase: solo lato server, per le tabelle chiuse al pubblico (es. liberatorie).
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
+async function supaFetchSrv(path, method, body, extraHeaders) {
+  if (!SUPABASE_SERVICE_KEY) throw new Error('SUPABASE_SERVICE_KEY non configurata');
+  method = method || 'GET';
+  const auth = SUPABASE_SERVICE_KEY.startsWith('sb_') ? {} : { 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` };
+  const headers = { 'Content-Type': 'application/json', 'apikey': SUPABASE_SERVICE_KEY, ...auth, ...(extraHeaders || {}) };
+  const opts = { method, headers };
+  if (body && method !== 'GET') opts.body = JSON.stringify(body);
+  const r = await fetch(`${SUPABASE_URL}${path}`, opts);
+  if (!r.ok) console.error('[DB] ' + method + ' ' + path.split('?')[0] + ' -> ' + r.status + ' ' + (await r.clone().text()).slice(0, 200));
+  return r;
+}
+
 async function supaFetch(path, method, body, extraHeaders) {
   method = method || 'GET';
   const headers = { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, ...(extraHeaders || {}) };
@@ -676,7 +690,7 @@ function oraRoma(d) {
   return new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(d).replace(',', '');
 }
 async function contaLiberatorie(cognome, nome) {
-  const r = await supaFetch(`/rest/v1/liberatorie?stato=eq.firmata&prova=eq.false&cognome=ilike.${encodeURIComponent(cognome)}&nome=ilike.${encodeURIComponent(nome)}&select=id`);
+  const r = await supaFetchSrv(`/rest/v1/liberatorie?stato=eq.firmata&prova=eq.false&cognome=ilike.${encodeURIComponent(cognome)}&nome=ilike.${encodeURIComponent(nome)}&select=id`);
   const rows = await r.json();
   return Array.isArray(rows) ? rows.length : 0;
 }
@@ -706,6 +720,14 @@ async function libAvvia(token, dati) {
   const hash = cr.pbkdf2Sync(otp, salt, 150000, 32, 'sha256').toString('hex');
   const prova = String(cfg.liberatoriaProva || '').toUpperCase() === 'SI';
 
+  const ins = await supaFetchSrv('/rest/v1/liberatorie', 'POST', {
+    cognome, nome, cellulare: cell, email, operatore: sessione.staff_nome || '', prova, stato: 'in_attesa',
+    otp_hash: hash, otp_salt: salt, otp_scadenza: new Date(Date.now() + 10 * 60000).toISOString(), otp_tentativi: 0
+  }, { 'Prefer': 'return=representation' });
+  const righe = await ins.json();
+  if (!ins.ok || !Array.isArray(righe) || !righe.length) return { ok: false, errore: 'Non riesco a salvare la liberatoria. Riprova tra qualche istante.' };
+  const riga = righe[0];
+
   let canale = '';
   if (!prova && String(cfg.canaleOTP || 'SMS').toUpperCase() === 'SMS') {
     if (await inviaSms(cell, `Officine Sportive: il tuo codice per la liberatoria è ${otp}. Vale 10 minuti.`)) canale = 'SMS';
@@ -720,13 +742,11 @@ async function libAvvia(token, dati) {
       canale = 'email';
     } catch (e) { console.error('[LIB] Mail OTP fallita:', e.message || e); }
   }
-  if (!canale) return { ok: false, errore: 'I sistemi sono momentaneamente bloccati: la liberatoria non può essere firmata ora. Riprova più tardi.' };
+  if (!canale) {
+    await supaFetchSrv(`/rest/v1/liberatorie?id=eq.${riga.id}`, 'DELETE');
+    return { ok: false, errore: 'I sistemi sono momentaneamente bloccati: la liberatoria non può essere firmata ora. Riprova più tardi.' };
+  }
 
-  const ins = await supaFetch('/rest/v1/liberatorie', 'POST', {
-    cognome, nome, cellulare: cell, email, operatore: sessione.staff_nome || '', prova, stato: 'in_attesa',
-    otp_hash: hash, otp_salt: salt, otp_scadenza: new Date(Date.now() + 10 * 60000).toISOString(), otp_tentativi: 0
-  }, { 'Prefer': 'return=representation' });
-  const [riga] = await ins.json();
   const mask = canale === 'SMS' ? numeroSkebby(cell).replace(/^(.{3}).+(.{2})$/, '$1***$2') : destMail.replace(/(.{2}).+(@.+)/, '$1***$2');
   return { ok: true, id: riga.id, numero: count + 1, canale, mask, nomeSocio: nome + ' ' + cognome };
 }
@@ -734,25 +754,25 @@ async function libAvvia(token, dati) {
 async function libConferma(token, id, codice) {
   const sessione = await verificaSessione(token);
   if (!sessione) return { ok: false, errore: 'Sessione scaduta.' };
-  const r = await supaFetch(`/rest/v1/liberatorie?id=eq.${encodeURIComponent(id || '')}&stato=eq.in_attesa&select=*`);
+  const r = await supaFetchSrv(`/rest/v1/liberatorie?id=eq.${encodeURIComponent(id || '')}&stato=eq.in_attesa&select=*`);
   const rows = await r.json();
   if (!Array.isArray(rows) || !rows.length) return { ok: false, errore: 'Sessione scaduta. Ricomincia.' };
   const o = rows[0];
-  const elimina = () => supaFetch(`/rest/v1/liberatorie?id=eq.${o.id}`, 'DELETE');
+  const elimina = () => supaFetchSrv(`/rest/v1/liberatorie?id=eq.${o.id}`, 'DELETE');
   if (new Date(o.otp_scadenza) < new Date()) { await elimina(); return { ok: false, errore: 'Codice scaduto. Ricomincia.' }; }
   if (o.otp_tentativi >= 5) { await elimina(); return { ok: false, errore: 'Troppi tentativi. Ricomincia.' }; }
   const cr = await getCrypto();
   const h = cr.pbkdf2Sync(String(codice || '').trim(), o.otp_salt, 150000, 32, 'sha256').toString('hex');
   if (h !== o.otp_hash) {
     const t = o.otp_tentativi + 1;
-    await supaFetch(`/rest/v1/liberatorie?id=eq.${o.id}`, 'PATCH', { otp_tentativi: t }, { 'Prefer': 'return=minimal' });
+    await supaFetchSrv(`/rest/v1/liberatorie?id=eq.${o.id}`, 'PATCH', { otp_tentativi: t }, { 'Prefer': 'return=minimal' });
     return { ok: false, errore: 'Codice errato. ' + (5 - t) + ' tentativi rimasti.' };
   }
   const numero = (o.prova ? 0 : await contaLiberatorie(o.cognome, o.nome)) + 1;
   if (numero > 2) { await elimina(); return { ok: false, errore: 'Questo socio ha già usato 2 liberatorie.' }; }
   const ora = new Date();
   const scad = new Date(Date.now() + 30 * 864e5);
-  await supaFetch(`/rest/v1/liberatorie?id=eq.${o.id}`, 'PATCH', {
+  await supaFetchSrv(`/rest/v1/liberatorie?id=eq.${o.id}`, 'PATCH', {
     stato: 'firmata', numero, firmata_il: ora.toISOString(), scadenza: scad.toISOString().slice(0, 10),
     otp_hash: null, otp_salt: null, otp_scadenza: null
   }, { 'Prefer': 'return=minimal' });

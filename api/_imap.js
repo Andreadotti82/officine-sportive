@@ -42,14 +42,14 @@ const q = (s) => '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '
 // Prova di collegamento: quale server risponde, login ok, quante mail ci sono e quali cartelle.
 export async function infoProva(chiave) {
   if (!chiave || chiave !== await segreto('giro')) return { ok: false };
-  const user = process.env.INFO_MAIL_USER, pass = process.env.INFO_MAIL_PASS;
+  const user = String(process.env.INFO_MAIL_USER || '').trim(), pass = String(process.env.INFO_MAIL_PASS || '').replace(/[\r\n]+$/,'');
   if (!user || !pass) return { ok: false, errore: 'variabili mancanti', user: !!user, pass: !!pass };
   const esiti = [];
-  for (const host of (process.env.INFO_MAIL_HOST ? [process.env.INFO_MAIL_HOST] : HOST_PROVA)) {
+  for (const host of (process.env.INFO_MAIL_HOST ? [process.env.INFO_MAIL_HOST] : ['mail.securemail.pro'])) {
     try {
       const s = await sessione(host);
       const l = await s.cmd('LOGIN ' + q(user) + ' ' + q(pass));
-      if (l.stato !== 'OK') { s.chiudi(); esiti.push({ host, login: l.stato, msg: l.riga.slice(0, 120) }); continue; }
+      if (l.stato !== 'OK') { s.chiudi(); esiti.push({ host, login: l.stato, msg: l.riga.slice(0, 120), utente: user.replace(/^(.{3}).*(@.*)$/, '$1…$2'), lunghezzaPass: pass.length, spaziPass: pass !== pass.trim() }); continue; }
       const sel = await s.cmd('EXAMINE INBOX');
       const ex = (sel.testo.match(/\* (\d+) EXISTS/) || [])[1];
       const lst = await s.cmd('LIST "" "*"');

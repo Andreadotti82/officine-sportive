@@ -2,7 +2,7 @@
 import tls from 'node:tls';
 import { segreto } from './_jarvis-base.js';
 
-const HOST_PROVA = ['imaps.register.it', 'imap.register.it', 'mail.register.it', 'imap.email-it.webapps.net', 'mail.officinesportive.it'];
+const HOST_PROVA = ['imap.securemail.pro', 'mail.securemail.pro', 'imaps.securemail.pro', 'imaps.register.it', 'imap.register.it', 'mail.register.it', 'imap.email-it.webapps.net', 'mail.officinesportive.it'];
 
 // Sessione IMAP minima: invia comandi con tag e raccoglie la risposta fino alla riga taggata.
 function sessione(host, port = 993, timeoutMs = 12000) {
@@ -56,7 +56,7 @@ export async function infoProva(chiave) {
       const cartelle = [...lst.testo.matchAll(/^\* LIST \([^)]*\) "[^"]*" (.+)$/gm)].map(x => x[1].replace(/^"|"$/g, ''));
       s.chiudi();
       return { ok: true, host, inbox: Number(ex || 0), cartelle, tentativi: esiti };
-    } catch (e) { esiti.push({ host, errore: String(e && e.message || e).slice(0, 120) }); }
+    } catch (e) { esiti.push({ host, errore: String(e && e.message || e).slice(0, 220) }); }
   }
   return { ok: false, tentativi: esiti };
 }

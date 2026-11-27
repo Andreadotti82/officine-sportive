@@ -31,10 +31,17 @@
     {
       "source": "/liberatoria",
       "destination": "/contratti.html"
+    },
+    {
+      "source": "/fitcheck",
+      "destination": "/fitcheck.html"
     }
   ],
   "functions": {
     "api/contratti.js": {
+      "maxDuration": 60
+    },
+    "api/jarvis.js": {
       "maxDuration": 60
     }
   }

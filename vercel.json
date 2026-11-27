@@ -39,6 +39,10 @@
     {
       "source": "/actionplan",
       "destination": "/actionplan.html"
+    },
+    {
+      "source": "/goodmorning",
+      "destination": "/api/jarvis?pagina=gm"
     }
   ],
   "functions": {

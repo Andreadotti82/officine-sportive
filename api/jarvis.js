@@ -13,8 +13,9 @@ import { infoProva } from './_imap.js';
 import { mailStaff } from './_staff.js';
 import { linkPagina } from './_link.js';
 import { testoCarica } from './_testi.js';
+import { pnImporta, pnGet, pnSet, pnList, pnPoll } from './_primanota.js';
 
-const FUNZIONI = { fcDati, fcPrenota, fcAnnulla, fcGiro, wCarica, apRun, gmRun, ponteRun, gasRun, gasEsegui, gasImporta, infoProva, mailStaff, testoCarica };
+const FUNZIONI = { fcDati, fcPrenota, fcAnnulla, fcGiro, wCarica, apRun, gmRun, ponteRun, gasRun, gasEsegui, gasImporta, infoProva, mailStaff, testoCarica, pnImporta, pnGet, pnSet, pnList, pnPoll };
 const errorePagina = '<p style="font-family:Arial;padding:30px;text-align:center">Il servizio non risponde in questo momento: riprova tra un attimo.</p>';
 
 async function pagina(res, crea, nome) {

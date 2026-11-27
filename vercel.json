@@ -35,6 +35,10 @@
     {
       "source": "/fitcheck",
       "destination": "/fitcheck.html"
+    },
+    {
+      "source": "/actionplan",
+      "destination": "/actionplan.html"
     }
   ],
   "functions": {

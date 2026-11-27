@@ -2,8 +2,9 @@
 export const config = { api: { bodyParser: { sizeLimit: '4mb' } } };
 import { fcDati, fcPrenota, fcAnnulla, fcGiro } from './_fitcheck.js';
 import { wCarica } from './_wellness.js';
+import { apRun } from './_actionplan.js';
 
-const FUNZIONI = { fcDati, fcPrenota, fcAnnulla, fcGiro, wCarica };
+const FUNZIONI = { fcDati, fcPrenota, fcAnnulla, fcGiro, wCarica, apRun };
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

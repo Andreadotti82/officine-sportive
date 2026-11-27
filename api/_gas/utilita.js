@@ -63,7 +63,12 @@ export class Blob {
   setDataFromString(s) { this._b = Buffer.from(String(s), 'utf8'); return this; }
   copyBlob() { return new Blob(Buffer.from(this._b), this._t, this._n); }
   getBlob() { return this; }
-  getAs(t) { if (t === this._t) return this; throw new Error('Conversione non disponibile su Jarvis: ' + t); }
+  getAs(t) {
+    if (t === this._t) return this;
+    // HTML → PDF: su Jarvis per ora resta una pagina HTML (si apre e si stampa uguale)
+    if (t === 'application/pdf' && /html/.test(this._t)) { const b = new Blob(this._b, 'text/html', String(this._n || 'documento').replace(/\.pdf$/i, '') + '.html'); b.setName = function (n) { this._n = String(n).replace(/\.pdf$/i, '.html'); return this; }; return b; }
+    throw new Error('Conversione non disponibile su Jarvis: ' + t);
+  }
   isGoogleType() { return false; }
 }
 export const aBuffer = x => x instanceof Blob ? x._b : Array.isArray(x) ? Buffer.from(x.map(v => v & 255)) : Buffer.from(String(x), 'utf8');

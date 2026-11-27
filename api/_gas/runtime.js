@@ -167,6 +167,8 @@ export function creaAmbiente(app) {
   const UrlFetchApp = {
     fetch: (url, o) => {
       o = o || {};
+      const rm = Object.keys(app2.rimappa || {}).find(k => String(url).startsWith(k));
+      if (rm) { const dest = app2.rimappa[rm]; if (!dest) return { getResponseCode: () => 200, getContentText: () => 'OK', getBlob: () => new Blob('OK', 'text/plain'), getContent: () => [], getHeaders: () => ({}), getAllHeaders: () => ({}) }; url = dest + String(url).slice(rm.length).replace(/^\?/, dest.includes('?') ? '&' : '?'); }
       const h = { ...(o.headers || {}) };
       if (o.contentType) h['Content-Type'] = o.contentType;
       let body = o.payload;
@@ -209,6 +211,7 @@ export function creaAmbiente(app) {
   const globali = {
     SpreadsheetApp, PropertiesService, CacheService, LockService, MailApp, GmailApp, DriveApp, UrlFetchApp, ScriptApp, HtmlService, ContentService, Logger,
     Utilities: creaUtilities(TZ),
+    FormApp: { openById: () => { throw new Error('Modulo Google non disponibile su Jarvis'); }, getActiveForm: () => null },
     Session: { getActiveUser: () => ({ getEmail: () => '' }), getEffectiveUser: () => ({ getEmail: () => app2.account || '' }), getScriptTimeZone: () => TZ, getTimeZone: () => TZ, getTemporaryActiveUserKey: () => '' },
     MimeType: { PDF: 'application/pdf', PNG: 'image/png', JPEG: 'image/jpeg', GIF: 'image/gif', CSV: 'text/csv', PLAIN_TEXT: 'text/plain', HTML: 'text/html', MICROSOFT_EXCEL: 'application/vnd.ms-excel', GOOGLE_SHEETS: 'application/vnd.google-apps.spreadsheet' },
     console: { log: (...a) => console.log('[' + app2.nome + ']', ...a), info: (...a) => console.log('[' + app2.nome + ']', ...a), warn: (...a) => console.warn('[' + app2.nome + ']', ...a), error: (...a) => console.error('[' + app2.nome + ']', ...a), time() { }, timeEnd() { } },

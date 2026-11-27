@@ -9,7 +9,12 @@ const LOGO_JARVIS = { nome: 'jarvis.gif', tipo: 'image/gif', locale: 'public/jar
 const FILE_NOTI = { '1DHgfuA8S-FU5cZ_bAwjwwCZRxiMQN1oJ': LOGO_JARVIS };
 
 export const APPS = {
-  actionplan: { nome: 'actionplan', url: BASE + '/actionplan', percorso: '/actionplan', mittente: 'Action plan audit', fileNoti: FILE_NOTI }
+  actionplan: { nome: 'actionplan', url: BASE + '/actionplan', percorso: '/actionplan', mittente: 'Action plan audit', fileNoti: FILE_NOTI },
+  gm: { nome: 'gm', url: BASE + '/goodmorning', percorso: '/goodmorning', mittente: 'Good Morning & Good Night', fileNoti: FILE_NOTI,
+    rimappa: {
+      'https://script.google.com/macros/s/AKfycbw8elh5LTFxELcgKHa7nQum8NPAIafVhn1y6sc1mwfNCs_mCF-DTB9SKiViH5tAaW1_Aw/exec': BASE + '/api/jarvis?gaspost=actionplan',
+      'https://script.google.com/macros/s/AKfycbxjfZhlL2WBKQeXZ6lm9mEOZcfQ_SmKw8-w-R4sG4Sb9nJCM4phcU_vm82qTyUuZVKO/exec': null   // il Fit Check su Jarvis legge i turni da solo
+    } }
 };
 
 const decifrati = {};

@@ -47,6 +47,10 @@
     {
       "source": "/hw",
       "destination": "/api/jarvis?ponte=hw"
+    },
+    {
+      "source": "/file/:id",
+      "destination": "/api/jarvis?file=:id"
     }
   ],
   "functions": {

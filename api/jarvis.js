@@ -13,9 +13,9 @@ import { infoProva } from './_imap.js';
 import { mailStaff } from './_staff.js';
 import { linkPagina } from './_link.js';
 import { testoCarica } from './_testi.js';
-import { pnImporta, pnGet, pnSet, pnList, pnPoll } from './_primanota.js';
+import { pnImporta, pnGet, pnSet, pnList, pnPoll, pnTurni, pnPagina } from './_primanota.js';
 
-const FUNZIONI = { fcDati, fcPrenota, fcAnnulla, fcGiro, wCarica, apRun, gmRun, ponteRun, gasRun, gasEsegui, gasImporta, infoProva, mailStaff, testoCarica, pnImporta, pnGet, pnSet, pnList, pnPoll };
+const FUNZIONI = { fcDati, fcPrenota, fcAnnulla, fcGiro, wCarica, apRun, gmRun, ponteRun, gasRun, gasEsegui, gasImporta, infoProva, mailStaff, testoCarica, pnImporta, pnGet, pnSet, pnList, pnPoll, pnTurni };
 const errorePagina = '<p style="font-family:Arial;padding:30px;text-align:center">Il servizio non risponde in questo momento: riprova tra un attimo.</p>';
 
 async function pagina(res, crea, nome) {
@@ -31,6 +31,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   const q = req.query || {};
+  if (req.method === 'GET' && q.pagina === 'primanota') return pagina(res, () => pnPagina(q), 'primanota');
   if (req.method === 'GET' && q.pagina === 'link') return pagina(res, () => linkPagina(q), 'link');
   if (req.method === 'GET' && q.pagina === 'gm') return pagina(res, () => gmPagina(q), 'gm');
   if (req.method === 'GET' && PONTI[q.ponte]) return pagina(res, () => pontePagina(q.ponte, q), q.ponte);

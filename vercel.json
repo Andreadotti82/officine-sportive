@@ -5,6 +5,10 @@
   ],
   "rewrites": [
     {
+      "source": "/primanota",
+      "destination": "/api/jarvis?pagina=primanota"
+    },
+    {
       "source": "/link",
       "destination": "/api/jarvis?pagina=link"
     },

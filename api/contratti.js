@@ -667,8 +667,136 @@ async function boCessioneCerca(token, d) {
 }
 
 // Liberatoria
-async function libAvvia(token, dati) { return { ok: false, errore: 'In fase di migrazione.' }; }
-async function libConferma(token, id, codice) { return { ok: false, errore: 'In fase di migrazione.' }; }
+// Stessa logica della versione Google: max 2 liberatorie per socio, certificato entro 30 giorni,
+// alla seconda mail al socio (serve il certificato) e allo staff (bloccare il tornello).
+function nomeProprio(t) {
+  return String(t || '').trim().toLowerCase().replace(/(^|[\s'-])([a-zà-ù])/g, (m, a, b) => a + b.toUpperCase());
+}
+function oraRoma(d) {
+  return new Intl.DateTimeFormat('it-IT', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(d).replace(',', '');
+}
+async function contaLiberatorie(cognome, nome) {
+  const r = await supaFetch(`/rest/v1/liberatorie?stato=eq.firmata&prova=eq.false&cognome=ilike.${encodeURIComponent(cognome)}&nome=ilike.${encodeURIComponent(nome)}&select=id`);
+  const rows = await r.json();
+  return Array.isArray(rows) ? rows.length : 0;
+}
+async function configContratti() {
+  const r = await supaFetch('/rest/v1/turni_docs?path=eq.contratti/config&select=data');
+  const rows = await r.json();
+  return rows.length ? rows[0].data || {} : {};
+}
+
+async function libAvvia(token, dati) {
+  const sessione = await verificaSessione(token);
+  if (!sessione) return { ok: false, errore: 'Sessione scaduta.' };
+  const nome = nomeProprio(dati && dati.nome), cognome = nomeProprio(dati && dati.cognome);
+  const cell = String((dati && dati.cellulare) || '').trim();
+  const email = String((dati && dati.email) || '').trim().toLowerCase();
+  if (!nome || !cognome) return { ok: false, errore: 'Inserisci nome e cognome.' };
+  if (!cell) return { ok: false, errore: 'Inserisci il numero di cellulare.' };
+  if (!email) return { ok: false, errore: 'Inserisci la mail del socio.' };
+
+  const cfg = await configContratti();
+  const count = await contaLiberatorie(cognome, nome);
+  if (count >= 2) return { ok: false, errore: 'Questo socio ha già usato 2 liberatorie.' };
+
+  const cr = await getCrypto();
+  const otp = String(cr.randomInt(0, 1000000)).padStart(6, '0');
+  const salt = cr.randomBytes(12).toString('hex');
+  const hash = cr.pbkdf2Sync(otp, salt, 150000, 32, 'sha256').toString('hex');
+  const prova = String(cfg.liberatoriaProva || '').toUpperCase() === 'SI';
+
+  let canale = '';
+  if (!prova && String(cfg.canaleOTP || 'SMS').toUpperCase() === 'SMS') {
+    if (await inviaSms(cell, `Officine Sportive: il tuo codice per la liberatoria è ${otp}. Vale 10 minuti.`)) canale = 'SMS';
+  }
+  const destMail = prova ? (cfg.emailAllarmi || email) : email;
+  if (!canale) {
+    try {
+      await inviaMail(destMail, 'Il tuo codice per la liberatoria: ' + otp,
+        cornice('<p style="margin:0 0 14px">Ciao ' + escHtml(nome) + ',</p><p style="margin:0 0 6px">il tuo codice per firmare la liberatoria è:</p>' +
+          '<div style="background:#13556F;color:#fff;font-size:32px;font-weight:800;text-align:center;padding:20px;border-radius:14px;letter-spacing:8px;margin:16px 0">' + otp + '</div>' +
+          '<p style="color:#5A707A;font-size:13px;margin:0">Vale 10 minuti.</p>'));
+      canale = 'email';
+    } catch (e) { console.error('[LIB] Mail OTP fallita:', e.message || e); }
+  }
+  if (!canale) return { ok: false, errore: 'I sistemi sono momentaneamente bloccati: la liberatoria non può essere firmata ora. Riprova più tardi.' };
+
+  const ins = await supaFetch('/rest/v1/liberatorie', 'POST', {
+    cognome, nome, cellulare: cell, email, operatore: sessione.staff_nome || '', prova, stato: 'in_attesa',
+    otp_hash: hash, otp_salt: salt, otp_scadenza: new Date(Date.now() + 10 * 60000).toISOString(), otp_tentativi: 0
+  }, { 'Prefer': 'return=representation' });
+  const [riga] = await ins.json();
+  const mask = canale === 'SMS' ? numeroSkebby(cell).replace(/^(.{3}).+(.{2})$/, '$1***$2') : destMail.replace(/(.{2}).+(@.+)/, '$1***$2');
+  return { ok: true, id: riga.id, numero: count + 1, canale, mask, nomeSocio: nome + ' ' + cognome };
+}
+
+async function libConferma(token, id, codice) {
+  const sessione = await verificaSessione(token);
+  if (!sessione) return { ok: false, errore: 'Sessione scaduta.' };
+  const r = await supaFetch(`/rest/v1/liberatorie?id=eq.${encodeURIComponent(id || '')}&stato=eq.in_attesa&select=*`);
+  const rows = await r.json();
+  if (!Array.isArray(rows) || !rows.length) return { ok: false, errore: 'Sessione scaduta. Ricomincia.' };
+  const o = rows[0];
+  const elimina = () => supaFetch(`/rest/v1/liberatorie?id=eq.${o.id}`, 'DELETE');
+  if (new Date(o.otp_scadenza) < new Date()) { await elimina(); return { ok: false, errore: 'Codice scaduto. Ricomincia.' }; }
+  if (o.otp_tentativi >= 5) { await elimina(); return { ok: false, errore: 'Troppi tentativi. Ricomincia.' }; }
+  const cr = await getCrypto();
+  const h = cr.pbkdf2Sync(String(codice || '').trim(), o.otp_salt, 150000, 32, 'sha256').toString('hex');
+  if (h !== o.otp_hash) {
+    const t = o.otp_tentativi + 1;
+    await supaFetch(`/rest/v1/liberatorie?id=eq.${o.id}`, 'PATCH', { otp_tentativi: t }, { 'Prefer': 'return=minimal' });
+    return { ok: false, errore: 'Codice errato. ' + (5 - t) + ' tentativi rimasti.' };
+  }
+  const numero = (o.prova ? 0 : await contaLiberatorie(o.cognome, o.nome)) + 1;
+  if (numero > 2) { await elimina(); return { ok: false, errore: 'Questo socio ha già usato 2 liberatorie.' }; }
+  const ora = new Date();
+  const scad = new Date(Date.now() + 30 * 864e5);
+  await supaFetch(`/rest/v1/liberatorie?id=eq.${o.id}`, 'PATCH', {
+    stato: 'firmata', numero, firmata_il: ora.toISOString(), scadenza: scad.toISOString().slice(0, 10),
+    otp_hash: null, otp_salt: null, otp_scadenza: null
+  }, { 'Prefer': 'return=minimal' });
+  if (numero === 2 && !o.prova) {
+    const cfg = await configContratti();
+    try { await libMailBlocco(o.nome, o.email); } catch (e) { console.error('[LIB] Mail socio:', e.message || e); }
+    try { await libMailStaffBlocco(o.nome, o.cognome, oraRoma(ora), cfg); } catch (e) { console.error('[LIB] Mail staff:', e.message || e); }
+  }
+  return { ok: true, numero, scadenza: fmtData(scad) };
+}
+
+const BOX_MEDICO = '<div style="background:#F0F7F8;border:1px solid #C8E0E3;border-radius:12px;padding:14px;margin:14px 0">' +
+  '<div style="font-size:12px;font-weight:600;color:#1A9DA7;text-transform:uppercase;margin-bottom:4px">Medico convenzionato del circolo</div>' +
+  '<div style="font-size:15px;font-weight:700;color:#14323F">Dr. Domenico Bisogno</div>' +
+  '<div style="font-size:13px;color:#5A707A">Medicina dello sport · Senza appuntamento<br>Viale Donato Bramante 47, Fiumicino<br>Lun e Mer 15–18 · Mar e Gio 11:30–15 · Ven 17–19</div></div>';
+
+async function libMailBlocco(nome, email) {
+  await inviaMail(email, 'Certificato medico: da adesso è obbligatorio per accedere · Officine Sportive', cornice(
+    '<p style="margin:0 0 14px">Ciao ' + escHtml(nome) + ',</p>' +
+    '<p style="margin:0 0 14px">ti scriviamo per aggiornarti sul tuo certificato medico.</p>' +
+    '<div style="background:#FFF4E5;border:1px solid #FFD599;border-radius:12px;padding:16px;margin:14px 0;font-size:14px;color:#8B5E00"><b>Hai utilizzato entrambe le liberatorie temporanee</b> previste dal regolamento del circolo.</div>' +
+    '<p style="margin:0 0 14px"><b style="color:#13556F">Da questo momento, per accedere al circolo è necessario presentare in reception il certificato medico.</b></p>' +
+    '<p style="margin:0 0 14px">I ragazzi in reception non sono autorizzati a fare eccezioni: senza certificato, purtroppo, non è possibile entrare.</p>' +
+    BOX_MEDICO +
+    '<p style="margin:0">Per qualsiasi informazione ti aspettiamo in reception!</p>'));
+}
+
+async function libMailStaffBlocco(nome, cognome, ora, cfg) {
+  const dest = [cfg.emailStaff, cfg.emailAllarmi].filter(Boolean);
+  if (!dest.length) return;
+  const html = '<div style="background:#EEF4F5;padding:24px 12px;font-family:Montserrat,Arial,Helvetica,sans-serif;color:#14323F">' +
+    '<div style="max-width:560px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #D4E0E3">' +
+    '<div style="padding:24px 26px;font-size:15px;line-height:1.6">' +
+    '<div style="background:#FDECEC;border:2px solid #C0392B;border-radius:12px;padding:16px;margin:0 0 16px;text-align:center"><div style="font-size:18px;font-weight:700;color:#C0392B">⛔ Bloccare il tornello</div></div>' +
+    '<p style="margin:0 0 14px">Il socio <b>' + escHtml(nome + ' ' + cognome) + '</b> ha firmato la seconda e ultima liberatoria il ' + ora + '.</p>' +
+    '<p style="margin:0 0 14px"><b>Da adesso questo socio non può più entrare senza certificato medico.</b></p>' +
+    '<p style="margin:0 0 6px"><b>Cosa fare:</b></p>' +
+    '<p style="margin:0 0 14px">1. Aprire Wellness in Cloud<br>2. Cercare il socio: ' + escHtml(nome + ' ' + cognome) + '<br>3. Inserire il blocco tornello per certificato medico mancante<br>4. Se il socio si presenta, spiegargli con gentilezza che senza certificato non è possibile entrare</p>' +
+    BOX_MEDICO +
+    '<table role="presentation" style="margin:20px 0 0"><tr><td style="vertical-align:middle;padding-right:10px"><img src="https://officine-sportive.vercel.app/jarvis-logo.gif" width="56" height="56" alt="Jarvis"></td>' +
+    '<td style="vertical-align:middle;font-size:15px">Un caro saluto,<br><b>Jarvis</b></td></tr></table>' +
+    '</div></div></div>';
+  await inviaMail(dest, 'Bloccare tornello: ' + nome + ' ' + cognome + ' ha firmato 2 liberatorie', html, 'Jarvis · Officine Sportive');
+}
 async function libAvviaSocio(dati) { return { ok: false, errore: 'In fase di migrazione.' }; }
 async function libConfermaSocio(id, codice) { return { ok: false, errore: 'In fase di migrazione.' }; }
 
@@ -701,6 +829,30 @@ async function inviaSms(numero, testo) {
     console.log('[SMS] Inviato a', dest);
     return true;
   } catch (e) { console.error('[SMS] Errore:', e.message || e); return false; }
+}
+
+// === HELPER: mail via Resend ===
+function escHtml(t) { return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+// Layout fisso delle mail ai soci: logo, firma del team, attività del circolo.
+function cornice(contenuto) {
+  return '<div style="background:#EEF4F5;padding:24px 12px;font-family:Montserrat,Arial,Helvetica,sans-serif;color:#14323F">' +
+    '<div style="max-width:560px;margin:0 auto;background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #D4E0E3">' +
+    '<div style="padding:20px 26px;text-align:center;border-bottom:4px solid #1A9DA7"><img src="https://www.officinesportive.it/wp-content/uploads/2025/11/logo-officine-sportive-top.png" width="200" alt="Officine Sportive" style="width:200px;max-width:60%;height:auto"></div>' +
+    '<div style="padding:24px 26px;font-size:15px;line-height:1.55">' + contenuto + '</div>' +
+    '<div style="border-top:1px solid #D4E0E3;padding:16px 26px;font-size:14px;color:#14323F"><table><tr>' +
+    '<td style="vertical-align:middle;padding-right:14px"><img src="https://www.officinesportive.it/wp-content/uploads/2025/11/logo-officine-sportive-top.png" width="140" alt="Officine Sportive"></td>' +
+    '<td style="vertical-align:middle">Un caro saluto,<br><b style="color:#13556F">Il team di Officine Sportive</b></td></tr></table>' +
+    '<div style="margin-top:10px;font-size:11.5px;letter-spacing:.5px;color:#5A707A;text-align:center">Palestra · Piscina · Spa · Padel · Centri estivi</div></div>' +
+    '</div></div>';
+}
+async function inviaMail(to, subject, html, mittente) {
+  if (!RESEND_KEY) throw new Error('RESEND_KEY non configurata');
+  const r = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: (mittente || 'Officine Sportive') + ' <info@officinesportive.it>', to: Array.isArray(to) ? to : [to], subject, html })
+  });
+  if (!r.ok) throw new Error('Resend ' + r.status + ': ' + (await r.text()).slice(0, 200));
 }
 
 // === HELPER: OTP via Email ===

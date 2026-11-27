@@ -347,6 +347,7 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:10px}
     <label for="libCognome">Cognome</label><input type="text" id="libCognome" autocapitalize="words">
     <label for="libCell">Cellulare (ricevera il codice OTP)</label><input type="tel" id="libCell">
     <label for="libEmail">Email</label><input type="email" id="libEmail">
+    <label class="sp" style="margin-top:8px"><input type="checkbox" id="libSenzaEmail"><div><b>Non ho un indirizzo email</b>: ricevo tutto via SMS</div></label>
     <div class="msg" id="errLib"></div>
     <button class="btn" id="libInvia" style="background:#0E9F86">Invia il codice OTP</button>
   </div>
@@ -376,6 +377,7 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:10px}
 
 <script>
 var APRI_STAFF = new URLSearchParams(location.search).has('staff') || location.pathname === '/staff';
+var LIB_PUBBLICA = location.pathname === '/liberatoria' || new URLSearchParams(location.search).has('liberatoria');
 var PAGATO = '';
 var CAT = null;
 var ST = { area: '', abb: null, offerte: [], promo: '', letto: false, sessione: '', client: {} };
@@ -1099,20 +1101,32 @@ $('revFirma').addEventListener('click', function () {
 var LIB = {};
 $('apriLib').addEventListener('click', function () {
   ['libNome', 'libCognome', 'libCell', 'libEmail', 'libCodice'].forEach(function (k) { $(k).value = ''; });
+  $('libSenzaEmail').checked = false; $('libEmail').disabled = false;
   $('errLib').textContent = ''; $('errLibOtp').textContent = ''; LIB = {};
   $('libCk1').checked = false; $('libCk2').checked = false; $('libCk3').checked = false; $('libFirma').disabled = true; LIB_LETTO = false;
   $('libScrollMsg').style.display = ''; ['splCk1','splCk2','splCk3'].forEach(function (id) { $(id).style.opacity = '0.4'; $(id).style.pointerEvents = 'none'; });
   $('libForm').classList.remove('nascosto'); $('libOtp').classList.add('nascosto'); $('libFatto').classList.add('nascosto');
   $('vLib').classList.add('on');
 });
+$('libSenzaEmail').addEventListener('change', function () { $('libEmail').disabled = this.checked; if (this.checked) $('libEmail').value = ''; });
+if (LIB_PUBBLICA) {
+  // Pagina pubblica (QR in reception): il socio fa la liberatoria da solo, senza back office.
+  document.addEventListener('DOMContentLoaded', function () {
+    $('apriLib').click();
+    $('libChiudi').classList.add('nascosto');
+    document.querySelector('#libForm .sub').textContent = 'Compila i tuoi dati: ti mandiamo un codice per SMS per firmare.';
+  });
+}
 $('libInvia').addEventListener('click', function () {
   var nome = $('libNome').value.trim(), cognome = $('libCognome').value.trim(), cell = $('libCell').value.trim(), email = $('libEmail').value.trim();
   if (!nome || !cognome) { $('errLib').textContent = 'Inserisci nome e cognome.'; return; }
   if (!cell) { $('errLib').textContent = 'Inserisci il numero di cellulare.'; return; }
-  if (!email || email.indexOf('@') < 0) { $('errLib').textContent = 'Inserisci la mail del socio.'; return; }
+  var senzaEmail = $('libSenzaEmail').checked;
+  if (!senzaEmail && (!email || email.indexOf('@') < 0)) { $('errLib').textContent = 'Inserisci la mail, oppure spunta «Non ho un indirizzo email».'; return; }
   $('errLib').textContent = '';
   attesa(true, 'Invio OTP...');
-  srv('libAvvia', [TOKEN, { nome: nome, cognome: cognome, cellulare: cell, email: email }], function (r) {
+  var datiLib = { nome: nome, cognome: cognome, cellulare: cell, email: senzaEmail ? '' : email, senzaEmail: senzaEmail };
+  srv(LIB_PUBBLICA ? 'libAvviaSocio' : 'libAvvia', LIB_PUBBLICA ? [datiLib] : [TOKEN, datiLib], function (r) {
     attesa(false);
     if (!r.ok) { $('errLib').innerHTML = r.errore; return; }
     LIB = r;
@@ -1146,7 +1160,7 @@ $('libCk1').addEventListener('change', libChk); $('libCk2').addEventListener('ch
 $('libFirma').addEventListener('click', function () {
   $('errLibOtp').textContent = '';
   attesa(true, 'Firmo e salvo...');
-  srv('libConferma', [TOKEN, LIB.id, $('libCodice').value.trim()], function (r) {
+  srv(LIB_PUBBLICA ? 'libConfermaSocio' : 'libConferma', LIB_PUBBLICA ? [LIB.id, $('libCodice').value.trim()] : [TOKEN, LIB.id, $('libCodice').value.trim()], function (r) {
     attesa(false);
     if (!r.ok) { $('errLibOtp').textContent = r.errore; return; }
     $('libFattoT').innerHTML = esc(LIB.nomeSocio) + ' puo accedere al circolo.<br>Liberatoria n. <b>' + r.numero + ' di 2</b>. Certificato medico da presentare entro il <b>' + esc(r.scadenza) + '</b>.';

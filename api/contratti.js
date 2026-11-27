@@ -1179,12 +1179,24 @@ async function configContratti() {
 async function libAvvia(token, dati) {
   const sessione = await verificaSessione(token);
   if (!sessione) return { ok: false, errore: 'Sessione scaduta.' };
+  return libAvviaCore(dati, sessione.staff_nome || '');
+}
+// Dal QR in reception: il socio fa da solo.
+async function libAvviaSocio(dati) { return libAvviaCore(dati, 'socio (QR reception)'); }
+
+async function libAvviaCore(dati, operatore) {
   const nome = nomeProprio(dati && dati.nome), cognome = nomeProprio(dati && dati.cognome);
-  const cell = String((dati && dati.cellulare) || '').trim();
-  const email = String((dati && dati.email) || '').trim().toLowerCase();
+  const cell = normalizzaCell((dati && dati.cellulare) || '');
+  const senzaEmail = !!(dati && dati.senzaEmail);
+  const email = senzaEmail ? '' : String((dati && dati.email) || '').trim().toLowerCase();
   if (!nome || !cognome) return { ok: false, errore: 'Inserisci nome e cognome.' };
-  if (!cell) return { ok: false, errore: 'Inserisci il numero di cellulare.' };
-  if (!email) return { ok: false, errore: 'Inserisci la mail del socio.' };
+  if (!/^\+393\d{8,9}$/.test(cell)) return { ok: false, errore: 'Il cellulare non è valido: serve un cellulare italiano per ricevere il codice.' };
+  if (!senzaEmail && !emailValida(email)) return { ok: false, errore: 'Inserisci una mail valida, oppure spunta «Non ho un indirizzo email».' };
+  // Anti abuso: massimo 3 codici all'ora per lo stesso cellulare.
+  const unOra = encodeURIComponent(new Date(Date.now() - 3600000).toISOString());
+  const rc = await supaFetchSrv(`/rest/v1/liberatorie?cellulare=eq.${encodeURIComponent(cell)}&creata_il=gt.${unOra}&select=id`);
+  const recenti = await rc.json();
+  if (Array.isArray(recenti) && recenti.length >= 3) return { ok: false, errore: 'Troppe richieste per questo cellulare: riprova tra un\'ora o chiedi in reception.' };
 
   const cfg = await configContratti();
   const count = await contaLiberatorie(cognome, nome);
@@ -1197,7 +1209,7 @@ async function libAvvia(token, dati) {
   const prova = String(cfg.liberatoriaProva || '').toUpperCase() === 'SI' || cognome.toLowerCase() === 'prova';
 
   const ins = await supaFetchSrv('/rest/v1/liberatorie', 'POST', {
-    cognome, nome, cellulare: cell, email, operatore: sessione.staff_nome || '', prova, stato: 'in_attesa',
+    cognome, nome, cellulare: cell, email, operatore, prova, stato: 'in_attesa',
     otp_hash: hash, otp_salt: salt, otp_scadenza: new Date(Date.now() + 10 * 60000).toISOString(), otp_tentativi: 0
   }, { 'Prefer': 'return=representation' });
   const righe = await ins.json();
@@ -1209,7 +1221,7 @@ async function libAvvia(token, dati) {
     if (await inviaSms(cell, `Officine Sportive: il tuo codice per la liberatoria è ${otp}. Vale 10 minuti.`)) canale = 'SMS';
   }
   const destMail = prova ? (cfg.emailAllarmi || email) : email;
-  if (!canale) {
+  if (!canale && destMail) {
     try {
       await inviaMail(destMail, 'Il tuo codice per la liberatoria: ' + otp,
         cornice('<p style="margin:0 0 14px">Ciao ' + escHtml(nome) + ',</p><p style="margin:0 0 6px">il tuo codice per firmare la liberatoria è:</p>' +
@@ -1230,6 +1242,11 @@ async function libAvvia(token, dati) {
 async function libConferma(token, id, codice) {
   const sessione = await verificaSessione(token);
   if (!sessione) return { ok: false, errore: 'Sessione scaduta.' };
+  return libConfermaCore(id, codice);
+}
+async function libConfermaSocio(id, codice) { return libConfermaCore(id, codice); }
+
+async function libConfermaCore(id, codice) {
   const r = await supaFetchSrv(`/rest/v1/liberatorie?id=eq.${encodeURIComponent(id || '')}&stato=eq.in_attesa&select=*`);
   const rows = await r.json();
   if (!Array.isArray(rows) || !rows.length) return { ok: false, errore: 'Sessione scaduta. Ricomincia.' };
@@ -1254,7 +1271,10 @@ async function libConferma(token, id, codice) {
   }, { 'Prefer': 'return=minimal' });
   if (numero === 2 && !o.prova) {
     const cfg = await configContratti();
-    try { await libMailBlocco(o.nome, o.email); } catch (e) { console.error('[LIB] Mail socio:', e.message || e); }
+    try {
+      if (o.email) await libMailBlocco(o.nome, o.email);
+      else await inviaSms(o.cellulare, 'Officine Sportive: ciao ' + o.nome + ', hai usato entrambe le liberatorie. Da adesso per entrare al circolo serve il certificato medico. Medico convenzionato: Dr. Bisogno, Viale D. Bramante 47, Fiumicino.');
+    } catch (e) { console.error('[LIB] Avviso socio:', e.message || e); }
     try { await libMailStaffBlocco(o.nome, o.cognome, oraRoma(ora), cfg); } catch (e) { console.error('[LIB] Mail staff:', e.message || e); }
   }
   return { ok: true, numero, scadenza: fmtData(scad) };
@@ -1293,8 +1313,6 @@ async function libMailStaffBlocco(nome, cognome, ora, cfg) {
     '</div></div></div>';
   await inviaMail(dest, 'Bloccare tornello: ' + nome + ' ' + cognome + ' ha firmato 2 liberatorie', html, 'Jarvis · Officine Sportive');
 }
-async function libAvviaSocio(dati) { return { ok: false, errore: 'In fase di migrazione.' }; }
-async function libConfermaSocio(id, codice) { return { ok: false, errore: 'In fase di migrazione.' }; }
 
 // === HELPER: SMS via Skebby ===
 function numeroSkebby(n) {

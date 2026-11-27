@@ -27,6 +27,10 @@
     {
       "source": "/contratti",
       "destination": "/contratti.html"
+    },
+    {
+      "source": "/liberatoria",
+      "destination": "/contratti.html"
     }
   ],
   "functions": {

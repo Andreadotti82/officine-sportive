@@ -12,6 +12,8 @@ const SKEBBY_PASS = process.env.SKEBBY_PASS || '';
 const SUMUP_KEY = process.env.SUMUP_API_KEY || '';
 const SUMUP_MERCHANT = process.env.SUMUP_MERCHANT_CODE || '';
 const RESEND_KEY = process.env.RESEND_API_KEY || '';
+const SMS_RELAY_URL = process.env.SMS_RELAY_URL || '';
+const SMS_RELAY_SECRET = process.env.SMS_RELAY_SECRET || '';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -672,52 +674,48 @@ async function libConfermaSocio(id, codice) { return { ok: false, errore: 'In fa
 
 // === HELPER: SMS via Skebby ===
 async function inviaSms(numero, testo) {
-  if (!SKEBBY_USER || !SKEBBY_PASS) return false;
-  const https = await import('node:https');
-  const auth = Buffer.from(SKEBBY_USER + ':' + SKEBBY_PASS).toString('base64');
-
-  // Helper: richiesta HTTPS diretta (bypassa fetch che potrebbe avere problemi)
-  function httpsReq(options, body) {
-    return new Promise((resolve, reject) => {
-      const req = https.default.request(options, res => {
-        let data = '';
-        res.on('data', chunk => data += chunk);
-        res.on('end', () => resolve({ status: res.statusCode, body: data, headers: res.headers }));
+  // Metodo 1: Relay via Google Apps Script (Skebby funziona da Google)
+  if (SMS_RELAY_URL) {
+    try {
+      console.log('[SMS] Invio via relay GAS a', numero);
+      const r = await fetch(SMS_RELAY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        redirect: 'follow',
+        body: JSON.stringify({ numero, testo, secret: SMS_RELAY_SECRET })
       });
-      req.on('error', reject);
-      req.setTimeout(15000, () => { req.destroy(); reject(new Error('timeout')); });
-      if (body) req.write(body);
-      req.end();
-    });
+      const body = await r.text();
+      console.log('[SMS] Relay risposta:', r.status, body.slice(0, 200));
+      try { const j = JSON.parse(body); if (j.ok) return true; } catch (_) {}
+      // GAS redirect: se ritorna HTML, prova a seguire il redirect
+      if (r.ok || r.status === 302) {
+        console.log('[SMS] Relay potrebbe aver funzionato (status', r.status + ')');
+      }
+      return false;
+    } catch (e) { console.error('[SMS] Errore relay:', e.message); }
   }
 
+  // Metodo 2: Chiamata diretta a Skebby (fallback)
+  if (!SKEBBY_USER || !SKEBBY_PASS) return false;
   try {
-    console.log('[SMS] Login Skebby via https, user:', SKEBBY_USER);
-
-    // Login
-    const loginRes = await httpsReq({
-      hostname: 'api.skebby.it',
-      path: '/API/v1.0/REST/login',
+    const auth = Buffer.from(SKEBBY_USER + ':' + SKEBBY_PASS).toString('base64');
+    console.log('[SMS] Login Skebby diretto, user:', SKEBBY_USER);
+    const loginR = await fetch('https://api.skebby.it/API/v1.0/REST/login', {
       method: 'GET',
-      headers: { 'Authorization': 'Basic ' + auth },
-      minVersion: 'TLSv1.2'
+      headers: { 'Authorization': 'Basic ' + auth }
     });
-    console.log('[SMS] Skebby login:', loginRes.status, loginRes.body.slice(0, 100));
-    if (loginRes.status !== 200) return false;
+    const loginBody = await loginR.text();
+    console.log('[SMS] Skebby login:', loginR.status, loginBody.slice(0, 100));
+    if (!loginR.ok) return false;
+    const keys = loginBody.trim().split(';');
 
-    const keys = loginRes.body.trim().split(';');
-
-    // Invio SMS
-    const smsBody = JSON.stringify({ message_type: 'GP', message: testo, recipient: [numero], returnCredits: true });
-    const smsRes = await httpsReq({
-      hostname: 'api.skebby.it',
-      path: '/API/v1.0/REST/sms',
+    const smsR = await fetch('https://api.skebby.it/API/v1.0/REST/sms', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'user_key': keys[0], 'Session_key': keys[1], 'Content-Length': Buffer.byteLength(smsBody) },
-      minVersion: 'TLSv1.2'
-    }, smsBody);
-    if (smsRes.status >= 300) {
-      console.error('[SMS] Invio fallito:', smsRes.status, smsRes.body);
+      headers: { 'Content-Type': 'application/json', 'user_key': keys[0], 'Session_key': keys[1] },
+      body: JSON.stringify({ message_type: 'GP', message: testo, recipient: [numero], returnCredits: true })
+    });
+    if (!smsR.ok) {
+      console.error('[SMS] Invio fallito:', smsR.status, await smsR.text());
       return false;
     }
     console.log('[SMS] Inviato a', numero);

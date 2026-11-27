@@ -43,6 +43,10 @@
     {
       "source": "/goodmorning",
       "destination": "/api/jarvis?pagina=gm"
+    },
+    {
+      "source": "/hw",
+      "destination": "/api/jarvis?ponte=hw"
     }
   ],
   "functions": {

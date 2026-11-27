@@ -5,7 +5,7 @@
 import { CONDIZIONI, INFORMATIVA, SPUNTE } from './_testi-contratto.js';
 import { COMUNI } from './_comuni.js';
 import { htmlContratto } from './_pdf-contratto.js';
-import { pdfContratto } from './_pdf-lib-contratto.js';
+import { pdfContratto, pdfRevoca, testoRevoca } from './_pdf-lib-contratto.js';
 
 let _crypto = null;
 async function getCrypto() { if (!_crypto) _crypto = await import('node:crypto'); return _crypto; }
@@ -93,6 +93,11 @@ async function pulisciProve() {
     if (pdfProva.length) await fetch(`${SUPABASE_URL}/storage/v1/object/contratti`, { method: 'DELETE', headers: { ...storageAuth(), 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: pdfProva }) });
     await supaFetchSrv(`/rest/v1/contratti?${filtro}`, 'DELETE', null, { 'Prefer': 'return=minimal' });
     await supaFetchSrv(`/rest/v1/liberatorie?prova=eq.true&or=(firmata_il.lt.${limite},and(firmata_il.is.null,creata_il.lt.${limite}))`, 'DELETE', null, { 'Prefer': 'return=minimal' });
+    const rr = await supaFetchSrv(`/rest/v1/revoche_disdetta?prova=eq.true&creata_il=lt.${limite}&select=pdf_path`);
+    const pdfRev = (await rr.json() || []).map(x => x.pdf_path).filter(Boolean);
+    if (pdfRev.length) await fetch(`${SUPABASE_URL}/storage/v1/object/contratti`, { method: 'DELETE', headers: { ...storageAuth(), 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: pdfRev }) });
+    await supaFetchSrv(`/rest/v1/revoche_disdetta?prova=eq.true&creata_il=lt.${limite}`, 'DELETE', null, { 'Prefer': 'return=minimal' });
+    await supaFetchSrv(`/rest/v1/revoche_disdetta?stato=eq.in_attesa&creata_il=lt.${limite}`, 'DELETE', null, { 'Prefer': 'return=minimal' });
   } catch (e) { console.error('[PROVE] Pulizia non riuscita:', e.message || e); }
 }
 
@@ -217,8 +222,15 @@ async function preventivo(abbId, codicePromo, primoGiorno, upg) {
   const r3 = await supaFetch('/rest/v1/turni_docs?path=eq.contratti/config&select=data');
   const cfgRows = await r3.json();
   const imp = cfgRows.length ? cfgRows[0].data : {};
+  if (upg) {
+    const u = await validaUpgrade(upg, abb);
+    if (u.errore) return { ok: false, errore: u.errore };
+    const abbU = u.cessione ? abbCessione(abb, u) : abb;
+    const pianoU = calcolaPiano(abbU, null, new Date(), { penale: imp.penale || 6, dataFirma: new Date(), upgrade: { scadenza: u.scadenza, cessione: !!u.cessione } });
+    return { ok: true, abbonamento: abbU, promo: null, piano: pianoU, upgrade: u };
+  }
   const firma = primoGiorno ? new Date(primoGiorno.split('/').reverse().join('-')) : new Date();
-  const piano = calcolaPiano(abb, promo, firma, { primaRataAllaFirma: imp.primaRataAllaFirma !== false, includiGiornoIscrizione: imp.giornoIscrizioneNelProRata !== false, penale: imp.penale || 6, upgrade: upg || null });
+  const piano = calcolaPiano(abb, promo, firma, { primaRataAllaFirma: imp.primaRataAllaFirma !== false, includiGiornoIscrizione: imp.giornoIscrizioneNelProRata !== false, penale: imp.penale || 6 });
   return { ok: true, abbonamento: abb, promo, piano };
 }
 
@@ -236,6 +248,30 @@ function calcolaPiano(abb, promo, firma, opz) {
     rinnovo: !!abb.rinnovo, fasciaOraria: abb.fascia_oraria || '',
     prorata: [], prorataTotale: 0, primaRataAllaFirma: false, totaleFirma: 0, righeFirma: [],
     promo: promo ? promo.descrizione || promo.codice : '', penale: opz.penale };
+  // Upgrade (solo dal back office): parte il 1° del mese dopo la firma, tiene la scadenza dell'abbonamento che
+  // sostituisce, nessun pagamento alla firma. Cessione: accesso da subito, le rate proseguono quelle del cedente.
+  if (opz.upgrade && opz.upgrade.scadenza) {
+    const oggiU = opz.dataFirma || new Date();
+    const iniU = dt(oggiU.getFullYear(), oggiU.getMonth() + 1, 1);
+    const scU = opz.upgrade.scadenza;
+    p.upgrade = true; p.inizio = fmtData(iniU); p.primoGiorno = fmtData(iniU); p.scadenza = fmtData(scU);
+    p.garanziaFino = null; p.primaRataAllaFirma = false; p.totaleFirma = euro(0); p.prorataTotale = euro(0);
+    p.pianoRate = 'Rata mensile di ' + euro(prezzo) + ' addebitata il giorno 1 di ogni mese dal ' + fmtData(iniU) + ', fino alla scadenza' + (p.rinnovo ? ' e a ogni rinnovo' : '');
+    if (opz.upgrade.cessione) {
+      p.cessione = true; p.primoGiorno = fmtData(oggiU);
+      p.pianoRate = 'Rata mensile di ' + euro(prezzo) + ' addebitata il giorno 1 di ogni mese dal ' + fmtData(iniU) +
+        ', in prosecuzione delle rate dell\'abbonamento ceduto, fino alla scadenza' + (p.rinnovo ? ' e a ogni rinnovo' : '');
+    }
+    p.mesiDurata = mesiTra(iniU, scU);
+    if (p.rinnovo && abb.tipo !== 'breve') {
+      const mpU = aggiungiMesi(dt(scU.getFullYear(), scU.getMonth(), 1), -1);
+      p.disdettaEntro = fmtData(dt(mpU.getFullYear(), mpU.getMonth(), 5));
+    } else p.disdettaEntro = null;
+    p.righeFirma = [];
+    p.prorataDescrizione = '';
+    if (p.penale) p.penale = euro(p.penale);
+    return p;
+  }
   if (abb.tipo === 'giornaliero') {
     p.inizio = fmtData(firma); p.scadenza = fmtData(firma); p.rinnovo = false; p.disdettaEntro = null;
     p.totaleFirma = euro(arrotonda(prezzo + iscrizione));
@@ -568,16 +604,75 @@ async function aggiungiEvento(id, testo, extra) {
   return d;
 }
 
+
+// === UPGRADE E CESSIONE (solo dal back office, con il PIN) ===
+function dataDa(s) {
+  const m = String(s || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  const d = dt(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  return d.getMonth() === Number(m[2]) - 1 ? d : null;
+}
+function nomeChiave(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z ]/g, ' ').split(/\s+/).filter(String).sort().join(' ');
+}
+async function giaCeduto(cedente) {
+  const r = await supaFetch('/rest/v1/contratti?firmato=eq.true&prova=eq.false&dettagli->upgrade->>cessione=eq.true&select=numero,nome,cognome,genitore_nome,genitore_cognome,junior,dettagli');
+  const rows = await r.json();
+  const k = nomeChiave(cedente);
+  for (const c of (Array.isArray(rows) ? rows : [])) {
+    const t = (c.dettagli && c.dettagli.titolare) || {};
+    if (nomeChiave(t.nome + ' ' + t.cognome) === k) return 'L\'abbonamento di ' + cedente + ' gli è stato ceduto da un altro socio (contratto ' + c.numero + '): non si può cedere di nuovo.';
+    if (nomeChiave(c.dettagli.upgrade.cedente) === k) return cedente + ' ha già ceduto il suo abbonamento (contratto ' + c.numero + '): non si può cedere una seconda volta.';
+  }
+  return '';
+}
+async function validaUpgrade(upg, abb) {
+  const sessione = await verificaSessione(upg && upg.token);
+  if (!sessione) return { errore: 'Sessione dello staff scaduta: rientra con il PIN e ricomincia.' };
+  const staff = sessione.staff_nome || '';
+  const oggi = new Date();
+  if (upg.cessione) {
+    const cedente = maiuscoleNome(pulisciTesto(upg.cedente, 80));
+    if (!cedente || cedente.split(' ').length < 2) return { errore: 'Indica nome e cognome del socio che cede l\'abbonamento.' };
+    const scad = dataDa(upg.scadenza);
+    if (!scad) return { errore: 'Indica la scadenza dell\'abbonamento ceduto.' };
+    if (scad < oggi) return { errore: 'L\'abbonamento ceduto risulta già scaduto (' + fmtData(scad) + '): non si può cedere.' };
+    const rata = Math.round(Number(String(upg.rata || '').replace(',', '.')) * 100) / 100;
+    if (!(rata > 0)) return { errore: 'Indica la rata mensile dell\'abbonamento ceduto.' };
+    const g = upg.provaCognome ? '' : await giaCeduto(cedente);
+    if (g) return { errore: g };
+    return { staff, cessione: true, cedente, scadenza: scad, rata, tacito: !!upg.tacito, pacchetto: pulisciTesto(upg.pacchetto, 100) || abb.nome, vecchio: 'cessione da ' + cedente };
+  }
+  if (abb.tipo === 'giornaliero' || abb.pagamento !== 'mensile') return { errore: 'L\'upgrade vale solo per abbonamenti a rate mensili.' };
+  const scad = dataDa(upg.scadenza);
+  if (!scad) return { errore: 'Indica la scadenza dell\'abbonamento attuale.' };
+  const fineMeseDopo = ultimoGiorno(oggi.getFullYear(), oggi.getMonth() + 1);
+  if (scad < fineMeseDopo) return { errore: 'La scadenza dell\'abbonamento attuale deve essere almeno il ' + fmtData(fineMeseDopo) + ': l\'upgrade parte il 1° del mese prossimo.' };
+  const vecchio = pulisciTesto(upg.vecchio, 80);
+  if (!vecchio) return { errore: 'Indica l\'abbonamento attuale del socio.' };
+  return { staff, scadenza: ultimoGiorno(scad.getFullYear(), scad.getMonth()), vecchio };
+}
+function abbCessione(abb, u) {
+  const a = JSON.parse(JSON.stringify(abb));
+  a.nome = u.pacchetto || a.nome; a.prezzo = u.rata; a.rinnovo = !!u.tacito; a.iscrizione = 0;
+  return a;
+}
+
 async function avviaFirma(dati) {
   dati = dati || {};
-  if (dati.upgrade) return { ok: false, errori: ['Upgrade e cessione non sono ancora attivi su questa versione: per ora usa l\'App Contratti su Google.'] };
   const cfg = await configContratti();
   const rl = await supaFetch(`/rest/v1/listino?id=eq.${encodeURIComponent(dati.abbId || '')}`);
   const listino = await rl.json();
   if (!Array.isArray(listino) || !listino.length) return { ok: false, errori: ['Abbonamento non disponibile.'] };
-  const abb = listino[0];
+  let abb = listino[0];
   const junior = !!abb.junior || !!dati.perMinore;
   let errori = [];
+  let upg = null;
+  if (dati.upgrade) {
+    upg = await validaUpgrade(dati.upgrade, abb);
+    if (upg.errore) return { ok: false, errori: [upg.errore] };
+    dati.promo = '';
+  }
 
   let promo = null;
   if (dati.promo) {
@@ -600,13 +695,14 @@ async function avviaFirma(dati) {
   if (!dati.lettura || !dati.lettura.aperto) errori.push('Prima di firmare apri e leggi il contratto completo.');
   if (errori.length) return { ok: false, errori };
 
-  const prev = await preventivo(abb.id, promo ? promo.codice : '', dati.primoGiorno);
+  const prev = await preventivo(abb.id, promo ? promo.codice : '', dati.primoGiorno, dati.upgrade || null);
   if (!prev.ok) return { ok: false, errori: [prev.errore || 'Errore nel calcolo del piano.'] };
   const piano = prev.piano;
+  if (upg && upg.cessione) abb = prev.abbonamento;
   const oggi = new Date();
   piano.dataFirma = fmtData(oggi);
-  piano.garanziaFino = abb.tipo === 'lungo' && String(abb.area).toLowerCase() !== 'centro estivo' ? fmtData(aggiungiGiorni(oggi, 14)) : null;
-  if (piano.disdettaEntro && abb.tipo !== 'breve' && Number(abb.durata_mesi) === 12) {
+  piano.garanziaFino = !upg && abb.tipo === 'lungo' && String(abb.area).toLowerCase() !== 'centro estivo' ? fmtData(aggiungiGiorni(oggi, 14)) : null;
+  if (!upg && piano.disdettaEntro && abb.tipo !== 'breve' && Number(abb.durata_mesi) === 12) {
     const pd = piano.disdettaEntro.split('/');
     piano.disdettaOgniAnno = '5 ' + MESI_IT[Number(pd[1]) - 1];
   }
@@ -631,11 +727,12 @@ async function avviaFirma(dati) {
     promo: promo ? { codice: promo.codice, descrizione: promo.descrizione || '' } : null,
     piano, metodo, offerte: (dati.offerte || []).slice(0, 20).map(o => pulisciTesto(o, 120)),
     lettura: dati.lettura, client: pulisciClient(dati.client), spunte: SPUNTE.map(s => s.titolo), spunteAlle: adesso,
+    upgrade: upg ? { scadenza: fmtData(upg.scadenza), vecchio: upg.vecchio, staff: upg.staff, cessione: !!upg.cessione, cedente: upg.cedente || '', rata: upg.rata || 0 } : null,
     eventi: [[adesso, 'Contratto visualizzato e spunte 1, 2, 3 approvate']]
   };
   const record = {
     numero: 'BOZZA-' + cr.randomBytes(5).toString('hex'),
-    tipo: 'nuovo', area: abb.area,
+    tipo: upg ? (upg.cessione ? 'cessione' : 'upgrade') : 'nuovo', area: abb.area,
     nome: junior && M ? M.nome : T.nome, cognome: junior && M ? M.cognome : T.cognome,
     codice_fiscale: junior && M ? M.cf : T.cf, sesso: junior && M ? M.sesso : T.sesso,
     luogo_nascita: junior && M ? M.luogoNascita : T.luogoNascita,
@@ -654,7 +751,8 @@ async function avviaFirma(dati) {
     piano, dettagli,
     otp_hash: otpHash, otp_salt: otpSalt, otp_tentativi: 0,
     otp_scadenza: new Date(Date.now() + 10 * 60000).toISOString(),
-    creato_da: 'online', prova: eProva(T.cognome)
+    creato_da: upg ? 'staff' : 'online', prova: eProva(T.cognome),
+    cessione_da_nome: upg && upg.cessione ? upg.cedente : null
   };
   if (junior && M) { const a = analizzaCF(M.cf); if (a.valido) record.data_nascita = a.nascitaData.toISOString().slice(0, 10); }
   else { const a = analizzaCF(T.cf); if (a.valido) record.data_nascita = a.nascitaData.toISOString().slice(0, 10); }
@@ -726,7 +824,13 @@ async function confermaFirma(id, codice) {
   if (!numero) return { ok: false, errore: 'Errore nel salvataggio della firma. Riprova.' };
   c.numero = numero; c.dettagli = d; c.firmato = true;
 
-  try { await creaPdfContratto(c); } catch (e) { console.error('[PDF] Errore creazione PDF', numero, e.message || e); }
+  try {
+    await creaPdfContratto(c);
+    if (d.upgrade) {   // upgrade e cessione si fanno al circolo: il contratto arriva subito
+      await inviaPdfSocio(c);
+      await supaFetch(`/rest/v1/contratti?id=eq.${c.id}`, 'PATCH', { pdf_inviato_il: new Date().toISOString() }, { 'Prefer': 'return=minimal' });
+    }
+  } catch (e) { console.error('[PDF] Errore creazione/invio PDF', numero, e.message || e); }
 
   if (c.pagamento_metodo === 'Carte online' && SUMUP_KEY && SUMUP_MERCHANT && Number(c.totale_firma) > 0) {
     try {
@@ -950,21 +1054,106 @@ async function riprovaPagamento(id) {
 // Revoca disdetta
 async function boRevocaAvvia(token, d) {
   const sessione = await verificaSessione(token);
-  if (!sessione) return { ok: false, errore: 'Sessione scaduta.' };
-  // TODO: implementare revoca disdetta
-  return { ok: false, errore: 'Revoca disdetta in fase di migrazione.' };
+  if (!sessione) return { ok: false, errori: ['Sessione scaduta: rientra con il PIN.'] };
+  d = d || {};
+  const t = validaPersona({ nome: d.nome, cognome: d.cognome, cf: d.cf }, 'Socio', false);
+  const e = t.errori.slice();
+  const cell = normalizzaCell(d.cellulare), email = String(d.email || '').trim().toLowerCase();
+  if (!/^\+393\d{8,9}$/.test(cell)) e.push('Il cellulare non è valido: serve un cellulare italiano per ricevere il codice.');
+  if (!emailValida(email)) e.push('L\'email non è valida.');
+  const abb = pulisciTesto(d.abbonamento, 80);
+  if (!abb) e.push('Indica l\'abbonamento del socio.');
+  const dataDisdetta = dataDa(d.dataDisdetta), scad = dataDa(d.scadenza);
+  if (!dataDisdetta) e.push('Indica la data in cui il socio ha dato la disdetta.');
+  else if (dataDisdetta > new Date()) e.push('La data della disdetta non può essere futura.');
+  if (!scad) e.push('Indica la scadenza dell\'abbonamento.');
+  if (e.length) return { ok: false, errori: e };
+
+  const cr = await getCrypto();
+  const otp = String(cr.randomInt(0, 1000000)).padStart(6, '0');
+  const salt = cr.randomBytes(12).toString('hex');
+  const ins = await supaFetchSrv('/rest/v1/revoche_disdetta', 'POST', {
+    nome: t.dati.nome, cognome: t.dati.cognome, codice_fiscale: t.dati.cf, cellulare: cell, email,
+    abbonamento: abb, data_disdetta: dataDisdetta.toISOString().slice(0, 10), scadenza: scad.toISOString().slice(0, 10),
+    staff: sessione.staff_nome || '', prova: eProva(t.dati.cognome),
+    eventi: [[new Date().toISOString(), 'Revoca della disdetta preparata da ' + (sessione.staff_nome || '') + ' al circolo']],
+    otp_hash: cr.pbkdf2Sync(otp, salt, 150000, 32, 'sha256').toString('hex'), otp_salt: salt,
+    otp_scadenza: new Date(Date.now() + 10 * 60000).toISOString()
+  }, { 'Prefer': 'return=representation' });
+  const righe = await ins.json();
+  if (!ins.ok || !Array.isArray(righe) || !righe.length) return { ok: false, errori: ['Non riesco a salvare la revoca. Riprova.'] };
+  const riga = righe[0];
+
+  const cfg = await configContratti();
+  let canale = '';
+  if (String(cfg.canaleOTP || 'SMS').toUpperCase() === 'SMS' && await inviaSms(cell, `Officine Sportive: il tuo codice per firmare la revoca della disdetta è ${otp}. Valido 10 minuti.`)) canale = 'SMS';
+  if (!canale) { try { await inviaOtpEmail(email, t.dati.nome, otp); canale = 'email'; } catch (er) { console.error('[REVOCA] OTP mail:', er.message || er); } }
+  if (!canale) {
+    await supaFetchSrv(`/rest/v1/revoche_disdetta?id=eq.${riga.id}`, 'DELETE');
+    return { ok: false, errori: ['I sistemi sono momentaneamente bloccati: la revoca non può essere firmata ora. Riprova più tardi.'] };
+  }
+  const a = canale === 'SMS' ? cell : email;
+  await supaFetchSrv(`/rest/v1/revoche_disdetta?id=eq.${riga.id}`, 'PATCH', { canale, eventi: riga.eventi.concat([[new Date().toISOString(), 'Codice OTP inviato via ' + canale + ' a ' + a]]) }, { 'Prefer': 'return=minimal' });
+  return { ok: true, id: riga.id, canale, a: mascherato(a) };
 }
 
 async function boRevocaConferma(token, id, codice) {
-  return { ok: false, errore: 'Revoca disdetta in fase di migrazione.' };
+  const sessione = await verificaSessione(token);
+  if (!sessione) return { ok: false, errore: 'Sessione scaduta: rientra con il PIN.' };
+  const r0 = await supaFetchSrv(`/rest/v1/revoche_disdetta?id=eq.${encodeURIComponent(id || '')}&select=*`);
+  const rows = await r0.json();
+  if (!Array.isArray(rows) || !rows.length) return { ok: false, errore: 'Sessione scaduta: ricomincia.' };
+  const r = rows[0];
+  if (r.stato === 'firmata') return { ok: true, numero: r.numero };
+  if (new Date(r.otp_scadenza) < new Date()) return { ok: false, errore: 'Il codice è scaduto: ricomincia.' };
+  if (r.otp_tentativi >= 5) return { ok: false, errore: 'Troppi tentativi: ricomincia.' };
+  const cr = await getCrypto();
+  if (cr.pbkdf2Sync(String(codice || '').replace(/\D/g, ''), r.otp_salt, 150000, 32, 'sha256').toString('hex') !== r.otp_hash) {
+    const t = r.otp_tentativi + 1;
+    await supaFetchSrv(`/rest/v1/revoche_disdetta?id=eq.${r.id}`, 'PATCH', { otp_tentativi: t }, { 'Prefer': 'return=minimal' });
+    return { ok: false, errore: 'Codice non corretto. Tentativi rimasti: ' + (5 - t) };
+  }
+  r.eventi = (r.eventi || []).concat([[new Date().toISOString(), 'Codice OTP inserito correttamente: revoca firmata']]);
+  const anno = new Date().getFullYear();
+  const pref = r.prova ? 'PROVA-RD-' : `RD-${anno}-`;
+  let numero = '';
+  for (let k = 0; k < 3 && !numero; k++) {
+    const rl = await supaFetchSrv(`/rest/v1/revoche_disdetta?numero=like.${encodeURIComponent(pref)}%25&select=numero&order=numero.desc&limit=1`);
+    const ult = await rl.json();
+    const n = pref + String((ult.length ? parseInt(ult[0].numero.split('-').pop(), 10) || 0 : 0) + 1).padStart(4, '0');
+    const up = await supaFetchSrv(`/rest/v1/revoche_disdetta?id=eq.${r.id}`, 'PATCH', { numero: n, stato: 'firmata', firmata_il: new Date().toISOString(), eventi: r.eventi, otp_hash: null, otp_salt: null }, { 'Prefer': 'return=minimal' });
+    if (up.ok) numero = n;
+  }
+  if (!numero) return { ok: false, errore: 'Errore nel salvataggio. Riprova.' };
+  r.numero = numero;
+  const doc = { ...r, dataDisdetta: dataIt(r.data_disdetta), scadenzaIt: dataIt(r.scadenza) };
+  try {
+    const impronta = cr.createHash('sha256').update(numero + '|' + testoRevoca(doc), 'utf8').digest('hex');
+    const pdf = await pdfRevoca(doc, await logoPng(), impronta);
+    const path = `revoche/${anno}/${numero}.pdf`;
+    const upl = await fetch(`${SUPABASE_URL}/storage/v1/object/contratti/${path}`, { method: 'POST', headers: { ...storageAuth(), 'Content-Type': 'application/pdf', 'x-upsert': 'true' }, body: pdf });
+    if (!upl.ok) throw new Error('Upload ' + upl.status);
+    await supaFetchSrv(`/rest/v1/revoche_disdetta?id=eq.${r.id}`, 'PATCH', { pdf_path: path, impronta }, { 'Prefer': 'return=minimal' });
+    await inviaMail(r.email, (r.prova ? '[PROVA] ' : '') + 'La tua revoca della disdetta · Officine Sportive', cornice(
+      '<p style="margin:0 0 12px">Ciao ' + escHtml(r.nome) + '! 👋</p>' +
+      '<p style="margin:0 0 14px">Siamo felici che tu resti con noi! 💙 Abbiamo registrato la <b>revoca della tua disdetta</b>: il tuo abbonamento <b>' + escHtml(r.abbonamento) + '</b> prosegue regolarmente, alle stesse condizioni.</p>' +
+      '<p style="margin:0 0 14px">In allegato trovi il documento firmato: conservalo insieme al tuo contratto.</p>' +
+      '<p style="margin:0">Per qualsiasi domanda contattaci: 📱 375 599 2375 · ☎️ 06 6595 5545 · ✉️ info@officinesportive.it</p>'),
+      null, [{ filename: numero + ' · Revoca disdetta · ' + r.cognome + ' ' + r.nome + '.pdf', content: pdf.toString('base64') }]);
+    await supaFetchSrv(`/rest/v1/revoche_disdetta?id=eq.${r.id}`, 'PATCH', { pdf_inviato_il: new Date().toISOString() }, { 'Prefer': 'return=minimal' });
+  } catch (e) { console.error('[REVOCA] PDF/mail', numero, e.message || e); }
+  return { ok: true, numero };
 }
 
 // Cessione
 async function boCessioneCerca(token, d) {
   const sessione = await verificaSessione(token);
   if (!sessione) return { ok: false, errore: 'Sessione scaduta.' };
-  // TODO: implementare cessione
-  return { ok: false, errore: 'Cessione in fase di migrazione.' };
+  d = d || {};
+  const cell = String(d.cellulare || '').replace(/\D/g, '');
+  if (!cell && nomeChiave((d.nome || '') + ' ' + (d.cognome || '')).split(' ').length < 2) return { ok: false, errore: 'Scrivi nome, cognome e cellulare del socio che cede.' };
+  // I report di Wellness in Cloud non arrivano ancora a Jarvis: per ora le condizioni si compilano a mano.
+  return { ok: true, trovato: false, motivo: 'I report di Wellness non sono ancora collegati a Jarvis: compila a mano le condizioni del vecchio abbonamento.' };
 }
 
 // Liberatoria

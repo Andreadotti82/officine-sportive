@@ -245,3 +245,33 @@ export async function pdfContratto(c, cfg, logoPng, impronta) {
   });
   return Buffer.from(await pdf.save());
 }
+
+/** Revoca della disdetta: documento firmato con OTP al circolo (stesso testo della versione Google). */
+export function testoRevoca(r) {
+  return 'Il/La sottoscritto/a ' + r.nome + ' ' + r.cognome + ', codice fiscale ' + r.codice_fiscale +
+    ', titolare dell\'abbonamento sopra indicato, dichiara di revocare la disdetta comunicata in data ' + r.dataDisdetta +
+    ', che deve pertanto intendersi priva di ogni effetto. Il contratto prosegue senza soluzione di continuità alle condizioni in essere, ivi compresi il piano di pagamento, ' +
+    'l\'autorizzazione all\'addebito delle rate e il rinnovo tacito alla scadenza del ' + r.scadenzaIt + ', salvo nuova disdetta comunicata nei modi e nei termini previsti dalle Condizioni generali.';
+}
+export async function pdfRevoca(r, logoPngBuf, impronta) {
+  const pdf = await PDFDocument.create();
+  pdf.setTitle('Revoca della disdetta ' + r.numero); pdf.setCreator('Jarvis · Officine Sportive');
+  const f = { r: await pdf.embedFont(StandardFonts.Helvetica), b: await pdf.embedFont(StandardFonts.HelveticaBold), i: await pdf.embedFont(StandardFonts.HelveticaOblique) };
+  const D = new Doc(pdf, f);
+  let logo = null;
+  try { if (logoPngBuf) logo = await pdf.embedPng(logoPngBuf); } catch (e) { logo = null; }
+  if (logo) { const s = 34.5 / logo.height; D.p.drawImage(logo, { x: MX, y: D.y - 34.5, width: logo.width * s, height: 34.5 }); D.y -= 44; }
+  else { D.p.drawText('OFFICINE SPORTIVE', { x: MX, y: D.y - 14, size: 13.5, font: f.b, color: C.blu }); D.y -= 24; }
+  if (/^PROVA/.test(r.numero)) D.riquadro('DOCUMENTO DI PROVA', '', { tSize: 11 });
+  D.testo([{ t: 'Revoca della disdetta', b: true }], { size: 16, colore: C.blu, dopo: 2 });
+  D.testo('Documento n. ' + r.numero + ' · Gate Fitness S.S.D. a r.l. · Circolo Officine Sportive', { size: 8.5, colore: C.grigio });
+  D.h2('Dati');
+  D.tabella([['Tesserato', r.nome + ' ' + r.cognome], ['Codice fiscale', r.codice_fiscale], ['Abbonamento', r.abbonamento],
+    ['Disdetta comunicata il', r.dataDisdetta], ['Scadenza dell\'abbonamento', r.scadenzaIt]]);
+  D.riquadro('', testoRevoca(r), { bordo: C.blu, sfondo: rgb(1, 1, 1), tSize: 1 });
+  D.h2('Firma elettronica');
+  D.testo('Sottoscritto con codice OTP personale inviato al cellulare ' + r.cellulare + ' (o all\'email ' + r.email + '), presso il Circolo, con la registrazione di ' + r.staff + '.', { size: 8.5 });
+  D.tabella((r.eventi || []).map(e => [oraRomaCompleta(e[0]), e[1]]), { kPerc: 0.28 });
+  D.testo('Impronta del documento (SHA-256): ' + (impronta || ''), { size: 7, colore: C.grigio });
+  return Buffer.from(await pdf.save());
+}

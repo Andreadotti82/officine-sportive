@@ -42,7 +42,7 @@ const q = (s) => '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '
 // Prova di collegamento: quale server risponde, login ok, quante mail ci sono e quali cartelle.
 export async function infoProva(chiave) {
   if (!chiave || chiave !== await segreto('giro')) return { ok: false };
-  const user = String(process.env.INFO_MAIL_USER || '').trim(), pass = String(process.env.INFO_MAIL_PASS || '').replace(/[\r\n]+$/,'');
+  const user = String(process.env.INFO_MAIL_USER || '').trim().replace(/\.+$/, ''), pass = String(process.env.INFO_MAIL_PASS || '').replace(/[\r\n]+$/,'');
   if (!user || !pass) return { ok: false, errore: 'variabili mancanti', user: !!user, pass: !!pass };
   const esiti = [];
   for (const host of (process.env.INFO_MAIL_HOST ? [process.env.INFO_MAIL_HOST] : ['mail.securemail.pro'])) {

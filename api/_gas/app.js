@@ -10,6 +10,8 @@ const FILE_NOTI = { '1DHgfuA8S-FU5cZ_bAwjwwCZRxiMQN1oJ': LOGO_JARVIS };
 
 export const APPS = {
   actionplan: { nome: 'actionplan', url: BASE + '/actionplan', percorso: '/actionplan', mittente: 'Action plan audit', fileNoti: FILE_NOTI },
+  hw: { nome: 'hw', url: BASE + '/hw', percorso: '/hw', mittente: 'Officine Sportive – No reply', fileNoti: FILE_NOTI, foglioAttivo: '12GcNhqN_v1indcANA8ogEzgI_ipUEYDQIV6oP4kAnAQ',
+    rimappa: { 'https://script.google.com/macros/s/AKfycbw8elh5LTFxELcgKHa7nQum8NPAIafVhn1y6sc1mwfNCs_mCF-DTB9SKiViH5tAaW1_Aw/exec': BASE + '/api/jarvis?gaspost=actionplan' } },
   gm: { nome: 'gm', url: BASE + '/goodmorning', percorso: '/goodmorning', mittente: 'Good Morning & Good Night', fileNoti: FILE_NOTI,
     rimappa: {
       'https://script.google.com/macros/s/AKfycbw8elh5LTFxELcgKHa7nQum8NPAIafVhn1y6sc1mwfNCs_mCF-DTB9SKiViH5tAaW1_Aw/exec': BASE + '/api/jarvis?gaspost=actionplan',

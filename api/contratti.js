@@ -570,6 +570,7 @@ async function aggiungiEvento(id, testo, extra) {
 
 async function avviaFirma(dati) {
   dati = dati || {};
+  if (dati.upgrade) return { ok: false, errori: ['Upgrade e cessione non sono ancora attivi su questa versione: per ora usa l\'App Contratti su Google.'] };
   const cfg = await configContratti();
   const rl = await supaFetch(`/rest/v1/listino?id=eq.${encodeURIComponent(dati.abbId || '')}`);
   const listino = await rl.json();

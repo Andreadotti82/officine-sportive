@@ -673,43 +673,51 @@ async function libConfermaSocio(id, codice) { return { ok: false, errore: 'In fa
 // === HELPER: SMS via Skebby ===
 async function inviaSms(numero, testo) {
   if (!SKEBBY_USER || !SKEBBY_PASS) return false;
-  try {
-    const auth = Buffer.from(SKEBBY_USER + ':' + SKEBBY_PASS).toString('base64');
-    console.log('[SMS] Login Skebby, user:', SKEBBY_USER);
+  const https = await import('node:https');
+  const auth = Buffer.from(SKEBBY_USER + ':' + SKEBBY_PASS).toString('base64');
 
-    // Prima prova: controlla se c'è un redirect
-    const loginR = await fetch('https://api.skebby.it/API/v1.0/REST/login', {
-      method: 'GET',
-      redirect: 'manual',
-      headers: { 'Authorization': 'Basic ' + auth }
-    });
-    console.log('[SMS] Skebby status:', loginR.status, 'location:', loginR.headers.get('location') || 'nessuno');
-
-    let finalR = loginR;
-    // Se redirect, segui manualmente con l'header Authorization
-    if (loginR.status >= 300 && loginR.status < 400) {
-      const loc = loginR.headers.get('location');
-      console.log('[SMS] Redirect a:', loc);
-      finalR = await fetch(loc, {
-        method: 'GET',
-        headers: { 'Authorization': 'Basic ' + auth }
+  // Helper: richiesta HTTPS diretta (bypassa fetch che potrebbe avere problemi)
+  function httpsReq(options, body) {
+    return new Promise((resolve, reject) => {
+      const req = https.default.request(options, res => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => resolve({ status: res.statusCode, body: data, headers: res.headers }));
       });
-    }
-
-    const bodyText = await finalR.text();
-    console.log('[SMS] Skebby risposta finale:', finalR.status, bodyText.slice(0, 150));
-    if (!finalR.ok) return false;
-
-    const keys = bodyText.trim().split(';');
-
-    // Invio SMS con Access_token
-    const smsR = await fetch('https://api.skebby.it/API/v1.0/REST/sms', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'user_key': keys[0], 'Session_key': keys[1] },
-      body: JSON.stringify({ message_type: 'GP', message: testo, recipient: [numero], returnCredits: true })
+      req.on('error', reject);
+      req.setTimeout(15000, () => { req.destroy(); reject(new Error('timeout')); });
+      if (body) req.write(body);
+      req.end();
     });
-    if (!smsR.ok) {
-      console.error('[SMS] Invio fallito:', smsR.status, await smsR.text());
+  }
+
+  try {
+    console.log('[SMS] Login Skebby via https, user:', SKEBBY_USER);
+
+    // Login
+    const loginRes = await httpsReq({
+      hostname: 'api.skebby.it',
+      path: '/API/v1.0/REST/login',
+      method: 'GET',
+      headers: { 'Authorization': 'Basic ' + auth },
+      minVersion: 'TLSv1.2'
+    });
+    console.log('[SMS] Skebby login:', loginRes.status, loginRes.body.slice(0, 100));
+    if (loginRes.status !== 200) return false;
+
+    const keys = loginRes.body.trim().split(';');
+
+    // Invio SMS
+    const smsBody = JSON.stringify({ message_type: 'GP', message: testo, recipient: [numero], returnCredits: true });
+    const smsRes = await httpsReq({
+      hostname: 'api.skebby.it',
+      path: '/API/v1.0/REST/sms',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'user_key': keys[0], 'Session_key': keys[1], 'Content-Length': Buffer.byteLength(smsBody) },
+      minVersion: 'TLSv1.2'
+    }, smsBody);
+    if (smsRes.status >= 300) {
+      console.error('[SMS] Invio fallito:', smsRes.status, smsRes.body);
       return false;
     }
     console.log('[SMS] Inviato a', numero);

@@ -75,14 +75,26 @@ function mesiTra(inizio, scadenza) { return (scadenza.getFullYear() - inizio.get
 function euroInteri(n) { return arrotonda(n); }
 
 // === CATALOGO ===
+// Regola del circolo: tutto ciò che è di PROVA (cognome «Prova») sparisce 30 minuti dopo la firma.
+// Gira a ogni apertura della pagina e del back office, così nessuno vede prove vecchie.
+async function pulisciProve() {
+  if (!SUPABASE_SERVICE_KEY) return;
+  const limite = encodeURIComponent(new Date(Date.now() - 30 * 60000).toISOString());
+  try {
+    await supaFetchSrv(`/rest/v1/contratti?prova=eq.true&or=(firmato_il.lt.${limite},and(firmato_il.is.null,creato_il.lt.${limite}))`, 'DELETE', null, { 'Prefer': 'return=minimal' });
+    await supaFetchSrv(`/rest/v1/liberatorie?prova=eq.true&or=(firmata_il.lt.${limite},and(firmata_il.is.null,creata_il.lt.${limite}))`, 'DELETE', null, { 'Prefer': 'return=minimal' });
+  } catch (e) { console.error('[PROVE] Pulizia non riuscita:', e.message || e); }
+}
+
 async function catalogo() {
+  const pulizia = pulisciProve();
   // Tutte le query in parallelo per velocizzare il caricamento
   const [r1, r2, r3] = await Promise.all([
     supaFetch('/rest/v1/listino?attivo=eq.true&order=ordine'),
     supaFetch('/rest/v1/promo?attivo=eq.true'),
     supaFetch('/rest/v1/turni_docs?path=eq.contratti/config&select=data')
   ]);
-  const [lista, promoList, cfgRows] = await Promise.all([r1.json(), r2.json(), r3.json()]);
+  const [lista, promoList, cfgRows] = await Promise.all([r1.json(), r2.json(), r3.json(), pulizia]);
 
   return {
     listino: lista,
@@ -328,6 +340,7 @@ async function boElenco(token, cerca, filtro) {
   // Verifica sessione
   const sessione = await verificaSessione(token);
   if (!sessione) return { ok: false, errore: 'Sessione scaduta.' };
+  await pulisciProve();
 
   // Leggi contratti
   let query = '/rest/v1/contratti?annullato=eq.false&order=creato_il.desc&limit=50';
@@ -718,7 +731,7 @@ async function libAvvia(token, dati) {
   const otp = String(cr.randomInt(0, 1000000)).padStart(6, '0');
   const salt = cr.randomBytes(12).toString('hex');
   const hash = cr.pbkdf2Sync(otp, salt, 150000, 32, 'sha256').toString('hex');
-  const prova = String(cfg.liberatoriaProva || '').toUpperCase() === 'SI';
+  const prova = String(cfg.liberatoriaProva || '').toUpperCase() === 'SI' || cognome.toLowerCase() === 'prova';
 
   const ins = await supaFetchSrv('/rest/v1/liberatorie', 'POST', {
     cognome, nome, cellulare: cell, email, operatore: sessione.staff_nome || '', prova, stato: 'in_attesa',

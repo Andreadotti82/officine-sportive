@@ -79,7 +79,7 @@ export async function driveCodice(chiave, id, nome) {
   while (tot === null || da < tot) { const x = await google('esportaFile', [id, da, PEZZO]); tot = x.tot; const b = Buffer.from(x.b64, 'base64'); parti.push(b); da += b.length; if (!b.length) break; }
   const testo = Buffer.concat(parti).toString('utf8');
   const up = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js', { method: 'POST',
-    headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }), 'Content-Type': 'text/plain', 'x-upsert': 'true' }, body: testo });
+    headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }), 'Content-Type': 'text/plain', 'x-upsert': 'true', 'cache-control': 'no-cache' }, body: testo });
   const conta = re => { const m = {}; for (const x of testo.matchAll(re)) m[x[0]] = (m[x[0]] || 0) + 1; return m; };
   const funzioni = [...testo.matchAll(/^function\s+([A-Za-z0-9_]+)/gm)].map(x => x[1]);
   return { ok: up.ok, byte: testo.length, servizi: conta(/\b(GmailApp|MailApp|SpreadsheetApp|DriveApp|UrlFetchApp|PropertiesService|CacheService|ScriptApp|FormApp|CalendarApp|HtmlService|LockService|Utilities)\.[A-Za-z]+/g),
@@ -91,7 +91,7 @@ export async function driveCodice(chiave, id, nome) {
 // Cerca dentro un codice copiato (righe che corrispondono a un'espressione), per leggerlo a pezzi.
 export async function codiceCerca(chiave, nome, re, contesto, max) {
   if (!chiave || chiave !== await segreto('giro')) return { ok: false };
-  const r = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js', { headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }) } });
+  const r = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js?t=' + Date.now(), { headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }) } });
   const righe = (await r.text()).split('\n'), rx = new RegExp(re), out = []; contesto = contesto || 0;
   for (let i = 0; i < righe.length && out.length < (max || 60); i++) if (rx.test(righe[i])) out.push((i + 1) + ': ' + righe.slice(Math.max(0, i - contesto), i + contesto + 1).join('\n').slice(0, 1500));
   return { righe: righe.length, trovate: out };
@@ -109,7 +109,7 @@ export async function gasRiceviProp(k, app, props) {
 // Aggiunge al codice di Google (copiato su Jarvis) il pezzo che manda le proprietà a Jarvis, e lo rimette nel Drive dei codici.
 export async function codiceAggancia(chiave, nome, app, funzione) {
   if (!chiave || chiave !== await segreto('giro')) return { ok: false };
-  const r = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js', { headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }) } });
+  const r = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js?t=' + Date.now(), { headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }) } });
   let testo = await r.text();
   testo = testo.replace(/\n\/\* JARVIS · AGGANCIO PROPRIETÀ[\s\S]*$/, '');
   testo += `
@@ -133,9 +133,9 @@ ${funzione} = function () { try { jarvisEsportaProp_(); } catch (e) { } return j
 export async function codicePatch(chiave, nome, vecchio, nuovo) {
   if (!chiave || chiave !== await segreto('giro')) return { ok: false };
   const url = SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js', h = { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }) };
-  const testo = await (await fetch(url, { headers: h })).text();
+  const testo = await (await fetch(url + '?t=' + Date.now(), { headers: h })).text();
   const n = testo.split(vecchio).length - 1;
   if (n !== 1) return { ok: false, trovate: n };
-  const up = await fetch(url, { method: 'POST', headers: { ...h, 'Content-Type': 'text/plain', 'x-upsert': 'true' }, body: testo.replace(vecchio, nuovo) });
+  const up = await fetch(url, { method: 'POST', headers: { ...h, 'Content-Type': 'text/plain', 'x-upsert': 'true', 'cache-control': 'no-cache' }, body: testo.replace(vecchio, nuovo) });
   return { ok: up.ok };
 }

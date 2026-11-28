@@ -29,7 +29,7 @@ function leggi(nome, chiave) {
   const a = APPS[nome];
   if (a && a.codiceStorage) {
     const KEY = process.env.SUPABASE_SERVICE_KEY || '', URL = process.env.SUPABASE_URL || 'https://kyricrhlqlassvhxqjgf.supabase.co';
-    const x = fetchSync(URL + '/storage/v1/object/jarvis-file/codici/' + a.codiceStorage + '.js', { headers: { apikey: KEY, ...(KEY.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + KEY }) } });
+    const x = fetchSync(URL + '/storage/v1/object/jarvis-file/codici/' + a.codiceStorage + '.js?t=' + Date.now(), { headers: { apikey: KEY, ...(KEY.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + KEY }) } });
     if (x.status >= 300) throw new Error('Codice non trovato: ' + a.codiceStorage);
     return (decifrati[nome] = { codice: x.body.toString('utf8'), html: {}, nomiFogli: {} });
   }

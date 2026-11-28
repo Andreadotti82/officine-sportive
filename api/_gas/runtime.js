@@ -265,7 +265,14 @@ export async function salva(app, stato) {
   } else for (const m of stato.mail) await mandaMail(app, m);
 }
 
+// Link alle vecchie app Google rimasti nel codice: nelle mail portano alla stessa app su Jarvis
+const LINK_GOOGLE = [
+  [/https:\/\/script\.google\.com\/macros\/s\/AKfycbw8elh5LTFxELcgKHa7nQum8NPAIafVhn1y6sc1mwfNCs_mCF-DTB9SKiViH5tAaW1_Aw\/exec/g, 'https://officine-sportive.vercel.app/actionplan'],
+  [/https:\/\/script\.google\.com\/macros\/s\/AKfycbxom9ST_8sRTWmx_Pp18hJpntQAv4rtMcgo8j48vVpgfYvzot1sAcgzpgvYI8OVu3Sn\/exec/g, 'https://officine-sportive.vercel.app/goodmorning']
+];
+const linkJarvis = t => (t ? LINK_GOOGLE.reduce((x, [re, u]) => x.replace(re, u), String(t)) : t);
 async function mandaMail(app, m) {
+  m = { ...m, htmlBody: linkJarvis(m.htmlBody), body: linkJarvis(m.body) };
   const lista = x => (x ? String(x).split(',').map(s => s.trim()).filter(Boolean) : []);
   const allegati = [];
   (m.attachments || []).forEach(b => { if (b) allegati.push({ filename: b.getName ? b.getName() || 'allegato' : 'allegato', content: aBuffer(b).toString('base64'), content_type: b.getContentType ? b.getContentType() : undefined }); });

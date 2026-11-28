@@ -34,6 +34,11 @@ Jarvis = Vercel (officine-sportive.vercel.app) + Supabase + Resend. Piano: stacc
 - **Prova nuoto**: legge un Google Modulo, va rifatta come pagina Jarvis.
 - **Compiti automatici di Claude** (mail dati mattina/sera, numeri Wellness nel Daily, VS, Piano di Alessandro, ranking, tesseramenti, revisione del lunedì, promemoria): leggono fogli Google e mandano dalla Gmail officinesportive3. Vanno ripuntati su Jarvis. Le mail dati mattina/sera leggono i turni dall'artifact della prima nota, fermi al 17/11.
 
+## 📋 Compiti automatici di Claude (da ripuntare allo switch)
+Leggono fogli/Drive/Gmail di Google e mandano da officinesportive3. Fino allo switch restano su Google (Google è ancora la fonte vera). Allo switch: riscriverli per leggere da Supabase (`gas_fogli`, `wellness_righe`, `drive_file`, `info_mail`) e mandare con `mailStaff`; dove possibile diventano codice di Jarvis (più veloce e senza costi).
+- trig_01T3dYytRCgxxbaT61kLdjZB dati mattina 07:00 · trig_01Tw4L8M9bQAuLTYcCQDS7Ku dati sera 21:10 → 28/11: turni letti da «Turni Circolo» (12GcNh…) e non più dall'artifact fermo al 17/11.
+- trig_016UBAsALbm9LbxNid6upZzM numeri Wellness nel Daily 21:35 · trig_01MKNFbhQxUBsLsx5WVKzUe9 File VS · trig_01VxjkpvLcDwWK8Gxhza14rF Piano di Alessandro · trig_01C5SFX2sShQ87gvtxSd6Ps4 promemoria urgenze · trig_01TM69K9So9ZNr2tiqANwuu7 ranking venerdì · trig_014tA1dX7m6NbZDGYVV4fpG3 tesseramenti · trig_019zfKxGDP4pkacoqdqH8EDU file Playtomic da Luca · trig_019jLg85xPVLSmZZhqtqcNZw report Wellness di Alessandro · trig_01VNKiSAJa9ougx8giZA4Qpz recensioni Google · trig_01XKss47XXC9apGyd2Hgtu1v sync turni artifact→Supabase (da spegnere allo switch) · trig_01QYfPz5EULXLxiJwFkUVsRD gradimento (già spento) · altri: vedi list_triggers.
+
 ## ⏳ In attesa
 - Alessandro: nuovo Jarvis 2 senza filtro «Disdetta rinnovo» (mail del 27/11). Controllo automatico lunedì 30/11 alle 17:30.
 

@@ -28,7 +28,8 @@ export async function gasRun(nome, fn, args) {
 export async function gasEsegui(chiave, nome, fn, args) {
   if (!chiave || chiave !== await segreto('giro')) return { ok: false };
   const { a, k } = await prepara(nome);
-  return { ok: true, data: normale(await esegui(a, k, fn, args || [])) };
+  try { return { ok: true, data: normale(await esegui(a, k, fn, args || [])) }; }
+  catch (e) { console.error('gasEsegui', nome, fn, e); return { ok: false, errore: String(e && e.stack || e).slice(0, 1500) }; }
 }
 
 function shim(nome) {

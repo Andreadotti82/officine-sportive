@@ -107,7 +107,7 @@ export async function gasRiceviProp(k, app, props) {
 }
 
 // Aggiunge al codice di Google (copiato su Jarvis) il pezzo che manda le proprietà a Jarvis, e lo rimette nel Drive dei codici.
-export async function codiceAggancia(chiave, nome, app, funzione) {
+export async function codiceAggancia(chiave, nome, app, funzione, archivio) {
   if (!chiave || chiave !== await segreto('giro')) return { ok: false };
   const r = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js?t=' + Date.now(), { headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }) } });
   let testo = await r.text();
@@ -122,8 +122,33 @@ function jarvisEsportaProp_() {
   UrlFetchApp.fetch('https://officine-sportive.vercel.app/api/jarvis', { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
     payload: JSON.stringify({ fn: 'gasRiceviProp', args: [${JSON.stringify(await segreto('ricevi-prop'))}, ${JSON.stringify(app)}, p.getProperties()] }) });
 }
+${archivio ? `
+/* JARVIS · STORICO (28/11/2026): copia una volta tutte le mail di questa casella nell'archivio di Jarvis, già gestite (niente risposte, niente sequenze). */
+function jarvisEsportaArchivio_() {
+  if (String(ScriptApp.getScriptId()).indexOf('jarvis-') === 0) return;
+  var p = PropertiesService.getScriptProperties();
+  if (p.getProperty('JARVIS_ARCH_FINITO')) return;
+  var t0 = Date.now(), start = Number(p.getProperty('JARVIS_ARCH_START') || 0);
+  while (Date.now() - t0 < 100000) {
+    var th = GmailApp.search('in:anywhere -in:trash -in:spam', start, 8);
+    if (!th.length) { p.setProperty('JARVIS_ARCH_FINITO', String(Date.now())); return; }
+    var lista = [], totB = 0;
+    th.forEach(function (t) {
+      var et = t.getLabels().map(function (l) { return l.getName(); }), inb = t.isInInbox();
+      t.getMessages().forEach(function (m) {
+        var all = [];
+        m.getAttachments().forEach(function (a) { var b = a.getBytes(); if (totB + b.length < 2200000) { totB += b.length; all.push({ nome: a.getName(), tipo: a.getContentType(), b64: Utilities.base64Encode(b) }); } else all.push({ nome: a.getName(), tipo: a.getContentType(), saltato: b.length }); });
+        lista.push({ id: m.getId(), thread: t.getId(), mid: String(m.getHeader('Message-ID') || ''), da: m.getFrom(), a: m.getTo(), cc: m.getCc(), rt: m.getReplyTo(), ogg: m.getSubject(), data: m.getDate().getTime(),
+          testo: String(m.getPlainBody() || '').slice(0, 100000), et: et, inbox: inb, allegati: all });
+      });
+    });
+    UrlFetchApp.fetch('https://officine-sportive.vercel.app/api/jarvis', { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      payload: JSON.stringify({ fn: 'infoArchivio', args: [${JSON.stringify(await segreto('ricevi-prop'))}, lista] }) });
+    start += th.length; p.setProperty('JARVIS_ARCH_START', String(start));
+  }
+}` : ''}
 var jarvisGiroOriginale_ = ${funzione};
-${funzione} = function () { try { jarvisEsportaProp_(); } catch (e) { } return jarvisGiroOriginale_.apply(this, arguments); };
+${funzione} = function () { try { jarvisEsportaProp_(); } catch (e) { } var r = jarvisGiroOriginale_.apply(this, arguments);${archivio ? ' try { jarvisEsportaArchivio_(); } catch (e) { }' : ''} return r; };
 `;
   const x = await google('scriviCodice', ['jarvis-codice-' + pulisci(nome) + '.js', testo]);
   return { ok: true, ...x };

@@ -180,6 +180,7 @@ ${archivio ? testoArchivio(await segreto('ricevi-prop')) : ''}
 var jarvisGiroOriginale_ = ${funzione};
 ${funzione} = function () { try { jarvisEsportaProp_(); } catch (e) { } var r = jarvisGiroOriginale_.apply(this, arguments);${archivio ? ' try { jarvisEsportaArchivio_(); } catch (e) { }' : ''} return r; };
 `;
+  try { new Function(testo); } catch (e) { return { ok: false, sintassi: String(e && e.message || e) }; }
   const x = await google('scriviCodice', ['jarvis-codice-' + pulisci(nome) + '.js', testo]);
   return { ok: true, ...x };
 }
@@ -218,7 +219,7 @@ ${archivio ? testoArchivio(await segreto('ricevi-prop')) : ''}
   g.doGet = function (e) {
     var q = e && e.queryString ? '&' + e.queryString : '';
     var t = UrlFetchApp.fetch('https://officine-sportive.vercel.app/api/jarvis?gas=${app}' + q, { muteHttpExceptions: true }).getContentText();
-    var m = t.match(/<title>([^<]*)<\/title>/i);
+    var m = t.match(/<title>([^<]*)<\\/title>/i);
     return HtmlService.createHtmlOutput(t).setTitle(m ? m[1] : 'Officine Sportive').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   };
 })();

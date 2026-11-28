@@ -96,3 +96,35 @@ export async function codiceCerca(chiave, nome, re, contesto, max) {
   for (let i = 0; i < righe.length && out.length < (max || 60); i++) if (rx.test(righe[i])) out.push((i + 1) + ': ' + righe.slice(Math.max(0, i - contesto), i + contesto + 1).join('\n').slice(0, 1500));
   return { righe: righe.length, trovate: out };
 }
+
+// Le impostazioni interne (proprietà) di un progetto Google arrivano qui ogni ora, finché il progetto gira su Google.
+export async function gasRiceviProp(k, app, props) {
+  if (!k || k !== await segreto('ricevi-prop') || !/^[a-z-]+$/.test(String(app)) || !props || typeof props !== 'object') return { ok: false };
+  const righe = Object.keys(props).filter(c => c !== 'JARVIS_PROP_ULTIMO').map(c => ({ app, chiave: c, valore: String(props[c]) }));
+  await db('/rest/v1/gas_proprieta?app=eq.' + encodeURIComponent(app), 'DELETE', null, { Prefer: 'return=minimal' });
+  for (let i = 0; i < righe.length; i += 200) await db('/rest/v1/gas_proprieta', 'POST', righe.slice(i, i + 200), { Prefer: 'return=minimal' });
+  return { ok: true, proprieta: righe.length };
+}
+
+// Aggiunge al codice di Google (copiato su Jarvis) il pezzo che manda le proprietà a Jarvis, e lo rimette nel Drive dei codici.
+export async function codiceAggancia(chiave, nome, app, funzione) {
+  if (!chiave || chiave !== await segreto('giro')) return { ok: false };
+  const r = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js', { headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }) } });
+  let testo = await r.text();
+  testo = testo.replace(/\n\/\* JARVIS · AGGANCIO PROPRIETÀ[\s\S]*$/, '');
+  testo += `
+/* JARVIS · AGGANCIO PROPRIETÀ (28/11/2026): ogni ora le proprietà di questo progetto vanno anche su Jarvis, per il passaggio. */
+function jarvisEsportaProp_() {
+  if (String(ScriptApp.getScriptId()).indexOf('jarvis-') === 0) return;
+  var p = PropertiesService.getScriptProperties();
+  if (Date.now() - Number(p.getProperty('JARVIS_PROP_ULTIMO') || 0) < 3600000) return;
+  p.setProperty('JARVIS_PROP_ULTIMO', String(Date.now()));
+  UrlFetchApp.fetch('https://officine-sportive.vercel.app/api/jarvis', { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    payload: JSON.stringify({ fn: 'gasRiceviProp', args: [${JSON.stringify(await segreto('ricevi-prop'))}, ${JSON.stringify(app)}, p.getProperties()] }) });
+}
+var jarvisGiroOriginale_ = ${funzione};
+${funzione} = function () { try { jarvisEsportaProp_(); } catch (e) { } return jarvisGiroOriginale_.apply(this, arguments); };
+`;
+  const x = await google('scriviCodice', ['jarvis-codice-' + pulisci(nome) + '.js', testo]);
+  return { ok: true, ...x };
+}

@@ -58,7 +58,8 @@ export async function pnPlaytomic(chiave, provaGiorni) {
   const [pag, pren, corr] = await Promise.all([scheda('Pagamenti'), scheda('Prenotazioni'), scheda('Correzioni K')]);
   if (Array.isArray(provaGiorni)) { const o = {}; provaGiorni.forEach(G => { o[G] = calcolaGiorno(G, pag, pren, corr); }); return { ok: true, prova: o }; }   // solo calcolo, niente scritture
   const raw = (await (await db('/rest/v1/gas_fogli?foglio=eq.' + FOGLIO + '&scheda=eq.Info&select=valori')).json())[0];
-  const b2 = raw && raw.valori && raw.valori[0] && raw.valori[0][1];
+  const rigaAgg = ((raw && raw.valori) || []).find(r => /ultimo aggiornamento/i.test(String(r[0])));
+  const b2 = rigaAgg && rigaAgg[1];
   const quando = b2 && b2.$d ? new Date(b2.$d) : null;
   if (!quando || Date.now() - quando.getTime() > 2 * 3600e3) return { ok: true, scritto: false, motivo: 'dati Playtomic vecchi o mancanti' };
   const ora = quando.toLocaleTimeString('it-IT', { timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit' });

@@ -93,7 +93,15 @@ export async function driveCodice(chiave, id, nome) {
   if (!chiave || chiave !== await segreto('giro')) return { ok: false };
   let parti = [], tot = null, da = 0;
   while (tot === null || da < tot) { const x = await google('esportaFile', [id, da, PEZZO]); tot = x.tot; const b = Buffer.from(x.b64, 'base64'); parti.push(b); da += b.length; if (!b.length) break; }
-  const testo = Buffer.concat(parti).toString('utf8');
+  let testo = Buffer.concat(parti).toString('utf8');
+  // progetto Google intero (script+json): il codice va insieme, le pagine HTML a parte
+  if (/^\s*\{\s*"files"/.test(testo)) {
+    const j = JSON.parse(testo), html = {};
+    testo = j.files.filter(f => f.type === 'server_js').map(f => '/* ===== ' + f.name + ' ===== */\n' + f.source).join('\n;\n');
+    j.files.filter(f => f.type === 'html').forEach(f => { html[f.name] = f.source; });
+    await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.html.json', { method: 'POST',
+      headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }), 'Content-Type': 'application/json', 'x-upsert': 'true', 'cache-control': 'no-cache' }, body: JSON.stringify(html) });
+  }
   const up = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js', { method: 'POST',
     headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }), 'Content-Type': 'text/plain', 'x-upsert': 'true', 'cache-control': 'no-cache' }, body: testo });
   const conta = re => { const m = {}; for (const x of testo.matchAll(re)) m[x[0]] = (m[x[0]] || 0) + 1; return m; };

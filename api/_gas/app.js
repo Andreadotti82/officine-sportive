@@ -20,6 +20,9 @@ export const APPS = {
     } },
   // Casella info@ e selezione: il codice è quello di Google, copiato nella parte privata di Jarvis (codici/…); la posta arriva da Register
   info: { nome: 'info', url: BASE + '/info', percorso: '/info', mittente: 'Officine Sportive', fileNoti: FILE_NOTI, posta: true, codiceStorage: 'casella-info', cartelleDrive: { '1grKl9i2yN9hNSI3JIOfAzOAaJ0SZ_-qr': 'Jarvis · Report Wellness' } },
+  hwclub: { nome: 'hwclub', url: BASE + '/hwclub', percorso: '/hwclub', mittente: 'Jarvis · Officine Sportive', fileNoti: FILE_NOTI, codiceStorage: 'hwclub' },
+  playtomic: { nome: 'playtomic', url: BASE + '/playtomic', percorso: '/playtomic', mittente: 'Jarvis · Officine Sportive', fileNoti: FILE_NOTI, codiceStorage: 'playtomic' },
+  bussola: { nome: 'bussola', url: BASE + '/bussola', percorso: '/bussola', mittente: 'Bussola Officine Sportive', fileNoti: FILE_NOTI, codiceStorage: 'bussola' },
   selezione: { nome: 'selezione', url: BASE + '/selezione', percorso: '/selezione', mittente: 'Officine Sportive', fileNoti: FILE_NOTI, posta: true, codiceStorage: 'selezione' }
 };
 
@@ -31,7 +34,10 @@ function leggi(nome, chiave) {
     const KEY = process.env.SUPABASE_SERVICE_KEY || '', URL = process.env.SUPABASE_URL || 'https://kyricrhlqlassvhxqjgf.supabase.co';
     const x = fetchSync(URL + '/storage/v1/object/jarvis-file/codici/' + a.codiceStorage + '.js?t=' + Date.now(), { headers: { apikey: KEY, ...(KEY.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + KEY }) } });
     if (x.status >= 300) throw new Error('Codice non trovato: ' + a.codiceStorage);
-    return (decifrati[nome] = { codice: x.body.toString('utf8'), html: {}, nomiFogli: {} });
+    let html = {};
+    const h = fetchSync(URL + '/storage/v1/object/jarvis-file/codici/' + a.codiceStorage + '.html.json?t=' + Date.now(), { headers: { apikey: KEY, ...(KEY.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + KEY }) } });
+    if (h.status < 300) { try { html = JSON.parse(h.body.toString('utf8')); } catch (e) { } }
+    return (decifrati[nome] = { codice: x.body.toString('utf8'), html, nomiFogli: {} });
   }
   const b = fs.readFileSync(path.join(process.cwd(), 'api', '_codici', nome + '.enc'));
   const iv = b.subarray(0, 12), tag = b.subarray(12, 28), dati = b.subarray(28);

@@ -9,7 +9,7 @@ const num = v => typeof v === 'number' ? v : (parseFloat(String(v || '').replace
 const r2 = x => Math.round(x * 100) / 100;
 const KP = /k[\s-]?padel/i;
 
-async function scheda(nome) {
+export async function scheda(nome) {
   const x = await (await db('/rest/v1/gas_fogli?foglio=eq.' + FOGLIO + '&scheda=eq.' + encodeURIComponent(nome) + '&select=valori')).json();
   const v = (x[0] && x[0].valori) || [];
   const h = v[0] || [];

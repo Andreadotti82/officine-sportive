@@ -4,7 +4,7 @@
 // dalle chiusure da risolvere, l'azione di cassa nell'Action plan si chiude e chi ha chiuso, Alessandro e Andrea lo sanno.
 // Se non torna nemmeno così non si tocca niente: resta KO e si risolve dalla Prima nota come sempre.
 import { db, segreto, inviaMail } from './_jarvis-base.js';
-import { calcolaGiorno } from './_pn-playtomic.js';
+import { calcolaGiorno, scheda as schedaPT } from './_pn-playtomic.js';
 
 const PLAYTOMIC = '1LRHt3BDd_J6m8VDQ4KO7ux1wp64kRD5tUqPozbdoIz4';
 const AP = '14HxB5_4S0tb3duMbfnxHl2g9CBQki4mAP6apBK7ti-g';
@@ -59,7 +59,7 @@ export async function pnVerificaNotte(chiave, giorno, prova) {
   const quando = riga && riga[1] && riga[1].$d ? new Date(riga[1].$d) : null;
   const domani0 = new Date(G + 'T23:00:00Z').getTime();   // mezzanotte italiana (inverno)
   if (!giorno && (!quando || quando.getTime() < domani0 + 3 * 3600e3)) return { ok: true, esito: 'Playtomic non ancora aggiornato dopo le 4', quando };
-  const [pag, pren, corr] = await Promise.all([scheda('Pagamenti'), scheda('Prenotazioni'), scheda('Correzioni K')]);
+  const [pag, pren, corr] = await Promise.all([schedaPT('Pagamenti'), schedaPT('Prenotazioni'), schedaPT('Correzioni K')]);
   const P = calcolaGiorno(G, pag, pren, corr), q = e.q || {};
   const incassi = r2(n(q.wc) + n(q.pc) + n(q.ts) + n(q.bo) + n(P.po) + n(q.st) + n(q.su) + n(q.fp));
   const gestionali = r2(n(q.gw) + n(P.gp));

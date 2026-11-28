@@ -49,8 +49,8 @@ export async function infoProva(chiave) {
   let mx = []; try { mx = (await dns.resolveMx('officinesportive.it')).map(x => x.exchange); } catch (e) { mx = ['errore ' + e.code]; }
   esiti.push({ mx });
   for (const h of ['imap.officinesportive.it', 'mail.securemail.pro']) { try { esiti.push({ dns: h, ip: await dns.resolve4(h) }); } catch (e) { esiti.push({ dns: h, errore: e.code }); } }
-  const candidati = ['imap.officinesportive.it', 'pop.officinesportive.it', 'mail.securemail.pro', 'imap.securemail.pro', 'imap.webapps.net', 'mail.webapps.net', 'imap.email-it.webapps.net', 'email-it.webapps.net', ...mx.filter(h => !/^errore/.test(h))];
-  for (const host of (process.env.INFO_MAIL_HOST ? [process.env.INFO_MAIL_HOST] : candidati)) {
+  const candidati = ['pop.securemail.pro', 'imap.officinesportive.it', 'pop.officinesportive.it', 'mail.securemail.pro', 'imap.securemail.pro', 'imap.webapps.net', 'mail.webapps.net', 'imap.email-it.webapps.net', 'email-it.webapps.net', ...mx.filter(h => !/^errore/.test(h))];
+  for (const host of [...new Set([...(process.env.INFO_MAIL_HOST ? [process.env.INFO_MAIL_HOST] : []), ...candidati])]) {
     try {
       const s = await sessione(host);
       const l = await s.cmd('LOGIN ' + q(user) + ' ' + q(pass));

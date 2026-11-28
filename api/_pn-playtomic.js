@@ -26,7 +26,10 @@ export function calcolaGiorno(G, pag, pren, corr) {
     if (/REFUNDED/i.test(stato) && tot > 0) return;
     if (tot < 0) {
       const gs = giorno(p['Giorno servizio']);
-      if (gs && gs !== G) { out.rimborsiAltriGiorni += tot; note.push('Rimborso di ' + Math.abs(tot) + ' € (' + prod + ', servizio ' + gs.split('-').reverse().join('/') + '): non si toglie dall\'incasso del giorno'); return; }
+      // il pagamento rimborsato era di un altro giorno? (caso del 20/11: lezione pagata il 10/11, rimborsata il 20/11)
+      const orig = pag.find(q => num(q['Totale €']) === -tot && String(q['Prodotto']) === prod && giorno(q['Giorno servizio']) === gs && String(q['Ora servizio']) === String(p['Ora servizio']));
+      const altro = (gs && gs !== G) || (orig && giorno(orig['Giorno pagamento']) !== G);
+      if (altro) { out.rimborsiAltriGiorni += tot; note.push('Rimborso di ' + Math.abs(tot) + ' € (' + prod + ', servizio ' + gs.split('-').reverse().join('/') + (orig ? ', pagato il ' + giorno(orig['Giorno pagamento']).split('-').reverse().join('/') : '') + '): non si toglie dall\'incasso del giorno'); return; }
       out.rimborsi += tot;
     }
     out.gp += tot;

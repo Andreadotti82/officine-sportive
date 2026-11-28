@@ -191,3 +191,33 @@ export async function codicePatch(chiave, nome, vecchio, nuovo) {
   const up = await fetch(url, { method: 'POST', headers: { ...h, 'Content-Type': 'text/plain', 'x-upsert': 'true', 'cache-control': 'no-cache' }, body: testo.replace(vecchio, nuovo) });
   return { ok: up.ok };
 }
+
+// Spegne un progetto Google che ora gira su Jarvis: orari fermi (al primo giro manda un'ultima volta le proprietà),
+// pagine servite da Jarvis (i link già mandati continuano a funzionare).
+export async function codiceSpegni(chiave, nome, app, funzioni) {
+  if (!chiave || chiave !== await segreto('giro')) return { ok: false };
+  const r = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js?t=' + Date.now(), { headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }) } });
+  let testo = await r.text();
+  testo += `
+/* ===== JARVIS · SPENTO SU GOOGLE (${new Date().toISOString().slice(0, 10)}): ora gira su Jarvis. ===== */
+(function () {
+  if (String(ScriptApp.getScriptId()).indexOf('jarvis-') === 0) return;
+  var g = (0, eval)('this');
+  var finale = function () {
+    try { var p = PropertiesService.getScriptProperties(); if (!p.getProperty('JARVIS_FINALE')) { var tutte = p.getProperties();
+      UrlFetchApp.fetch('https://officine-sportive.vercel.app/api/jarvis', { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+        payload: JSON.stringify({ fn: 'gasRiceviProp', args: [${JSON.stringify(await segreto('ricevi-prop'))}, ${JSON.stringify(app)}, tutte] }) });
+      p.setProperty('JARVIS_FINALE', String(Date.now())); } } catch (e) { }
+  };
+  ${JSON.stringify(funzioni)}.forEach(function (n) { g[n] = finale; });
+  g.doGet = function (e) {
+    var q = e && e.queryString ? '&' + e.queryString : '';
+    var t = UrlFetchApp.fetch('https://officine-sportive.vercel.app/api/jarvis?gas=${app}' + q, { muteHttpExceptions: true }).getContentText();
+    var m = t.match(/<title>([^<]*)<\/title>/i);
+    return HtmlService.createHtmlOutput(t).setTitle(m ? m[1] : 'Officine Sportive').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  };
+})();
+`;
+  const x = await google('scriviCodice', ['jarvis-codice-' + pulisci(nome) + '.js', testo]);
+  return { ok: true, ...x };
+}

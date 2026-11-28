@@ -34,7 +34,7 @@ export async function gasEsegui(chiave, nome, fn, args) {
 function shim(nome) {
   return `<script>(function(){var A=${JSON.stringify(nome)};function mk(ok,ko,uo){return new Proxy({},{get:function(_,n){
 if(n==='withSuccessHandler')return function(f){return mk(f,ko,uo)};if(n==='withFailureHandler')return function(f){return mk(ok,f,uo)};if(n==='withUserObject')return function(o){return mk(ok,ko,o)};
-return function(){var a=[].slice.call(arguments);fetch('/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fn:'gasRun',args:[A,n,a]})})
+return function(){var a=[].slice.call(arguments);fetch('https://officine-sportive.vercel.app/api/jarvis',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fn:'gasRun',args:[A,n,a]})})
 .then(function(r){return r.json()}).then(function(r){var x=r&&r.data;if(!r.ok||!x)throw new Error('Connessione assente: riprova.');if(!x.ok)throw new Error(x.errore||'Errore');ok&&ok(x.data,uo)})
 .catch(function(e){if(ko)ko(e,uo);else alert(e.message)})}}})}
 window.google=window.google||{};google.script={run:mk(),host:{close:function(){},setHeight:function(){},setWidth:function(){},editor:{focus:function(){}}},

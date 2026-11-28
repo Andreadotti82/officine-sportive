@@ -5,6 +5,18 @@
   ],
   "rewrites": [
     {
+      "source": "/info",
+      "destination": "/api/jarvis?gas=info"
+    },
+    {
+      "source": "/selezione",
+      "destination": "/api/jarvis?gas=selezione"
+    },
+    {
+      "source": "/hwclub",
+      "destination": "/api/jarvis?gas=hwclub"
+    },
+    {
       "source": "/goodmorning",
       "destination": "/api/jarvis?gas=gm"
     },

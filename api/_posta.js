@@ -181,14 +181,14 @@ export async function infoArchivio(k, lista) {
   for (const m of lista) {
     const mid = String(m.mid || '').replace(/[<>\s]/g, '') || ('gmail-' + m.id);
     if (visti.has(mid)) continue;
-    const id = 'gm' + String(m.id).replace(/\W/g, ''), allegati = [];
+    const id = String(m.id).replace(/[^\w-]/g, ''), allegati = [];   // stesso ID di Gmail: le pratiche aperte che lo citano lo ritrovano
     for (const [j, a] of (m.allegati || []).entries()) {
       if (!a.b64) { allegati.push({ nome: a.nome, tipo: a.tipo, nonCopiato: a.saltato || true }); continue; }
       const path = 'info/' + id + '/' + j + '-' + pulisciNome(a.nome), dati = Buffer.from(a.b64, 'base64');
       const up = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/' + encodeURI(path), { method: 'POST', headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }), 'Content-Type': a.tipo || 'application/octet-stream', 'x-upsert': 'true' }, body: dati });
       if (up.ok) allegati.push({ nome: a.nome, tipo: a.tipo, path, dim: dati.length });
     }
-    const riga = { id, uid: null, cartella: 'GMAIL', message_id: mid, thread_id: 'gt' + String(m.thread).replace(/\W/g, ''), da: m.da || '', a: m.a || '', cc: m.cc || '', reply_to: m.rt || '', oggetto: m.ogg || '',
+    const riga = { id, uid: null, cartella: 'GMAIL', message_id: mid, thread_id: String(m.thread).replace(/[^\w-]/g, ''), da: m.da || '', a: m.a || '', cc: m.cc || '', reply_to: m.rt || '', oggetto: m.ogg || '',
       data: new Date(Number(m.data) || Date.now()).toISOString(), testo: String(m.testo || ''), html: '', intestazioni: { 'message-id': mid, storico: 'officneinfo' }, allegati,
       etichette: (m.et || []).concat('Storico Gmail'), in_inbox: false, cestino: false, letto: true };
     const w = await db('/rest/v1/info_mail?on_conflict=id', 'POST', [riga], { Prefer: 'resolution=ignore-duplicates,return=minimal' });

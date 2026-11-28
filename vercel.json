@@ -9,6 +9,14 @@
       "destination": "/api/jarvis?gas=info"
     },
     {
+      "source": "/info/exec",
+      "destination": "/api/jarvis?gas=info"
+    },
+    {
+      "source": "/selezione/exec",
+      "destination": "/api/jarvis?gas=selezione"
+    },
+    {
       "source": "/selezione",
       "destination": "/api/jarvis?gas=selezione"
     },

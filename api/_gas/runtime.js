@@ -131,7 +131,7 @@ export function creaAmbiente(app) {
     return {
       getId: () => r.id, getName: () => r.nome, setName: n => { r.nome = n; return this; }, getUrl: () => BASE + '/file/' + r.id, getDownloadUrl: () => BASE + '/file/' + r.id,
       getMimeType: () => r.tipo, setSharing: function () { return this; }, setTrashed: function () { return this; }, isTrashed: () => false, getLastUpdated: () => new Date(r.creato_il || Date.now()),
-      getDateCreated: () => new Date(r.creato_il || Date.now()), getSize: () => 0, getOwner: () => ({ getEmail: () => '' }), addViewer: function () { return this; },
+      getDateCreated: () => new Date(r.creato_il || Date.now()), getSize: () => Number(r.dim || r.dimensione || (r._blob ? aBuffer(r._blob).length : 0)), getOwner: () => ({ getEmail: () => '' }), addViewer: function () { return this; },
       getBlob: () => { if (r._blob) return r._blob; const x = fetchSync(SUPABASE_URL + '/storage/v1/object/jarvis-file/' + r.path, { headers: intestazioni() }); if (x.status >= 300) throw new Error('File non trovato: ' + r.id); return new Blob(x.body, r.tipo, r.nome); },
       getAs: function (t) { return this.getBlob().getAs(t); }
     };
@@ -157,8 +157,8 @@ export function creaAmbiente(app) {
   function cercaFile(id, q) {
     const tutti = dbSync('/rest/v1/gas_file?cartella=eq.' + enc(id) + '&select=*&order=creato_il.desc');
     const nomeC = (app2.cartelleDrive || {})[id];
-    if (nomeC) dbSync('/rest/v1/drive_file?stato=eq.copiato&cartella=ilike.' + enc('*' + nomeC) + '&select=drive_id,nome,tipo,mime,path,modificato&order=modificato.desc&limit=2000')
-      .forEach(r => tutti.push({ id: r.drive_id, nome: r.nome, tipo: r.tipo || r.mime, path: r.path, creato_il: r.modificato }));
+    if (nomeC) dbSync('/rest/v1/drive_file?stato=eq.copiato&cartella=ilike.' + enc('*' + nomeC) + '&select=drive_id,nome,tipo,mime,path,modificato,dimensione&order=modificato.desc&limit=2000')
+      .forEach(r => tutti.push({ id: r.drive_id, nome: r.nome, tipo: r.tipo || r.mime, path: r.path, creato_il: r.modificato, dim: r.dimensione }));
     const filtri = [];
     String(q || '').replace(/title\s+contains\s+'((?:[^'\\]|\\.)*)'/gi, (m, v) => { const w = v.replace(/\\'/g, "'").toLowerCase(); filtri.push(r => String(r.nome).toLowerCase().includes(w)); return m; });
     String(q || '').replace(/(modifiedDate|createdDate)\s*(>=?|<=?)\s*'([^']+)'/gi, (m, c, op, v) => { const t = new Date(v.endsWith('Z') || /[+-]\d\d:?\d\d$/.test(v) ? v : v + 'Z').getTime(); filtri.push(r => { const x = new Date(r.creato_il).getTime(); return op[0] === '>' ? x > t : x < t; }); return m; });
@@ -173,9 +173,9 @@ export function creaAmbiente(app) {
     getFileById: id => {
       if (fileNoti[id]) { const f = fileNoti[id]; return fileDaRiga({ id, nome: f.nome, tipo: f.tipo, _blob: new Blob(fs.readFileSync(path.join(process.cwd(), f.locale)), f.tipo, f.nome) }); }
       const r = dbSync('/rest/v1/gas_file?id=eq.' + enc(id) + '&select=*'); if (r.length) return fileDaRiga(r[0]);
-      const d = dbSync('/rest/v1/drive_file?drive_id=eq.' + enc(id) + '&stato=eq.copiato&select=drive_id,nome,tipo,mime,path,modificato');
+      const d = dbSync('/rest/v1/drive_file?drive_id=eq.' + enc(id) + '&stato=eq.copiato&select=drive_id,nome,tipo,mime,path,modificato,dimensione');
       if (!d.length) throw new Error('File non trovato: ' + id);
-      return fileDaRiga({ id: d[0].drive_id, nome: d[0].nome, tipo: d[0].tipo || d[0].mime, path: d[0].path, creato_il: d[0].modificato });
+      return fileDaRiga({ id: d[0].drive_id, nome: d[0].nome, tipo: d[0].tipo || d[0].mime, path: d[0].path, creato_il: d[0].modificato, dim: d[0].dimensione });
     },
     getFilesByName: n => iter(dbSync('/rest/v1/gas_file?nome=eq.' + enc(n) + '&select=*&order=creato_il.desc').map(fileDaRiga)),
     Access: { ANYONE_WITH_LINK: 1, ANYONE: 2, PRIVATE: 3, DOMAIN: 4, DOMAIN_WITH_LINK: 5 }, Permission: { VIEW: 1, EDIT: 2, COMMENT: 3 }
@@ -253,7 +253,7 @@ export async function salva(app, stato) {
   for (const f of stato.fileNuovi) {
     const up = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/' + f.path, { method: 'POST', headers: { ...intestazioni(), 'Content-Type': f.tipo || 'application/octet-stream', 'x-upsert': 'true' }, body: aBuffer(f._blob) });
     if (!up.ok) console.error('[GAS] file non salvato', f.nome, up.status);
-    await dbAsync('/rest/v1/gas_file', 'POST', { id: f.id, nome: f.nome, tipo: f.tipo, cartella: f.cartella, path: f.path, app: app.nome }, { Prefer: 'return=minimal' });
+    await dbAsync('/rest/v1/gas_file', 'POST', { id: f.id, nome: f.nome, tipo: f.tipo, cartella: f.cartella, path: f.path, app: app.nome, dim: aBuffer(f._blob).length }, { Prefer: 'return=minimal' });
   }
   if (stato.lockPreso) { await dbAsync('/rest/v1/gas_lock?app=eq.' + enc(app.nome), 'DELETE'); stato.lockPreso = false; }
   // In simulazione: al massimo 5 mail d'esempio, più un riepilogo con tutte le altre (così Andrea non viene sommerso)

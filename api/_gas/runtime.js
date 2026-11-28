@@ -278,7 +278,9 @@ async function mandaMail(app, m) {
   const corpo = { from: (m.name || app.mittente || 'Officine Sportive') + ' <info@officinesportive.it>', to: dest, subject: oggetto, ...(m.htmlBody ? { html: m.htmlBody } : {}), ...(m.body ? { text: m.body } : {}), ...(cc.length ? { cc } : {}), ...(bcc.length ? { bcc } : {}), ...(m.replyTo ? { reply_to: m.replyTo } : {}), ...(allegati.length ? { attachments: allegati } : {}), ...(m.inReplyTo && !app.simulazione ? { headers: { 'In-Reply-To': m.inReplyTo, References: m.inReplyTo } } : {}) };
   if (!dest.length) return;
   const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + RESEND, 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
-  if (!r.ok) console.error('[GAS] mail non partita', r.status, (await r.text()).slice(0, 300));
+  let esito = 'ok';
+  if (!r.ok) { esito = 'errore ' + r.status + ': ' + (await r.text()).slice(0, 200); console.error('[GAS] mail non partita', esito); }
+  try { await dbAsync('/rest/v1/gas_mail_log', 'POST', { app: app.nome, a: lista(m.to).join(', '), cc: lista(m.cc).join(', '), oggetto: String(m.subject || '').slice(0, 300), simulazione: !!app.simulazione, esito }, { Prefer: 'return=minimal' }); } catch (e) { console.error('[GAS] registro mail', e); }
 }
 
 // Carica il codice dell'app (cifrato nel repository) e lo esegue nello stesso "mondo" di Node

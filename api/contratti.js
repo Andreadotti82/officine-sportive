@@ -933,8 +933,53 @@ async function giroContratti(chiave) {
       inviati++;
     } catch (e) { console.error('[GIRO] PDF al socio', c.numero, e.message || e); errori.push('mail ' + c.numero + ': ' + String(e.message || e).slice(0, 200)); }
   }
+  let benvenuti = 0; try { benvenuti = await giroBenvenuto(); } catch (e) { errori.push('benvenuto: ' + String(e.message || e).slice(0, 200)); }
   await pulisciProve();
-  return { ok: true, inviati, rifatti, errori };
+  return { ok: true, inviati, rifatti, benvenuti, errori };
+}
+
+// Mail «Benvenuto» con le info utili: la mattina dopo la firma, dalle 9 (come faceva l'App Contratti su Google).
+function htmlBenvenuto(nome) {
+  const voce = (t, x) => '<tr><td style="padding:14px 0;border-bottom:1px solid #D4E0E3"><div style="font-weight:700;color:#13556F;font-size:15px;margin-bottom:4px">' + t + '</div><div style="font-size:14px;line-height:1.55;color:#14323F">' + x + '</div></td></tr>';
+  const bt = (u, t) => '<br><a href="' + u + '" style="display:inline-block;margin-top:8px;background:#1A9DA7;color:#FFFFFF;text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:9px">' + t + '</a>';
+  return cornice(
+    '<div style="margin:0 0 20px;padding:24px 22px;background:#13556F;background-image:linear-gradient(135deg,#13556F,#1A9DA7);color:#FFFFFF;border-radius:12px"><div style="font-size:26px;font-weight:800">Benvenuto! 👋</div><div style="font-size:14px;opacity:.9;margin-top:4px">Da oggi fai parte della famiglia di Officine Sportive</div></div>' +
+    '<p style="margin:0 0 14px">Ciao ' + escHtml(nome) + '! 💪</p><p style="margin:0 0 8px">Benvenuto in Officine Sportive, siamo felicissimi di averti con noi! Ecco tutto quello che ti serve per partire alla grande.</p>' +
+    '<p style="margin:0 0 4px;font-size:13px;letter-spacing:1px;font-weight:700;color:#1A9DA7">ℹ️ INFO UTILI</p><table style="width:100%;border-collapse:collapse">' +
+    voce('👨‍⚕️ Certificato medico', 'Il nostro medico convenzionato, <b>Dr. Domenico Bisogno</b>, riceve senza appuntamento:<br>🗓️ lunedì e mercoledì 15-18, martedì e giovedì 11:30-15, venerdì 17-19<br>📍 Viale Donato Bramante 47') +
+    voce('⏱️ Orario dei corsi', 'Puoi consultarlo sul nostro sito.' + bt('https://www.officinesportive.it/orari/', 'Vedi gli orari')) +
+    voce('🏋️‍♀️ Fit-check', 'Fissa in reception un appuntamento per la prima scheda di allenamento in sala attrezzi, oppure prenotalo online.' + bt('https://officine-sportive.vercel.app/fitcheck', 'Prenota il fit-check')) +
+    voce('🎾 Padel', 'Scarica la nostra app per gestire partite e prenotazioni.' + bt('https://tinyurl.com/Officine-Sportive', "Scarica l'app")) +
+    voce('🧖‍♂️ Servizio asciugamani', 'Telo asciugamano grande a ogni allenamento per soli <b>12 € al mese</b>. Attivalo in reception!') +
+    voce('➕ Un mese gratis', 'Se si iscrive un tuo amico, per te un mese gratis!') + '</table>' +
+    '<p style="margin:18px 0 6px"><b>📞 Non esitare a contattarci: siamo qui per te!</b><br>📱 375 599 2375 &nbsp;·&nbsp; ☎️ 06 6595 5545</p>' +
+    '<p style="margin:12px 0 0">🔵🔴 Seguici sui nostri canali social:<br><a href="https://bit.ly/OfficineSportive_Facebook" style="color:#13556F;font-weight:700">Facebook</a> &nbsp;·&nbsp; <a href="https://bit.ly/OfficineSportive_Instagram" style="color:#13556F;font-weight:700">Instagram</a></p>');
+}
+async function giroBenvenuto(prova) {
+  const ora = Number(new Date().toLocaleString('en-GB', { timeZone: 'Europe/Rome', hour: '2-digit', hour12: false }));
+  if (prova) { await inviaMail(prova, '[SIMULAZIONE] Benvenuto in Officine Sportive! 👋', htmlBenvenuto('Patrizia')); return 1; }
+  if (ora < 9 || ora >= 20) return 0;
+  const oggi = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' });
+  const r = await supaFetchSrv('/rest/v1/contratti?firmato=eq.true&annullato=eq.false&prova=eq.false&benvenuto_il=is.null&tipo=neq.upgrade&select=id,nome,email,firmato_il,dettagli&limit=20');
+  const rows = await r.json(); let n = 0;
+  for (const c of (Array.isArray(rows) ? rows : [])) {
+    if (!c.firmato_il || new Date(c.firmato_il).toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' }) >= oggi || !c.email) continue;
+    const nome = (c.dettagli && c.dettagli.titolare && c.dettagli.titolare.nome) || c.nome;
+    try { await inviaMail(c.email, 'Benvenuto in Officine Sportive! 👋', htmlBenvenuto(nome)); n++; } catch (e) { console.error('[BENVENUTO]', c.id, e.message || e); continue; }
+    await supaFetchSrv('/rest/v1/contratti?id=eq.' + c.id, 'PATCH', { benvenuto_il: new Date().toISOString() }, { 'Prefer': 'return=minimal' });
+  }
+  return n;
+}
+
+// Prova per Andrea: le due mail dopo la firma (contratto con il PDF d'esempio di De Marchi + benvenuto), solo al suo indirizzo
+async function provaMailFirma(chiave, email) {
+  const rk = await supaFetchSrv('/rest/v1/jarvis_segreti?nome=eq.giro&select=valore');
+  const k = await rk.json();
+  if (!Array.isArray(k) || !k.length || !chiave || chiave !== k[0].valore) return { ok: false };
+  const c = { numero: 'OS-2026-0005', nome: 'Patrizia', abbonamento_nome: 'Open 12', dettagli: { titolare: { nome: 'Patrizia' }, piano: { area: 'Fitness', abbonamento: 'Open 12', inizio: '01/02/2027', scadenza: '31/01/2028', rinnovo: true, disdettaEntro: '05/12/2027' } } };
+  await inviaMail(email, '[SIMULAZIONE · 30 minuti dopo la firma] Il tuo contratto Officine Sportive n. OS-2026-0005', htmlMailContratto(c));
+  await giroBenvenuto(email);
+  return { ok: true };
 }
 
 async function reinviaOtp(id) {
@@ -1415,7 +1460,7 @@ async function verificaSessione(token) {
 const FUNZIONI = {
   analizzaCF, verificaNomeCF, datiDaCF, catalogo, verificaPromo, preventivo,
   calcolaPiano: preventivo, // alias
-  testiSpunte, avviaFirma, reinviaOtp, confermaFirma, otpViaEmail, giroContratti,
+  testiSpunte, avviaFirma, reinviaOtp, confermaFirma, otpViaEmail, giroContratti, provaMailFirma,
   statoPagamento, riprovaPagamento,
   boLogin, boRegistrazioneAperta, boRegistra, boEsci, boElenco, boPromo,
   boSegnaGestionale, boPdf, boInvia,

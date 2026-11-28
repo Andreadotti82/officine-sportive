@@ -1,6 +1,7 @@
 // 28/11/2026 · Copia del Drive di officinesportive3 su Jarvis (Supabase, parte privata «jarvis-file/drive/…»).
 // Google elenca i file e li consegna a pezzi; Jarvis li salva e segna in «drive_file» cosa è stato copiato.
 // Gira a giri di ~45 secondi (chiamato ogni minuto finché c'è da copiare). Il Drive non viene toccato.
+import crypto from 'crypto';
 import { db, segreto } from './_jarvis-base.js';
 
 const URL_GM = 'https://script.google.com/macros/s/AKfycbxom9ST_8sRTWmx_Pp18hJpntQAv4rtMcgo8j48vVpgfYvzot1sAcgzpgvYI8OVu3Sn/exec';
@@ -226,4 +227,30 @@ ${archivio ? testoArchivio(await segreto('ricevi-prop')) : ''}
 `;
   const x = await google('scriviCodice', ['jarvis-codice-' + pulisci(nome) + '.js', testo]);
   return { ok: true, ...x };
+}
+
+
+// 28/11/2026 · PONTE MOMENTANEO per il registro chiamate: finché i telefoni non mandano il file per mail a info@,
+// ogni ora Jarvis prende dalle 2 cartelle Drive dei telefoni (officinesportive4) il file calls-*.xml più recente
+// e lo salva come farebbe la posta (gas_file, cartella «registro-chiamate»). Quando passano alla mail, si toglie il cron.
+const CARTELLE_TELEFONI = { '10s6WAza6hwoW8URa6idkLYi8lu1FtLs3': 'telefono 1', '1QsU1lFswKrOBdJvUEfp_bSqhqFLtsxR4': 'telefono 2' };
+export async function chiamateDaDrive(chiave) {
+  if (!chiave || chiave !== await segreto('giro')) return { ok: false };
+  const dopo = new Date(Date.now() - 26 * 3600e3).toISOString().slice(0, 19);
+  const out = [];
+  for (const id of Object.keys(CARTELLE_TELEFONI)) {
+    const l = await google('elencaCartella', [id, dopo]);
+    const f = (l.file || []).filter(x => /^calls-.*\.xml$/i.test(x.nome)).sort((a, b) => b.mod - a.mod)[0];
+    if (!f) { out.push(CARTELLE_TELEFONI[id] + ': nessun file nuovo'); continue; }
+    const gia = await (await db('/rest/v1/gas_file?cartella=eq.registro-chiamate&nome=eq.' + encodeURIComponent(f.nome) + '&select=id')).json();
+    if (Array.isArray(gia) && gia.length) { out.push(CARTELLE_TELEFONI[id] + ': ' + f.nome + ' già preso'); continue; }
+    const parti = []; let da = 0, tot = null;
+    while (tot === null || da < tot) { const x = await google('esportaFile', [f.id, da, PEZZO]); tot = x.tot; const b = Buffer.from(x.b64, 'base64'); parti.push(b); da += b.length; if (!b.length) break; }
+    const path = 'chiamate/' + id + '/' + f.nome;
+    const up = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/' + path, { method: 'POST', headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }), 'Content-Type': 'text/xml', 'x-upsert': 'true' }, body: Buffer.concat(parti) });
+    if (!up.ok) { out.push(CARTELLE_TELEFONI[id] + ': errore salvataggio ' + up.status); continue; }
+    await db('/rest/v1/gas_file', 'POST', { id: 'jf' + crypto.randomBytes(12).toString('hex'), nome: f.nome, tipo: 'text/xml', cartella: 'registro-chiamate', path, app: 'chiamate', dim: tot }, { Prefer: 'return=minimal' });
+    out.push(CARTELLE_TELEFONI[id] + ': ' + f.nome);
+  }
+  return { ok: true, esito: out };
 }

@@ -149,8 +149,21 @@ export function creaAmbiente(app) {
       createFolder: n => cartella('jd' + crypto.randomBytes(8).toString('hex'), n),
       getFilesByName: n => iter(dbSync('/rest/v1/gas_file?cartella=eq.' + enc(id) + '&nome=eq.' + enc(n) + '&select=*&order=creato_il.desc').map(fileDaRiga)),
       getFiles: () => iter(dbSync('/rest/v1/gas_file?cartella=eq.' + enc(id) + '&select=*&order=creato_il.desc').map(fileDaRiga)),
-      getFolders: () => iter([]), getFoldersByName: () => iter([]), setSharing: function () { return this; }, addFile: function () { return this; }, removeFile: function () { return this; }
+      getFolders: () => iter([]), getFoldersByName: () => iter([]), setSharing: function () { return this; }, addFile: function () { return this; }, removeFile: function () { return this; },
+      searchFiles: q => iter(cercaFile(id, q))
     };
+  }
+  // File di una cartella: quelli creati su Jarvis (gas_file) + quelli copiati dal Drive (drive_file), filtrati come la ricerca di Drive
+  function cercaFile(id, q) {
+    const tutti = dbSync('/rest/v1/gas_file?cartella=eq.' + enc(id) + '&select=*&order=creato_il.desc');
+    const nomeC = (app2.cartelleDrive || {})[id];
+    if (nomeC) dbSync('/rest/v1/drive_file?stato=eq.copiato&cartella=ilike.' + enc('*' + nomeC) + '&select=drive_id,nome,tipo,mime,path,modificato&order=modificato.desc&limit=2000')
+      .forEach(r => tutti.push({ id: r.drive_id, nome: r.nome, tipo: r.tipo || r.mime, path: r.path, creato_il: r.modificato }));
+    const filtri = [];
+    String(q || '').replace(/title\s+contains\s+'((?:[^'\\]|\\.)*)'/gi, (m, v) => { const w = v.replace(/\\'/g, "'").toLowerCase(); filtri.push(r => String(r.nome).toLowerCase().includes(w)); return m; });
+    String(q || '').replace(/(modifiedDate|createdDate)\s*(>=?|<=?)\s*'([^']+)'/gi, (m, c, op, v) => { const t = new Date(v.endsWith('Z') || /[+-]\d\d:?\d\d$/.test(v) ? v : v + 'Z').getTime(); filtri.push(r => { const x = new Date(r.creato_il).getTime(); return op[0] === '>' ? x > t : x < t; }); return m; });
+    String(q || '').replace(/title\s*=\s*'((?:[^'\\]|\\.)*)'/gi, (m, v) => { const w = v.replace(/\\'/g, "'"); filtri.push(r => r.nome === w); return m; });
+    return tutti.filter(r => filtri.every(f => f(r))).map(fileDaRiga);
   }
   const iter = l => { let i = 0; return { hasNext: () => i < l.length, next: () => l[i++] }; };
   const fileNoti = app2.fileNoti || {};
@@ -159,7 +172,10 @@ export function creaAmbiente(app) {
     createFile: (b, c, t) => (typeof b === 'string' ? creaFile(new Blob(c, t || 'text/plain', b), null, b, t) : creaFile(b)),
     getFileById: id => {
       if (fileNoti[id]) { const f = fileNoti[id]; return fileDaRiga({ id, nome: f.nome, tipo: f.tipo, _blob: new Blob(fs.readFileSync(path.join(process.cwd(), f.locale)), f.tipo, f.nome) }); }
-      const r = dbSync('/rest/v1/gas_file?id=eq.' + enc(id) + '&select=*'); if (!r.length) throw new Error('File non trovato: ' + id); return fileDaRiga(r[0]);
+      const r = dbSync('/rest/v1/gas_file?id=eq.' + enc(id) + '&select=*'); if (r.length) return fileDaRiga(r[0]);
+      const d = dbSync('/rest/v1/drive_file?drive_id=eq.' + enc(id) + '&stato=eq.copiato&select=drive_id,nome,tipo,mime,path,modificato');
+      if (!d.length) throw new Error('File non trovato: ' + id);
+      return fileDaRiga({ id: d[0].drive_id, nome: d[0].nome, tipo: d[0].tipo || d[0].mime, path: d[0].path, creato_il: d[0].modificato });
     },
     getFilesByName: n => iter(dbSync('/rest/v1/gas_file?nome=eq.' + enc(n) + '&select=*&order=creato_il.desc').map(fileDaRiga)),
     Access: { ANYONE_WITH_LINK: 1, ANYONE: 2, PRIVATE: 3, DOMAIN: 4, DOMAIN_WITH_LINK: 5 }, Permission: { VIEW: 1, EDIT: 2, COMMENT: 3 }

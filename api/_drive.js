@@ -128,3 +128,14 @@ ${funzione} = function () { try { jarvisEsportaProp_(); } catch (e) { } return j
   const x = await google('scriviCodice', ['jarvis-codice-' + pulisci(nome) + '.js', testo]);
   return { ok: true, ...x };
 }
+
+// Corregge un pezzo del codice copiato (deve comparire una volta sola). Dopo, codiceAggancia lo rimette su Google.
+export async function codicePatch(chiave, nome, vecchio, nuovo) {
+  if (!chiave || chiave !== await segreto('giro')) return { ok: false };
+  const url = SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js', h = { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }) };
+  const testo = await (await fetch(url, { headers: h })).text();
+  const n = testo.split(vecchio).length - 1;
+  if (n !== 1) return { ok: false, trovate: n };
+  const up = await fetch(url, { method: 'POST', headers: { ...h, 'Content-Type': 'text/plain', 'x-upsert': 'true' }, body: testo.replace(vecchio, nuovo) });
+  return { ok: up.ok };
+}

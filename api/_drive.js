@@ -133,23 +133,7 @@ export async function gasRiceviProp(k, app, props) {
   return { ok: true, proprieta: righe.length };
 }
 
-// Aggiunge al codice di Google (copiato su Jarvis) il pezzo che manda le proprietà a Jarvis, e lo rimette nel Drive dei codici.
-export async function codiceAggancia(chiave, nome, app, funzione, archivio) {
-  if (!chiave || chiave !== await segreto('giro')) return { ok: false };
-  const r = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js?t=' + Date.now(), { headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }) } });
-  let testo = await r.text();
-  testo = testo.replace(/\n\/\* JARVIS · AGGANCIO PROPRIETÀ[\s\S]*$/, '');
-  testo += `
-/* JARVIS · AGGANCIO PROPRIETÀ (28/11/2026): ogni ora le proprietà di questo progetto vanno anche su Jarvis, per il passaggio. */
-function jarvisEsportaProp_() {
-  if (String(ScriptApp.getScriptId()).indexOf('jarvis-') === 0) return;
-  var p = PropertiesService.getScriptProperties();
-  if (Date.now() - Number(p.getProperty('JARVIS_PROP_ULTIMO') || 0) < 3600000) return;
-  p.setProperty('JARVIS_PROP_ULTIMO', String(Date.now()));
-  UrlFetchApp.fetch('https://officine-sportive.vercel.app/api/jarvis', { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-    payload: JSON.stringify({ fn: 'gasRiceviProp', args: [${JSON.stringify(await segreto('ricevi-prop'))}, ${JSON.stringify(app)}, p.getProperties()] }) });
-}
-${archivio ? `
+const testoArchivio = k => `
 /* JARVIS · STORICO (28/11/2026): copia una volta tutte le mail di questa casella nell'archivio di Jarvis, già gestite (niente risposte, niente sequenze). */
 function jarvisEsportaArchivio_() {
   if (String(ScriptApp.getScriptId()).indexOf('jarvis-') === 0) return;
@@ -170,10 +154,28 @@ function jarvisEsportaArchivio_() {
       });
     });
     UrlFetchApp.fetch('https://officine-sportive.vercel.app/api/jarvis', { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-      payload: JSON.stringify({ fn: 'infoArchivio', args: [${JSON.stringify(await segreto('ricevi-prop'))}, lista] }) });
+      payload: JSON.stringify({ fn: 'infoArchivio', args: [${JSON.stringify(k)}, lista] }) });
     start += th.length; p.setProperty('JARVIS_ARCH_START', String(start));
   }
-}` : ''}
+}`;
+
+// Aggiunge al codice di Google (copiato su Jarvis) il pezzo che manda le proprietà a Jarvis, e lo rimette nel Drive dei codici.
+export async function codiceAggancia(chiave, nome, app, funzione, archivio) {
+  if (!chiave || chiave !== await segreto('giro')) return { ok: false };
+  const r = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js?t=' + Date.now(), { headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }) } });
+  let testo = await r.text();
+  testo = testo.replace(/\n\/\* JARVIS · AGGANCIO PROPRIETÀ[\s\S]*$/, '');
+  testo += `
+/* JARVIS · AGGANCIO PROPRIETÀ (28/11/2026): ogni ora le proprietà di questo progetto vanno anche su Jarvis, per il passaggio. */
+function jarvisEsportaProp_() {
+  if (String(ScriptApp.getScriptId()).indexOf('jarvis-') === 0) return;
+  var p = PropertiesService.getScriptProperties();
+  if (Date.now() - Number(p.getProperty('JARVIS_PROP_ULTIMO') || 0) < 3600000) return;
+  p.setProperty('JARVIS_PROP_ULTIMO', String(Date.now()));
+  UrlFetchApp.fetch('https://officine-sportive.vercel.app/api/jarvis', { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    payload: JSON.stringify({ fn: 'gasRiceviProp', args: [${JSON.stringify(await segreto('ricevi-prop'))}, ${JSON.stringify(app)}, p.getProperties()] }) });
+}
+${archivio ? testoArchivio(await segreto('ricevi-prop')) : ''}
 var jarvisGiroOriginale_ = ${funzione};
 ${funzione} = function () { try { jarvisEsportaProp_(); } catch (e) { } var r = jarvisGiroOriginale_.apply(this, arguments);${archivio ? ' try { jarvisEsportaArchivio_(); } catch (e) { }' : ''} return r; };
 `;
@@ -194,11 +196,12 @@ export async function codicePatch(chiave, nome, vecchio, nuovo) {
 
 // Spegne un progetto Google che ora gira su Jarvis: orari fermi (al primo giro manda un'ultima volta le proprietà),
 // pagine servite da Jarvis (i link già mandati continuano a funzionare).
-export async function codiceSpegni(chiave, nome, app, funzioni) {
+export async function codiceSpegni(chiave, nome, app, funzioni, archivio) {
   if (!chiave || chiave !== await segreto('giro')) return { ok: false };
   const r = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js?t=' + Date.now(), { headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }) } });
   let testo = await r.text();
   testo += `
+${archivio ? testoArchivio(await segreto('ricevi-prop')) : ''}
 /* ===== JARVIS · SPENTO SU GOOGLE (${new Date().toISOString().slice(0, 10)}): ora gira su Jarvis. ===== */
 (function () {
   if (String(ScriptApp.getScriptId()).indexOf('jarvis-') === 0) return;
@@ -208,6 +211,7 @@ export async function codiceSpegni(chiave, nome, app, funzioni) {
       UrlFetchApp.fetch('https://officine-sportive.vercel.app/api/jarvis', { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
         payload: JSON.stringify({ fn: 'gasRiceviProp', args: [${JSON.stringify(await segreto('ricevi-prop'))}, ${JSON.stringify(app)}, tutte] }) });
       p.setProperty('JARVIS_FINALE', String(Date.now())); } } catch (e) { }
+    ${archivio ? "try { jarvisEsportaArchivio_(); } catch (e) { }" : ''}
   };
   ${JSON.stringify(funzioni)}.forEach(function (n) { g[n] = finale; });
   g.doGet = function (e) {

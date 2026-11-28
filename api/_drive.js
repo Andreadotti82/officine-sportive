@@ -1,0 +1,73 @@
+// 28/11/2026 · Copia del Drive di officinesportive3 su Jarvis (Supabase, parte privata «jarvis-file/drive/…»).
+// Google elenca i file e li consegna a pezzi; Jarvis li salva e segna in «drive_file» cosa è stato copiato.
+// Gira a giri di ~45 secondi (chiamato ogni minuto finché c'è da copiare). Il Drive non viene toccato.
+import { db, segreto } from './_jarvis-base.js';
+
+const URL_GM = 'https://script.google.com/macros/s/AKfycbxom9ST_8sRTWmx_Pp18hJpntQAv4rtMcgo8j48vVpgfYvzot1sAcgzpgvYI8OVu3Sn/exec';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://kyricrhlqlassvhxqjgf.supabase.co';
+const K = process.env.SUPABASE_SERVICE_KEY || '';
+const PEZZO = 6 * 1024 * 1024, MAX = 45 * 1024 * 1024;
+const SALTA = /^jarvis-codice-/;   // copie dei codici: non servono
+
+async function google(fn, args) {
+  const r = await fetch(URL_GM, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ k: await segreto('gm'), fn, args }), redirect: 'follow' });
+  const t = await r.text(); let j;
+  try { j = JSON.parse(t); } catch (e) { throw new Error('Risposta non valida da Google: ' + t.slice(0, 120)); }
+  if (!j.ok) throw new Error(j.errore || 'errore Google');
+  return JSON.parse(j.data);
+}
+async function stato() { const r = await db('/rest/v1/jarvis_stato?chiave=eq.drive&select=valore'); const x = await r.json(); return (x[0] && x[0].valore) || {}; }
+async function salvaStato(v) { await db('/rest/v1/jarvis_stato', 'POST', [{ chiave: 'drive', valore: v }], { Prefer: 'resolution=merge-duplicates,return=minimal' }); }
+const pulisci = s => String(s || 'file').replace(/[^\w.\- ]+/g, '_').replace(/\s+/g, ' ').trim().slice(0, 120) || 'file';
+
+async function copiaUno(f) {
+  let parti = [], tot = null, tipo = f.mime, est = '', da = 0;
+  while (tot === null || da < tot) {
+    const x = await google('esportaFile', [f.drive_id, da, PEZZO]);
+    if (x.salta) return { stato: 'saltato', nota: 'tipo Google non copiabile: ' + x.salta };
+    tot = x.tot; tipo = x.tipo; est = x.est || '';
+    if (tot > MAX) return { stato: 'troppo grande', nota: Math.round(tot / 1048576) + ' MB' };
+    const b = Buffer.from(x.b64, 'base64'); parti.push(b); da += b.length;
+    if (!b.length) break;
+  }
+  const nome = pulisci(f.nome) + (est && !f.nome.toLowerCase().endsWith(est) ? est : '');
+  const path = 'drive/' + f.drive_id + '/' + nome;
+  const up = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/' + encodeURI(path), { method: 'POST',
+    headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }), 'Content-Type': tipo || 'application/octet-stream', 'x-upsert': 'true' }, body: Buffer.concat(parti) });
+  if (!up.ok) throw new Error('Salvataggio ' + up.status + ': ' + (await up.text()).slice(0, 150));
+  return { stato: 'copiato', path, tipo };
+}
+
+export async function driveGiro(chiave) {
+  if (!chiave || chiave !== await segreto('giro')) return { ok: false };
+  const t0 = Date.now(), s = await stato(), fatto = { elencati: 0, copiati: 0, errori: 0 };
+  if (s.inCorso && Date.now() - s.inCorso < 70000) return { ok: true, occupato: true };
+  s.inCorso = Date.now(); await salvaStato(s);
+  try {
+    // 1. elenco di tutti i file (a pagine)
+    while (!s.elencoFinito && Date.now() - t0 < 25000) {
+      const x = await google('elencaFile', [s.token || '']);
+      const righe = x.file.filter(f => !SALTA.test(f.nome)).map(f => ({ drive_id: f.id, nome: f.nome, mime: f.mime, dimensione: f.dim, modificato: new Date(f.mod).toISOString(), cartella: f.cartella }));
+      if (righe.length) await db('/rest/v1/drive_file?on_conflict=drive_id', 'POST', righe, { Prefer: 'resolution=ignore-duplicates,return=minimal' });
+      fatto.elencati += righe.length; s.token = x.token; if (!x.token) s.elencoFinito = Date.now();
+      await salvaStato(s);
+    }
+    // 2. copia, i più piccoli prima
+    while (Date.now() - t0 < 40000) {
+      const r = await db('/rest/v1/drive_file?stato=eq.da%20copiare&tentativi=lt.3&order=dimensione.asc.nullsfirst&limit=5&select=drive_id,nome,mime,dimensione,tentativi');
+      const lista = await r.json(); if (!lista.length) break;
+      for (const f of lista) {
+        if (Date.now() - t0 > 42000) break;
+        try {
+          const e = await copiaUno(f);
+          await db('/rest/v1/drive_file?drive_id=eq.' + encodeURIComponent(f.drive_id), 'PATCH', { ...e, copiato_il: e.stato === 'copiato' ? new Date().toISOString() : null }, { Prefer: 'return=minimal' });
+          if (e.stato === 'copiato') fatto.copiati++;
+        } catch (err) {
+          fatto.errori++;
+          await db('/rest/v1/drive_file?drive_id=eq.' + encodeURIComponent(f.drive_id), 'PATCH', { tentativi: (f.tentativi || 0) + 1, nota: String(err && err.message || err).slice(0, 300), ...((f.tentativi || 0) >= 2 ? { stato: 'errore' } : {}) }, { Prefer: 'return=minimal' });
+        }
+      }
+    }
+  } finally { s.inCorso = 0; s.ultimoGiro = Date.now(); await salvaStato(s); }
+  return { ok: true, ...fatto, elencoFinito: !!s.elencoFinito };
+}

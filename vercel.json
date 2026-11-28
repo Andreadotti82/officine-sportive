@@ -5,6 +5,14 @@
   ],
   "rewrites": [
     {
+      "source": "/info/exec",
+      "destination": "/api/jarvis?gas=info"
+    },
+    {
+      "source": "/selezione/exec",
+      "destination": "/api/jarvis?gas=selezione"
+    },
+    {
       "source": "/info",
       "destination": "/api/jarvis?gas=info"
     },

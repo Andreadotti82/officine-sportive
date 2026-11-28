@@ -192,8 +192,8 @@ export async function codicePatch(chiave, nome, vecchio, nuovo) {
   const testo = await (await fetch(url + '?t=' + Date.now(), { headers: h })).text();
   const n = testo.split(vecchio).length - 1;
   if (n !== 1) return { ok: false, trovate: n };
-  const up = await fetch(url, { method: 'POST', headers: { ...h, 'Content-Type': 'text/plain', 'x-upsert': 'true', 'cache-control': 'no-cache' }, body: testo.replace(vecchio, nuovo) });
-  return { ok: up.ok };
+  const up = await fetch(url, { method: 'POST', headers: { ...h, 'Content-Type': 'text/plain', 'x-upsert': 'true', 'cache-control': 'no-cache' }, body: testo.replace(vecchio, () => nuovo) });   // funzione: i «$» del codice nuovo restano com'erano
+  return { ok: up.ok, ...(up.ok ? {} : { errore: up.status + ' ' + (await up.text()).slice(0, 200) }) };
 }
 
 // Spegne un progetto Google che ora gira su Jarvis: orari fermi (al primo giro manda un'ultima volta le proprietà),

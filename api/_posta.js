@@ -164,6 +164,12 @@ export async function infoLeggi(chiave, giorni) {
         const riga = { id, uid, cartella: 'INBOX', message_id: mid, thread_id: idDa('T:' + radice), da: parolaCodificata(h['from'] || ''), a: parolaCodificata(h['to'] || ''), cc: parolaCodificata(h['cc'] || ''), reply_to: parolaCodificata(h['reply-to'] || ''),
           oggetto: parolaCodificata(h['subject'] || ''), data: isNaN(data) ? new Date().toISOString() : data.toISOString(), testo: (m.testo || '').slice(0, 200000), html: (m.html || '').slice(0, 400000),
           intestazioni: { 'message-id': mid, 'in-reply-to': irt ? irt[0] : '', references: refs.join(' '), 'list-unsubscribe': h['list-unsubscribe'] || '', 'auto-submitted': h['auto-submitted'] || '', 'x-original-to': h['x-original-to'] || '', 'delivered-to': h['delivered-to'] || '' }, allegati };
+        // Registro chiamate dei telefoni (SMS Backup & Restore via email): si archivia subito, non è una mail da smistare
+        const chiamate = allegati.filter(a => /^calls-.*\.xml$/i.test(a.nome));
+        if (chiamate.length) {
+          riga.in_inbox = false; riga.letto = true; riga.etichette = ['Registro chiamate'];
+          for (const a of chiamate) await db('/rest/v1/gas_file', 'POST', { id: 'jf' + crypto.randomBytes(12).toString('hex'), nome: a.nome, tipo: 'text/xml', cartella: 'registro-chiamate', path: a.path, app: 'chiamate' }, { Prefer: 'return=minimal' });
+        }
         const w = await db('/rest/v1/info_mail?on_conflict=id', 'POST', [riga], { Prefer: 'resolution=ignore-duplicates,return=minimal' });
         if (w.ok) nuove++;
       }

@@ -134,6 +134,11 @@ export async function wellnessDaily(chiave, giorno, scrivi) {
   const riga = v.findIndex((r, i) => i > 0 && String(r[iData]).slice(0, 10) === oggi);
   const ieri = v.filter((r, i) => i > 0 && String(r[iData]).slice(0, 10) < oggi).pop();
   const { valori, nota } = calcola(csv, oggi, ieri ? ieri[iDis] : 0);
+  const iAtt = h.indexOf('Actives member'), attIeri = ieri ? Number(ieri[iAtt]) || 0 : 0;
+  if (valori['Actives member'] != null && attIeri && valori['Actives member'] < attIeri * 0.7) {   // Jarvis 2 incompleto: non sporcare il dato
+    nota.push('soci attivi ' + valori['Actives member'] + ' contro ' + attIeri + ' di ieri: Jarvis 2 incompleto, lasciato il valore di ieri');
+    valori['Actives member'] = attIeri;
+  }
   if (riga < 0) return { ok: true, scritto: false, motivo: 'riga di oggi non ancora creata dalla Prima nota', valori, nota, usati };
   if (!scrivi) return { ok: true, scritto: false, valori, nota, usati };
   const r = v[riga].slice();

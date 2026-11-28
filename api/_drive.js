@@ -71,3 +71,19 @@ export async function driveGiro(chiave) {
   } finally { s.inCorso = 0; s.ultimoGiro = Date.now(); await salvaStato(s); }
   return { ok: true, ...fatto, elencoFinito: !!s.elencoFinito };
 }
+
+// Copia un codice di Google (es. casella info) nella parte privata di Jarvis e dice quali funzioni di posta usa.
+export async function driveCodice(chiave, id, nome) {
+  if (!chiave || chiave !== await segreto('giro')) return { ok: false };
+  let parti = [], tot = null, da = 0;
+  while (tot === null || da < tot) { const x = await google('esportaFile', [id, da, PEZZO]); tot = x.tot; const b = Buffer.from(x.b64, 'base64'); parti.push(b); da += b.length; if (!b.length) break; }
+  const testo = Buffer.concat(parti).toString('utf8');
+  const up = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js', { method: 'POST',
+    headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }), 'Content-Type': 'text/plain', 'x-upsert': 'true' }, body: testo });
+  const conta = re => { const m = {}; for (const x of testo.matchAll(re)) m[x[0]] = (m[x[0]] || 0) + 1; return m; };
+  const funzioni = [...testo.matchAll(/^function\s+([A-Za-z0-9_]+)/gm)].map(x => x[1]);
+  return { ok: up.ok, byte: testo.length, servizi: conta(/\b(GmailApp|MailApp|SpreadsheetApp|DriveApp|UrlFetchApp|PropertiesService|CacheService|ScriptApp|FormApp|CalendarApp|HtmlService|LockService|Utilities)\.[A-Za-z]+/g),
+    metodiPosta: conta(/\.(getThreads|getMessages|getMessageCount|getFirstMessageSubject|getAttachments|getPlainBody|getBody|getFrom|getTo|getCc|getReplyTo|getSubject|getDate|getId|getThreadById|getMessageById|markRead|markUnread|moveToArchive|moveToTrash|moveToInbox|addLabel|removeLabel|getLabels|reply|replyAll|forward|createDraftReply|isUnread|isInInbox|isInTrash|getLastMessageDate|getHeader|getRawContent|star|unstar|isStarred|getPermalink)\(/g),
+    ricerche: [...testo.matchAll(/GmailApp\.search\(([^;\n]{0,160})/g)].map(x => x[1]).slice(0, 40),
+    trigger: [...testo.matchAll(/newTrigger\('([^']+)'\)[^;\n]{0,90}/g)].map(x => x[0]), funzioni: funzioni.length, nomiFunzioni: funzioni.filter(f => !/_$/.test(f)) };
+}

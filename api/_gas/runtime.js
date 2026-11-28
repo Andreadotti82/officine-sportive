@@ -6,6 +6,7 @@ import path from 'path';
 import { fetchSync } from './sync.js';
 import { creaUtilities, Blob, aBuffer, formatDate } from './utilita.js';
 import { Spreadsheet, daDb, perDb } from './fogli.js';
+import { creaGmail } from './posta.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://kyricrhlqlassvhxqjgf.supabase.co';
 const KEY = process.env.SUPABASE_SERVICE_KEY || '';
@@ -119,7 +120,7 @@ export function creaAmbiente(app) {
     stato.mail.push(o);
   }
   const MailApp = { sendEmail: mail, getRemainingDailyQuota: () => 1000 };
-  const GmailApp = {
+  const GmailApp = app2.posta ? creaGmail({ dbSync, enc, mail, Blob, fetchSync, SUPABASE_URL, intestazioni }) : {
     sendEmail: mail, getAliases: () => [],
     search: () => { throw new Error('La lettura della casella mail non è ancora su Jarvis'); },
     getInboxUnreadCount: () => 0, getUserLabelByName: () => null, createLabel: () => ({ addToThread() { }, removeFromThread() { } })
@@ -252,7 +253,7 @@ async function mandaMail(app, m) {
     oggetto = '[SIMULAZIONE → ' + dest.join(', ') + (cc.length ? ' + cc ' + cc.join(', ') : '') + '] ' + oggetto;
     dest = [app.simulazione]; cc = []; bcc = [];
   }
-  const corpo = { from: (m.name || app.mittente || 'Officine Sportive') + ' <info@officinesportive.it>', to: dest, subject: oggetto, ...(m.htmlBody ? { html: m.htmlBody } : {}), ...(m.body ? { text: m.body } : {}), ...(cc.length ? { cc } : {}), ...(bcc.length ? { bcc } : {}), ...(m.replyTo ? { reply_to: m.replyTo } : {}), ...(allegati.length ? { attachments: allegati } : {}) };
+  const corpo = { from: (m.name || app.mittente || 'Officine Sportive') + ' <info@officinesportive.it>', to: dest, subject: oggetto, ...(m.htmlBody ? { html: m.htmlBody } : {}), ...(m.body ? { text: m.body } : {}), ...(cc.length ? { cc } : {}), ...(bcc.length ? { bcc } : {}), ...(m.replyTo ? { reply_to: m.replyTo } : {}), ...(allegati.length ? { attachments: allegati } : {}), ...(m.inReplyTo && !app.simulazione ? { headers: { 'In-Reply-To': m.inReplyTo, References: m.inReplyTo } } : {}) };
   if (!dest.length) return;
   const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + RESEND, 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
   if (!r.ok) console.error('[GAS] mail non partita', r.status, (await r.text()).slice(0, 300));

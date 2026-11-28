@@ -3,6 +3,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { fetchSync } from './sync.js';
 
 const BASE = 'https://officine-sportive.vercel.app';
 const LOGO_JARVIS = { nome: 'jarvis.gif', tipo: 'image/gif', locale: 'public/jarvis-logo.gif' };
@@ -16,12 +17,22 @@ export const APPS = {
     rimappa: {
       'https://script.google.com/macros/s/AKfycbw8elh5LTFxELcgKHa7nQum8NPAIafVhn1y6sc1mwfNCs_mCF-DTB9SKiViH5tAaW1_Aw/exec': BASE + '/api/jarvis?gaspost=actionplan',
       'https://script.google.com/macros/s/AKfycbxjfZhlL2WBKQeXZ6lm9mEOZcfQ_SmKw8-w-R4sG4Sb9nJCM4phcU_vm82qTyUuZVKO/exec': null   // il Fit Check su Jarvis legge i turni da solo
-    } }
+    } },
+  // Casella info@ e selezione: il codice è quello di Google, copiato nella parte privata di Jarvis (codici/…); la posta arriva da Register
+  info: { nome: 'info', url: BASE + '/info', percorso: '/info', mittente: 'Officine Sportive', fileNoti: FILE_NOTI, posta: true, codiceStorage: 'casella-info' },
+  selezione: { nome: 'selezione', url: BASE + '/selezione', percorso: '/selezione', mittente: 'Officine Sportive', fileNoti: FILE_NOTI, posta: true, codiceStorage: 'selezione' }
 };
 
 const decifrati = {};
 function leggi(nome, chiave) {
   if (decifrati[nome]) return decifrati[nome];
+  const a = APPS[nome];
+  if (a && a.codiceStorage) {
+    const KEY = process.env.SUPABASE_SERVICE_KEY || '', URL = process.env.SUPABASE_URL || 'https://kyricrhlqlassvhxqjgf.supabase.co';
+    const x = fetchSync(URL + '/storage/v1/object/jarvis-file/codici/' + a.codiceStorage + '.js', { headers: { apikey: KEY, ...(KEY.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + KEY }) } });
+    if (x.status >= 300) throw new Error('Codice non trovato: ' + a.codiceStorage);
+    return (decifrati[nome] = { codice: x.body.toString('utf8'), html: {}, nomiFogli: {} });
+  }
   const b = fs.readFileSync(path.join(process.cwd(), 'api', '_codici', nome + '.enc'));
   const iv = b.subarray(0, 12), tag = b.subarray(12, 28), dati = b.subarray(28);
   const d = crypto.createDecipheriv('aes-256-gcm', Buffer.from(chiave, 'hex'), iv); d.setAuthTag(tag);

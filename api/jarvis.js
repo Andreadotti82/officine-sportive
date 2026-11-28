@@ -19,9 +19,10 @@ import { wellnessDaily } from './_daily-wellness.js';
 import { mailDati } from './_mail-dati.js';
 import { sumupInsoluto, sumupStato } from './_sumup-insoluti.js';
 import { contrattiRecenti } from './_contratti-recenti.js';
+import { archiviaRinnovo } from './_rinnovo.js';
 import { pnImporta, pnGet, pnSet, pnList, pnPoll, pnTurni, pnPagina } from './_primanota.js';
 
-const FUNZIONI = { fcDati, fcPrenota, fcAnnulla, fcGiro, wCarica, apRun, gmRun, ponteRun, gasRun, gasEsegui, gasImporta, infoProva, mailStaff, testoCarica, pnImporta, pnGet, pnSet, pnList, pnPoll, pnTurni, driveGiro, driveCodice, codiceCerca, infoLeggi, gasRiceviProp, codiceAggancia, codicePatch, infoArchivio, codiceSpegni, wellnessDaily, mailDati, sumupInsoluto, sumupStato, contrattiRecenti, chiamateDaDrive };
+const FUNZIONI = { fcDati, fcPrenota, fcAnnulla, fcGiro, wCarica, apRun, gmRun, ponteRun, gasRun, gasEsegui, gasImporta, infoProva, mailStaff, testoCarica, pnImporta, pnGet, pnSet, pnList, pnPoll, pnTurni, driveGiro, driveCodice, codiceCerca, infoLeggi, gasRiceviProp, codiceAggancia, codicePatch, infoArchivio, codiceSpegni, wellnessDaily, mailDati, sumupInsoluto, sumupStato, contrattiRecenti, chiamateDaDrive, archiviaRinnovo };
 const errorePagina = '<p style="font-family:Arial;padding:30px;text-align:center">Il servizio non risponde in questo momento: riprova tra un attimo.</p>';
 
 async function pagina(res, crea, nome) {

@@ -6,6 +6,7 @@ import { CONDIZIONI, INFORMATIVA, SPUNTE } from './_testi-contratto.js';
 import { COMUNI } from './_comuni.js';
 import { htmlContratto } from './_pdf-contratto.js';
 import { pdfContratto, pdfRevoca, testoRevoca } from './_pdf-lib-contratto.js';
+import { pdfMailRinnovo } from './_rinnovo.js';
 
 let _crypto = null;
 async function getCrypto() { if (!_crypto) _crypto = await import('node:crypto'); return _crypto; }
@@ -903,8 +904,13 @@ function htmlMailContratto(c) {
 async function inviaPdfSocio(c, email) {
   const pdf = await leggiPdf(c) || await creaPdfContratto(c);
   const prova = String(c.numero).indexOf('PROVA') === 0 ? '[PROVA] ' : '';
-  await inviaMail(email || c.email, prova + 'Il tuo contratto Officine Sportive n. ' + c.numero, htmlMailContratto(c), null,
-    [{ filename: nomeFilePdf(c), content: pdf.toString('base64') }]);
+  const allegati = [{ filename: nomeFilePdf(c), content: pdf.toString('base64') }];
+  // 27/11 · Andrea: se al socio è già partita la mail dei 75 giorni, va allegata al contratto
+  try {
+    const rm = await supaFetchSrv('/rest/v1/mail_rinnovo?or=(contratto.eq.' + encodeURIComponent(c.numero) + ',email.eq.' + encodeURIComponent(String(c.email || '').toLowerCase()) + ')&select=*&order=inviata_il.desc&limit=3');
+    for (const m of (await rm.json()) || []) allegati.push({ filename: 'Comunicazione rinnovo tacito del ' + new Date(m.inviata_il).toLocaleDateString('it-IT', { timeZone: 'Europe/Rome' }).replace(/\//g, '-') + '.pdf', content: (await pdfMailRinnovo(m)).toString('base64') });
+  } catch (e) { console.error('[RINNOVO] allegato', c.numero, e.message || e); }
+  await inviaMail(email || c.email, prova + 'Il tuo contratto Officine Sportive n. ' + c.numero, htmlMailContratto(c), null, allegati);
 }
 
 // Giro programmato (ogni 10 minuti da Supabase): PDF ai soci 30 minuti dopo la firma, pulizia prove.

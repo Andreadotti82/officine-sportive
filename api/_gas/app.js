@@ -28,8 +28,8 @@ export const APPS = {
 
 const decifrati = {};
 function leggi(nome, chiave) {
-  if (decifrati[nome]) return decifrati[nome];
   const a = APPS[nome];
+  if (decifrati[nome] && !(a && a.codiceStorage && Date.now() - (decifrati[nome]._letto || 0) > 60000)) return decifrati[nome];   // codice dallo storage: si rilegge ogni minuto (le correzioni valgono subito)
   if (a && a.codiceStorage) {
     const KEY = process.env.SUPABASE_SERVICE_KEY || '', URL = process.env.SUPABASE_URL || 'https://kyricrhlqlassvhxqjgf.supabase.co';
     const x = fetchSync(URL + '/storage/v1/object/jarvis-file/codici/' + a.codiceStorage + '.js?t=' + Date.now(), { headers: { apikey: KEY, ...(KEY.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + KEY }) } });
@@ -37,7 +37,7 @@ function leggi(nome, chiave) {
     let html = {};
     const h = fetchSync(URL + '/storage/v1/object/jarvis-file/codici/' + a.codiceStorage + '.html.json?t=' + Date.now(), { headers: { apikey: KEY, ...(KEY.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + KEY }) } });
     if (h.status < 300) { try { html = JSON.parse(h.body.toString('utf8')); } catch (e) { } }
-    return (decifrati[nome] = { codice: x.body.toString('utf8'), html, nomiFogli: {} });
+    return (decifrati[nome] = { codice: x.body.toString('utf8'), html, nomiFogli: {}, _letto: Date.now() });
   }
   const b = fs.readFileSync(path.join(process.cwd(), 'api', '_codici', nome + '.enc'));
   const iv = b.subarray(0, 12), tag = b.subarray(12, 28), dati = b.subarray(28);

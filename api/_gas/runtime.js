@@ -293,11 +293,9 @@ async function mandaMail(app, m) {
 // Carica il codice dell'app (cifrato nel repository) e lo esegue nello stesso "mondo" di Node
 const compilati = {};
 function compila(app, chiave) {
-  if (!compilati[app.nome]) {
-    const t = app.testo(chiave);
-    compilati[app.nome] = new Function('__g', 'with(__g){' + t + '\n;return function(__n){ return eval(__n); };}');
-  }
-  return compilati[app.nome];
+  const t = app.testo(chiave);
+  if (!compilati[app.nome] || compilati[app.nome].t !== t) compilati[app.nome] = { t, f: new Function('__g', 'with(__g){' + t + '\n;return function(__n){ return eval(__n); };}') };   // ricompila quando il codice cambia
+  return compilati[app.nome].f;
 }
 
 export async function esegui(app, chiave, fn, args) {

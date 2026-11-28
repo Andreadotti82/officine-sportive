@@ -53,9 +53,10 @@ export async function driveGiro(chiave) {
       await salvaStato(s);
     }
     // 1b. finito l'elenco completo: ogni giro prende i file nuovi o cambiati (finché i ragazzi caricano anche su Google)
-    if (s.elencoFinito && Date.now() - (s.ultimoNuovi || 0) > 9 * 60000) {
-      const dopo = new Date((s.ultimoNuovi || s.elencoFinito) - 2 * 36e5).toISOString().slice(0, 19);
-      let tok = '', giri = 0;
+    if (s.elencoFinito && (s.dopoNuovi || Date.now() - (s.ultimoNuovi || 0) > 9 * 60000)) {
+      if (!s.dopoNuovi) { s.dopoNuovi = new Date((s.ultimoNuovi || s.elencoFinito) - 2 * 36e5).toISOString().slice(0, 19); s.inizioNuovi = Date.now(); }
+      const dopo = s.dopoNuovi;
+      let tok = s.tokNuovi || '', giri = 0;
       do {
         const x = await google('elencaFile', [tok, dopo]);
         const righe = x.file.filter(f => !SALTA.test(f.nome)).map(f => ({ drive_id: f.id, nome: f.nome, mime: f.mime, dimensione: f.dim, modificato: new Date(f.mod).toISOString(), cartella: f.cartella }));
@@ -65,8 +66,10 @@ export async function driveGiro(chiave) {
           else if (new Date(g[0].modificato) < new Date(r.modificato)) { await db('/rest/v1/drive_file?drive_id=eq.' + encodeURIComponent(r.drive_id), 'PATCH', { ...r, stato: 'da copiare', tentativi: 0 }, { Prefer: 'return=minimal' }); fatto.elencati++; }
         }
         tok = x.token; giri++;
+        s.tokNuovi = tok; await salvaStato(s);
       } while (tok && giri < 5 && Date.now() - t0 < 25000);
-      s.ultimoNuovi = Date.now(); await salvaStato(s);
+      if (!tok) { s.ultimoNuovi = s.inizioNuovi || Date.now(); s.dopoNuovi = ''; s.tokNuovi = ''; }
+      await salvaStato(s);
     }
     // 2. copia, i più piccoli prima
     while (Date.now() - t0 < 40000) {

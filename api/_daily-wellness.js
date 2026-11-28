@@ -1,6 +1,6 @@
 // Numeri di Wellness nel Daily della sera (prima li calcolava un compito di Claude alle 21:35 sui file del Drive Google).
 // Regole di Andrea (21-23/11/2026): vedi STATO-JARVIS.md, «Numeri Wellness nel Daily».
-import { db, segreto } from './_jarvis-base.js';
+import { db, segreto, inviaMail } from './_jarvis-base.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://kyricrhlqlassvhxqjgf.supabase.co';
 const K = process.env.SUPABASE_SERVICE_KEY || '';
@@ -122,7 +122,22 @@ async function fileDelGiorno(oggi) {
 }
 
 /* ---------- Giro: calcola e scrive nella riga di oggi del Daily (non la crea: la crea la Prima nota) ---------- */
-export async function wellnessDaily(chiave, giorno, scrivi) {
+// Ultimo giro della sera: se manca un file, Jarvis scrive ad Alessandro (regola di Andrea del 28/11/2026)
+async function avvisaFileMancanti(oggi, mancano) {
+  const st = (await json('/rest/v1/jarvis_stato?chiave=eq.daily-avviso&select=valore'))[0];
+  if (st && st.valore && st.valore.giorno === oggi) return;
+  const link = 'https://officine-sportive.vercel.app/goodmorning?page=dati&amp;t=' + (mancano.some(x => /3|4/.test(x)) ? 'sera' : 'mattina');
+  const html = '<div style="font-family:Arial,Helvetica,sans-serif;color:#14323F;max-width:620px"><div style="background:#13556F;color:#ffffff;padding:16px 20px;font-size:12px;letter-spacing:2px;font-weight:bold;border-radius:12px 12px 0 0">OFFICINE SPORTIVE · DAILY</div>'
+    + '<div style="padding:20px;border:1px solid #DCE6E8;border-top:0;border-radius:0 0 12px 12px;font-size:15px;line-height:1.55"><div style="font-size:19px;font-weight:bold;color:#13556F;margin:0 0 14px">📊 Mi manca qualche file per il Daily</div>'
+    + '<p style="margin:0 0 12px">Ciao Alessandro! 👋</p><p style="margin:0 0 12px">per completare i numeri del Daily di oggi mi manca: <b>' + mancano.join(', ') + '</b>. Quando hai un attimo, me lo carichi qui? 🙏</p>'
+    + '<a href="' + link + '" style="display:block;text-decoration:none;color:#14323F;background:#F3F8F8;border:2px dashed #1A9DA7;border-radius:14px;padding:18px 16px;text-align:center;margin:4px 0 12px"><div style="font-size:26px;line-height:1">📤</div><div style="font-size:18px;font-weight:bold;color:#13556F;margin:6px 0 2px">Carica i file</div></a>'
+    + '<p style="margin:0;font-size:13px;color:#5A707A">Appena arrivano, i numeri si sistemano da soli. Grazie mille! 🙌</p>'
+    + '<table role="presentation" style="margin:18px 0 0"><tr><td style="vertical-align:middle;padding-right:10px"><img src="https://officine-sportive.vercel.app/jarvis-logo.gif" width="56" height="56" alt="Jarvis"></td><td style="vertical-align:middle;font-size:15px">Un caro saluto,<br><b>Jarvis</b></td></tr></table></div></div>';
+  await inviaMail('alessandropt@officinesportive.it', '📊 Daily: mi manca ' + mancano.join(', '), html, 'Jarvis · Officine Sportive');
+  await db('/rest/v1/jarvis_stato', 'POST', { chiave: 'daily-avviso', valore: { giorno: oggi, mancano } }, { Prefer: 'resolution=merge-duplicates,return=minimal' });
+}
+
+export async function wellnessDaily(chiave, giorno, scrivi, ultimo) {
   if (!chiave || chiave !== await segreto('giro')) return { ok: false };
   const oggi = giorno || new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' });
   const f = await fileDelGiorno(oggi), csv = {}, usati = {};
@@ -139,7 +154,9 @@ export async function wellnessDaily(chiave, giorno, scrivi) {
     nota.push('soci attivi ' + valori['Actives member'] + ' contro ' + attIeri + ' di ieri: Jarvis 2 incompleto, lasciato il valore di ieri');
     valori['Actives member'] = attIeri;
   }
-  if (riga < 0) return { ok: true, scritto: false, motivo: 'riga di oggi non ancora creata dalla Prima nota', valori, nota, usati };
+  const mancano = ['j1', 'j2', 'j3', 'j4'].filter(k => !csv[k]).map(k => 'Jarvis ' + k.slice(1));
+  if (ultimo && scrivi && mancano.length) await avvisaFileMancanti(oggi, mancano);
+  if (riga < 0) return { ok: true, scritto: false, motivo: 'riga di oggi non ancora creata dalla Prima nota', valori, nota, usati, mancano };
   if (!scrivi) return { ok: true, scritto: false, valori, nota, usati };
   const r = v[riga].slice();
   while (r.length < h.length) r.push('');

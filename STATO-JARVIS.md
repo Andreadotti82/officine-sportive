@@ -1,6 +1,6 @@
 # Stato del passaggio a Jarvis
 
-Unico punto di verità sul passaggio da Google a Jarvis. **Ogni sessione di Claude (chat o Claude Code) lo legge prima di lavorare e lo aggiorna quando finisce qualcosa.** Ultimo aggiornamento: 28/11/2026.
+Unico punto di verità sul passaggio da Google a Jarvis. **Ogni sessione di Claude (chat o Claude Code) lo legge prima di lavorare e lo aggiorna quando finisce qualcosa.** Ultimo aggiornamento: 28/11/2026 pomeriggio (switch anticipato a sabato).
 
 Jarvis = Vercel (officine-sportive.vercel.app) + Supabase + Resend. Piano: staccare Google da lunedì 30/11, quando Claude dice ad Andrea che è tutto pronto.
 
@@ -15,6 +15,14 @@ Jarvis = Vercel (officine-sportive.vercel.app) + Supabase + Resend. Piano: stacc
 - **Prima nota** (`/primanota?k=…`): stesso codice dell'artifact, archivio in `pn_docs`, turni dall'app Turni. Allo switch: copiare l'archivio dall'artifact (cassa/*, movimenti, allegati) a cassa chiusa, dare il link nuovo ai ragazzi.
 - **Contenitore di link** (`/link?k=…`) con tutti i link nuovi.
 - **QR Good Morning / Good Night**: stampati (indirizzo fisso `/gm`).
+
+## 🚀 SWITCH IN CORSO (sabato 28/11)
+- ✅ **Good Morning / Good Night, Homework, Action plan**: Google spento (nuovo jarvis-codice-gm/homework/ap.js con orari fermi e pagina «spostata su Jarvis»; doPost resta per le copie), dati e proprietà ricopiati alle 12:30, `jarvis_stato gas-gm/hw/actionplan attivo`, indirizzi `/goodmorning`, `/gm` (QR), `/hw`, `/actionplan` sul motore.
+- ✅ **Prima nota**: archivio copiato in `pn_docs` (cassa/stato con 25 chiusure, playtomic, persone, storico, movimenti 14–27/11; allegati/foto NON copiati, restano nell'artifact). La chiusura va al Good Night di Jarvis (`jarvis_stato primanota.gn = /api/jarvis?gaspost=gm`). Link nuovo per i ragazzi: `/primanota?k=…` (vedi pagina /link).
+- 🟡 **Casella info, selezione, hwclub, bussola, playtomic**: su Jarvis in simulazione. Prima di accenderli: ricopiare fogli e proprietà, spegnere Google (codice «spento» per casella-info/selezione/hwclub/playtomic; Bussola è vecchio stile: spegnere a mano o lasciare), togliere l'inoltro Register → officneinfo.
+- Simulazioni mail ai soci: helper `jarvisSimula(quale)` solo nella copia su Jarvis (pigri, ex, ins, cert, comeva, grad, rinnovo); in simulazione max 5 mail d'esempio + riepilogo (api/_gas/runtime.js).
+- ⚠️ La prima copia del Drive era incompleta (mancavano 86 file dal 23/11): `copia-drive` ora ogni minuto finché finisce, poi rimetterlo ogni 10 min.
+- Turni 28/11 (app Turni): Francesca 7–14, Giorgia 14–22 (Alessandro NON in turno).
 
 ## 🔄 In corso
 - **Casella info@ collegata a Jarvis** (28/11): IMAP su `pop.securemail.pro:993` (è il server IMAP di Register; `mail.securemail.pro` rifiuta il login). Utente e password nelle variabili Vercel `INFO_MAIL_USER`/`INFO_MAIL_PASS`. Prova: `infoProva` → 282 mail in INBOX.

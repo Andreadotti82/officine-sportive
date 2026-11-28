@@ -87,3 +87,12 @@ export async function driveCodice(chiave, id, nome) {
     ricerche: [...testo.matchAll(/GmailApp\.search\(([^;\n]{0,160})/g)].map(x => x[1]).slice(0, 40),
     trigger: [...testo.matchAll(/newTrigger\('([^']+)'\)[^;\n]{0,90}/g)].map(x => x[0]), funzioni: funzioni.length, nomiFunzioni: funzioni.filter(f => !/_$/.test(f)) };
 }
+
+// Cerca dentro un codice copiato (righe che corrispondono a un'espressione), per leggerlo a pezzi.
+export async function codiceCerca(chiave, nome, re, contesto, max) {
+  if (!chiave || chiave !== await segreto('giro')) return { ok: false };
+  const r = await fetch(SUPABASE_URL + '/storage/v1/object/jarvis-file/codici/' + pulisci(nome) + '.js', { headers: { apikey: K, ...(K.startsWith('sb_') ? {} : { Authorization: 'Bearer ' + K }) } });
+  const righe = (await r.text()).split('\n'), rx = new RegExp(re), out = []; contesto = contesto || 0;
+  for (let i = 0; i < righe.length && out.length < (max || 60); i++) if (rx.test(righe[i])) out.push((i + 1) + ': ' + righe.slice(Math.max(0, i - contesto), i + contesto + 1).join('\n').slice(0, 1500));
+  return { righe: righe.length, trovate: out };
+}

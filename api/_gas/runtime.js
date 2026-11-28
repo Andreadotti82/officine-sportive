@@ -256,7 +256,13 @@ export async function salva(app, stato) {
     await dbAsync('/rest/v1/gas_file', 'POST', { id: f.id, nome: f.nome, tipo: f.tipo, cartella: f.cartella, path: f.path, app: app.nome }, { Prefer: 'return=minimal' });
   }
   if (stato.lockPreso) { await dbAsync('/rest/v1/gas_lock?app=eq.' + enc(app.nome), 'DELETE'); stato.lockPreso = false; }
-  for (const m of stato.mail) await mandaMail(app, m);
+  // In simulazione: al massimo 5 mail d'esempio, più un riepilogo con tutte le altre (così Andrea non viene sommerso)
+  if (app.simulazione && stato.mail.length > 5) {
+    const resto = stato.mail.slice(5);
+    for (const m of stato.mail.slice(0, 5)) await mandaMail(app, m);
+    const righe = resto.map(m => '<tr><td style="padding:4px 8px;border-bottom:1px solid #DCE6E8">' + escHtml(String(m.to || '')) + '</td><td style="padding:4px 8px;border-bottom:1px solid #DCE6E8">' + escHtml(String(m.subject || '')) + '</td></tr>').join('');
+    await mandaMail(app, { to: app.simulazione, subject: 'Riepilogo: altre ' + resto.length + ' mail (' + app.nome + ')', htmlBody: '<div style="font-family:Arial,sans-serif;color:#14323F"><p>Oltre ai 5 esempi, in questo giro Jarvis avrebbe mandato anche queste <b>' + resto.length + '</b> mail:</p><table style="border-collapse:collapse;font-size:13px"><tr><th align="left" style="padding:4px 8px">A</th><th align="left" style="padding:4px 8px">Oggetto</th></tr>' + righe + '</table></div>' });
+  } else for (const m of stato.mail) await mandaMail(app, m);
 }
 
 async function mandaMail(app, m) {

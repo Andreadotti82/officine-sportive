@@ -22,9 +22,10 @@ import { contrattiRecenti } from './_contratti-recenti.js';
 import { archiviaRinnovo } from './_rinnovo.js';
 import { pnPlaytomic } from './_pn-playtomic.js';
 import { chiamateDaily } from './_chiamate-daily.js';
+import { pnVerificaNotte } from './_pn-verifica.js';
 import { pnImporta, pnGet, pnSet, pnList, pnPoll, pnTurni, pnPagina } from './_primanota.js';
 
-const FUNZIONI = { fcDati, fcPrenota, fcAnnulla, fcGiro, wCarica, apRun, gmRun, ponteRun, gasRun, gasEsegui, gasImporta, infoProva, mailStaff, testoCarica, pnImporta, pnGet, pnSet, pnList, pnPoll, pnTurni, driveGiro, driveCodice, codiceCerca, infoLeggi, gasRiceviProp, codiceAggancia, codicePatch, infoArchivio, codiceSpegni, wellnessDaily, mailDati, sumupInsoluto, sumupStato, contrattiRecenti, chiamateDaDrive, archiviaRinnovo, pnPlaytomic, chiamateDaily };
+const FUNZIONI = { fcDati, fcPrenota, fcAnnulla, fcGiro, wCarica, apRun, gmRun, ponteRun, gasRun, gasEsegui, gasImporta, infoProva, mailStaff, testoCarica, pnImporta, pnGet, pnSet, pnList, pnPoll, pnTurni, driveGiro, driveCodice, codiceCerca, infoLeggi, gasRiceviProp, codiceAggancia, codicePatch, infoArchivio, codiceSpegni, wellnessDaily, mailDati, sumupInsoluto, sumupStato, contrattiRecenti, chiamateDaDrive, archiviaRinnovo, pnPlaytomic, chiamateDaily, pnVerificaNotte };
 const errorePagina = '<p style="font-family:Arial;padding:30px;text-align:center">Il servizio non risponde in questo momento: riprova tra un attimo.</p>';
 
 async function pagina(res, crea, nome) {

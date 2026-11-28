@@ -16,11 +16,14 @@ Jarvis = Vercel (officine-sportive.vercel.app) + Supabase + Resend. Piano: stacc
 - **Contenitore di link** (`/link?k=…`) con tutti i link nuovi.
 - **QR Good Morning / Good Night**: stampati (indirizzo fisso `/gm`).
 
+## 🔄 In corso
+- **Copia del Drive di officinesportive3** (28/11): `driveGiro` in `api/_drive.js`, lanciato ogni minuto dal cron Supabase `copia-drive`. Google (codice GM, funzioni `elencaFile`/`esportaFile`) consegna i file, Jarvis li salva in `jarvis-file/drive/<id>/<nome>` e segna tutto in `drive_file` (stato: da copiare / copiato / saltato / troppo grande / errore). Fogli Google → .xlsx, Documenti → .docx. Il Drive non viene toccato: si cancella solo dopo il controllo. Finita la copia: togliere il cron (`select cron.unschedule('copia-drive')`) e far leggere VS, chiusura mese e report club da `drive_file`.
+- Nota 28/11: le tabelle `pn_docs`, `jarvis_testi`, `drive_file` non erano aperte a `service_role` (Jarvis non le leggeva). Corretto. **Ogni tabella nuova va creata con `grant select, insert, update, delete … to service_role`.**
+
 ## 🔴 Bloccato
 - **Casella info** (CV e selezione, lamentele, disdette, sospensioni, richieste prezzo, sequenze) e tutto ciò che legge le mail (conferma budget via mail, Daily via mail): serve l'accesso IMAP a info@ su Register (server `mail.securemail.pro`). Login rifiutato: da sbloccare con Andrea.
 - **Prova nuoto**: legge un Google Modulo, va rifatta come pagina Jarvis.
 - **Compiti automatici di Claude** (mail dati mattina/sera, numeri Wellness nel Daily, VS, Piano di Alessandro, ranking, tesseramenti, revisione del lunedì, promemoria): leggono fogli Google e mandano dalla Gmail officinesportive3. Vanno ripuntati su Jarvis. Le mail dati mattina/sera leggono i turni dall'artifact della prima nota, fermi al 17/11.
-- **File del Drive** (foto, attestati): ancora da copiare.
 
 ## ⏳ In attesa
 - Alessandro: nuovo Jarvis 2 senza filtro «Disdetta rinnovo» (mail del 27/11). Controllo automatico lunedì 30/11 alle 17:30.

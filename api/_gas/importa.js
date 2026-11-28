@@ -1,5 +1,6 @@
 // Copia una volta i dati da Google a Jarvis (fogli e proprietà), usando i ponti già attivi.
 import { db, segreto } from '../_jarvis-base.js';
+import { ponteRun } from '../_ponte.js';
 
 const URL_GM = 'https://script.google.com/macros/s/AKfycbxom9ST_8sRTWmx_Pp18hJpntQAv4rtMcgo8j48vVpgfYvzot1sAcgzpgvYI8OVu3Sn/exec';
 const URL_AP = 'https://script.google.com/macros/s/AKfycbw8elh5LTFxELcgKHa7nQum8NPAIafVhn1y6sc1mwfNCs_mCF-DTB9SKiViH5tAaW1_Aw/exec';
@@ -25,8 +26,9 @@ export async function gasImporta(chiave, tipo, arg, app) {
     return { ok: true, nome: x.nome, schede: righe.map(r => r.scheda + ' (' + r.valori.length + ')') };
   }
   if (tipo === 'proprieta') {
-    const fonte = arg === 'gm' ? [URL_GM, await segreto('gm')] : [URL_AP, await segreto('actionplan')];
-    const p = await ponte(fonte[0], fonte[1], 'esportaProprieta', []);
+    let p;
+    if (arg === 'hw') { const x = await ponteRun('hw', 'esportaProprietaJarvis', []); if (!x || !x.ok) throw new Error('Homework: ' + (x && x.errore || 'nessuna risposta')); p = JSON.parse(x.data); }
+    else { const fonte = arg === 'gm' ? [URL_GM, await segreto('gm')] : [URL_AP, await segreto('actionplan')]; p = await ponte(fonte[0], fonte[1], 'esportaProprieta', []); }
     const righe = Object.keys(p).map(k => ({ app, chiave: k, valore: p[k] }));
     await db('/rest/v1/gas_proprieta?app=eq.' + encodeURIComponent(app), 'DELETE', null, { Prefer: 'return=minimal' });
     if (righe.length) await db('/rest/v1/gas_proprieta', 'POST', righe, { Prefer: 'return=minimal' });
